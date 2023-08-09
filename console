@@ -1,0 +1,48 @@
+local seerhealth = function() {
+	if (IsLobby())
+		return;
+
+	bool enabled = true;
+	float maxDistance = 220.0;
+
+	while(true) {
+		entity LocalPlayer = GetLocalClientPlayer();
+		if (!IsValid(LocalPlayer)) {
+			wait 5.0;
+			continue;
+		}
+
+		entity viewPlayer = GetLocalViewPlayer();
+		if (!IsValid(viewPlayer) || !IsAlive(viewPlayer)) {
+			wait 5.0;
+			continue;
+		}
+
+		enabled = GetCurrentPlaylistVarBool( "mz_seer_health", false );
+		if ( enabled == false ) {
+			wait 2.0;
+			continue;
+		}
+
+		array<entity> enemies = GetPlayerArrayOfEnemies(viewPlayer.GetTeam());
+		foreach (enemy in enemies) {
+			bool inList = (enemy in LocalPlayer.p.reconScanRUIs);
+			if (!IsValid(enemy) || !enemy.IsPlayer() || !IsAlive(enemy) || enemy == LocalPlayer) {
+				if(inList && LocalPlayer.p.reconScanRUIs[enemy] != null) {
+					ReconScan_RemoveHudForTarget(LocalPlayer, enemy);
+				}
+				continue;
+			}
+
+			float dist = Distance(enemy.GetOrigin(), viewPlayer.GetOrigin()) * INCHES_TO_METERS;
+			if (!inList && dist < maxDistance && enabled) {
+				ReconScan_ShowHudForTarget(LocalPlayer, enemy, false );
+			}
+			else if (inList && dist >= maxDistance && LocalPlayer.p.reconScanRUIs[enemy] != null) {
+				ReconScan_RemoveHudForTarget(LocalPlayer, enemy);
+			}
+		}
+		wait 0.5
+	}
+}
+thread seerhealth()

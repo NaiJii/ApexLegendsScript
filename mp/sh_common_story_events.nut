@@ -1,61 +1,54 @@
-#if SERVER
-                                      
-#endif
-
-#if CLIENT
-global function ClCommonStoryEvents_Init
-
-#endif
-
-struct
-{
-
-} file
-
-
-                                                                                                                                    
-                                                                                                                                    
-                                                                                                                                    
-                                                                                                                                    
-  
-                               
-                            
-                            
-                            
-                            
-                            
-                            
-  
-                                                                                                                                    
-                                                                                                                                    
-                                                                                                                                    
-                                                                                                                                    
-
-
-#if SERVER
-                                      
- 
-	                                              
- 
-#endif
-
-
-#if CLIENT
-void function ClCommonStoryEvents_Init()
-{
-	AddCallback_EntitiesDidLoad( EntitiesDidLoad )
-}
-#endif
-
-#if SERVER || CLIENT
-void function EntitiesDidLoad()
-{
-                        
-	#if SERVER
-		                           
-	#endif
-       
-}
-#endif
-
+
+
+
+
+
+global function ClCommonStoryEvents_Init
+
+
+struct
+{
+
+} file
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+void function ClCommonStoryEvents_Init()
+{
+	AddCallback_EntitiesDidLoad( EntitiesDidLoad )
+}
+
+
+
+void function EntitiesDidLoad()
+{
+
+}
+
 

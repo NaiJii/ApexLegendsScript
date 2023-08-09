@@ -1,26 +1,26 @@
-
-global function CodeCallback_ZiplineMount
-                                          
-                                           
-                                          
-
-void function CodeCallback_ZiplineMount( entity player, entity zipline )
-{
-	thread Chroma_ZiplineThread()
-}
-
-  
-                                                                       
- 
- 
-
-                                                                        
- 
-	                             
- 
-
-                                                       
- 
- 
-  
+
+global function CodeCallback_ZiplineMount
+
+
+
+
+void function CodeCallback_ZiplineMount( entity player, entity zipline )
+{
+	thread Chroma_ZiplineThread()
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
