@@ -1,6 +1,9 @@
 
 global function FreeDM_PopulateAboutText
 
+
+
+
 string function GetPlaylist()
 {
 	if ( IsLobby() )
@@ -41,6 +44,25 @@ array< featureTutorialTab > function GunGame_PopulateAboutText()
 
 	return tabs
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

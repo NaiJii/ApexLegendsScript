@@ -393,6 +393,9 @@ void function ChargePylons_Init()
 
 
 
+
+
+
 void function ChargePylon_Cl_SetButtonUsable( entity prop )
 {
 	if ( prop.GetScriptName() == "charge_pylon_button" )
@@ -518,6 +521,10 @@ void function DisplayRuiForLootVaultPanel_Internal( var rui, asset icon, float s
 	RuiSetString( rui, "hintKeyboardMouse", hint )
 	RuiSetString( rui, "hintController", hint )
 }
+
+
+
+
 
 
 

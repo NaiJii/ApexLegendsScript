@@ -1,46 +1,49 @@
 global function PIN_Init
 global function PIN_Customization
 global function PIN_UltimateReadyPing
+global function PIN_DynamicDialogue
 global function PIN_NET_TraceRouteResult
 
 
-global function UICodeCallback_PINEvent
-global function PIN_Shutdown
-global function PIN_PageView
-global function PIN_Message
-global function PIN_UM_Message
-global function PIN_LobbyPopUp_Event
-global function PIN_Survey
-global function PIN_Settings
-global function PIN_Settings_SetMainProfile
-global function PIN_UIInteraction_Select
-global function PIN_ComicPageView
-global function PIN_QuestTextView
-global function PIN_StoryTrackerPageView
-global function PIN_Store_EventButton
-global function PIN_Store_Message
-global function PIN_Club_Create
-global function PIN_Club_Leave
-global function PIN_Club_Remove
-global function PIN_Club_Invite
-global function PIN_Club_RequestToJoin
-global function PIN_Club_AcceptInvite
-global function PIN_Club_DeclineInvite
-global function PIN_Club_Promote
-global function PIN_Club_Demote
-global function PIN_Club_Search
-global function PIN_Club_Setting
-global function PIN_BattlepassPurchase
-global function PIN_BattlepassMilestonePageView
 
-global function SetCurrentHubForPIN
-global function SetCurrentTabForPIN
-global function SetCachedOfferAlias
-global function GetLastMenuIDForPIN
-global function SetLastMenuIDForPIN
-global function GetMatchPINData
-global function UpdateMatchPINData
-global function ClearMatchPINData
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 global enum ePINPromoMessageStatus
@@ -55,15 +58,15 @@ struct
 	float startupTime
 
 
+		entity networkWaypoint
 
 
 
 
-		string currentHubForPIN = ""
-		string currentTabForPIN = ""
-		string cachedOfferAlias = ""
-		string pin_lastMenuId = ""
-		table matchPinData = {}
+
+
+
+
 
 } file
 
@@ -86,8 +89,6 @@ table function PIN_GetPIDM( entity player )
 
 
 
-		Warning( "unspecified PROG in PIN_GetPIDM" )
-
 
 	return pidm
 }
@@ -103,8 +104,8 @@ table function PIN_StandardHeader()
 		game_type		= "online",
 		mode_type		= "multiplayer",
 
-
-
+			game_mode	= GAMETYPE,
+			map			= GetMapName(),
 
 		plat			= player.GetPlayerPINPlatformName(),
 		title_id		= player.GetPlayerPINTitleId(),
@@ -116,16 +117,9 @@ table function PIN_StandardHeader()
 void function PIN_Init()
 {
 
-	file.startupTime = UITime()
 
 
-
-
-
-		CreatePINTelemetryHeader( 2,0, 
-			{
-			}
-		)
+	file.startupTime = Time()
 
 
 
@@ -133,377 +127,386 @@ void function PIN_Init()
 
 
 
-}
-
-
-void function UICodeCallback_PINEvent( string eventName, table params )
-{
-	if ( eventName == "boot_start" )
-		file.startupTime = UITime() 
-
-	AddPINTelemetryEvent( eventName, PIN_StandardHeader(), params )
-}
-
-void function PIN_Shutdown()
-{
-	AddPINTelemetryEvent( "boot_end",
-		PIN_StandardHeader(),
-		{
-			end_reason = "normal",
-			sdur = PIN_GetSessionDuration(),
-		}
-	)
-}
 
 
 
-void function PIN_PageView( string menuName, float openDuration, string fromId, bool isDialog, table metaData )
-{
-	if ( openDuration < 1.0 )
-		return
 
-	metaData = PIN_GetSpecialMetaData( isDialog, metaData, menuName )
 
-	AddPINTelemetryEvent( "page_view",
-		PIN_StandardHeader(),
-		{
-			ldur = 0
-			pgdur = int( openDuration )
-			pgid = menuName.tolower()
-			fromid = fromId.tolower()
-			type = isDialog ? "popup" : "menu"
-			meta = metaData
-		}
-	)
+		Waypoints_RegisterCustomType( "PIN", OnPINWaypointCreated )
+
 }
 
 
 
 
 
-table function PIN_GetSpecialMetaData( bool isDialog, table metaData, string menuName )
-{
-	if ( isDialog )
-	{
-		metaData[ "hub_name" ] = file.currentHubForPIN
-		if ( "tab_name" in metaData )
-			metaData[ "tab_name" ] = file.currentTabForPIN
-		else
-			metaData[ "tab_name" ] <- file.currentTabForPIN
-	}
-
-	
-	if ( metaData[ "hub_name" ] == "PassPurchaseMenu" || metaData[ "hub_name" ] == "BattlePassAboutPage1")
-	{
-		metaData[ "hub_name" ] = "SeasonPanel"
-		if ( "tab_name" in metaData )
-			metaData[ "tab_name" ] = "PassPanel"
-		else
-			metaData[ "tab_name" ] <- "PassPanel"
-	}
-	else if ( metaData[ "hub_name" ] == "ConfirmPurchaseDialog" || metaData[ "hub_name" ] == "StoreInspectMenu" || metaData[ "hub_name" ] == "ConfirmPackBundlePurchaseDialog" )
-	{
-		metaData[ "hub_name" ] = file.currentHubForPIN
-		if ( "tab_name" in metaData )
-			metaData[ "tab_name" ] = file.currentTabForPIN
-		else
-			metaData[ "tab_name" ] <- file.currentTabForPIN
-
-		if ( !("item_name" in metaData) )
-			metaData[ "item_name" ] <- file.cachedOfferAlias
-	}
-
-	if ( menuName == "menu_ConfirmPackBundlePurchaseDialog" )
-	{
-		if ( "item_name" in metaData )
-			metaData[ "item_name" ] = file.cachedOfferAlias
-		else
-			metaData[ "item_name" ] <- file.cachedOfferAlias
-
-	}
-
-	
-	if ( "tab_name" in metaData && metaData[ "tab_name" ] == "InspectPanel" )
-	{
-		metaData[ "hub_name" ] = file.currentHubForPIN
-		metaData[ "tab_name" ] = file.currentTabForPIN
-	}
-
-	return metaData
-}
-
-
-
-void function PIN_ComicPageView( string currentID, string previousID, float viewDuration )
-{
-	AddPINTelemetryEvent( "page_view",
-		PIN_StandardHeader(),
-		{
-			ldur = 0
-			pgdur = viewDuration
-			pgid = currentID
-			fromid = previousID
-			type = "comic"
-		}
-	)
-}
-
-void function PIN_QuestTextView( string currentID, string previousID, float viewDuration )
-{
-	AddPINTelemetryEvent( "page_view",
-		PIN_StandardHeader(),
-		{
-			ldur = 0
-			pgdur = viewDuration
-			pgid = currentID
-			fromid = previousID
-			type = "quest_text"
-		}
-	)
-}
-
-void function PIN_StoryTrackerPageView( string currentID, string previousID, float viewDuration )
-{
-	AddPINTelemetryEvent( "page_view",
-		PIN_StandardHeader(),
-		{
-			ldur = 0
-			pgdur = viewDuration
-			pgid = currentID
-			fromid = previousID
-			type = "story_tracker"
-		}
-	)
-}
 
 
 
 
-void function PIN_Message( string titleText, string messageText, string msgType, bool isClick )
-{
-	string msg_idString = titleText.len() > 128 ? titleText.tolower().slice( 0, 128 ) : titleText.tolower()
-	string msg_status = isClick ? "click" : "impression"
-
-	printf( "PIN_Message type: %s, msgType: %s, title: %s", msg_status, msgType, msg_idString )
-	AddPINTelemetryEvent( "message",
-		PIN_StandardHeader(), {
-			sdur 	= PIN_GetSessionDuration()
-			msg_id  = msg_idString
-			service = "game"
-			status  = msg_status
-			type    = "in_game"
-			custom = {
-				msg_type = msgType
-			}
-		}
-	)
-}
 
 
 
 
-string function PIN_GetMessageStatusText( int msgStatus )
-{
-	switch ( msgStatus )
-	{
-	case ePINPromoMessageStatus.CLICK:
-		return "click"
-	case ePINPromoMessageStatus.IMPRESSION:
-		return "impression"
-	case ePINPromoMessageStatus.CONVERSION:
-		return "conversion"
-	}
-	return ""
-}
 
 
 
 
-void function PIN_UM_Message( string titleText, string trackingId, string msgType, int msgStatus, int position )
-{
-	string msg_idString = titleText.len() > 128 ? titleText.tolower().slice( 0, 128 ) : titleText.tolower()
-	string msg_status = PIN_GetMessageStatusText( msgStatus )
-
-	printf( "%s status: %s, msgType: %s, title: %s, tile_position: %i, trackingid: %s",
-		FUNC_NAME(), msg_status, msgType, msg_idString, position, trackingId )
-
-	AddPINTelemetryEvent( "message",
-		PIN_StandardHeader(), {
-			sdur 	= PIN_GetSessionDuration()
-			msg_id  = msg_idString
-			service = "game"
-			status  = msg_status
-			type    = "in_game"
-			en      = "message"
-			service = "aruba"
-			count 	= 1
-			track   = {
-				trackingtag = trackingId,
-				data = {
-					tile_position = position
-				}
-			},
-			custom = {
-				msg_type = msgType
-			}
-		}
-	)
-}
-void function PIN_LobbyPopUp_Event( string popupType, int status )
-{
-	string msg_status = PIN_GetMessageStatusText( status )
-	AddPINTelemetryEvent( "message",
-		PIN_StandardHeader(),
-		{
-			sdur = PIN_GetSessionDuration()
-			service = "game"
-			status = msg_status
-			type = "in_game"
-			en = "message"
-			service = "aruba"
-			count = 1
-			custom =
-			{
-				msg_type = popupType
-			}
-		}
-	)
-}
 
 
 
 
-void function PIN_Survey( int surveyType, string questionText, string aOptionText, string bOptionText, string answerText, string matchId, float sampleRate, bool ignored )
-{
-	if ( surveyType == eSurveyType.POSTGAME )
-	{
-		if ( !("mid" in file.matchPinData) )
-			return
-		if ( !("map" in file.matchPinData) )
-			return
-		if ( !("match_type" in file.matchPinData) )
-			return
-	}
-
-	string msg_idString = questionText.len() > 128 ? questionText.tolower().slice( 0, 128 ) : questionText.tolower()
-	AddPINTelemetryEvent( "survey",
-		PIN_StandardHeader(), {
-			complete_flag = ignored ? "empty" : "complete",
-			status = "sent",
-			survey_id = msg_idString,
-			type = GetEnumString( "eSurveyType", surveyType ).tolower(),
-			
-
-			json = {
-				properties = {
-					sample_rate = sampleRate
-					mid = matchId
-					map = file.matchPinData["map"]
-					match_type = file.matchPinData["match_type"]
-				}
-
-				choices = [
-					aOptionText,
-					bOptionText
-				]
-
-				responses = [
-					ignored ? "NA" : answerText
-				]
-
-				questionText = questionText
-			}
-		}
-	)
-}
 
 
 
 
-void function PIN_Settings( table settingsTable )
-{
-	AddPINTelemetryEvent( "settings",
-		PIN_StandardHeader(),
-		{
-			settings = settingsTable
-			status  = "update"
-			type    = "preferences"
-		}
-	)
-}
 
 
 
-void function PIN_Settings_SetMainProfile( string lastHardware, string currentHardware, string lastPersonaId, string currentPersonaId )
-{
-	bool hasLastAccount = lastHardware.len() > 0;
-
-	table accountMetadataTable = {
-		current_account  = currentPersonaId,
-		current_platform = currentHardware.tolower(),
-		current_account_type = "persona",
-
-		current_account_updated_time = GetISODateTime(),
-
-		last_account      = hasLastAccount ? lastPersonaId : "",
-		last_platform     = hasLastAccount ? lastHardware.tolower() : "",
-		last_account_type = hasLastAccount ? "persona" : "",
-	}
-
-	table settingsTable = {
-		persistant_account_metadata = accountMetadataTable,
-	}
-
-	PIN_Settings( settingsTable )
-}
 
 
 
-void function PIN_UIInteraction_Select( string menuName, string objectName, var jsonTable )
-{
-	AddPINTelemetryEvent( "ui_interaction",
-		PIN_StandardHeader(),
-		{
-			action = "selection"
-			mdur = 0
-			object_id = objectName.tolower()
-			pgid = menuName.tolower()
-			interaction_attr = jsonTable
-		}
-	)
-}
 
 
 
-void function PIN_Store_EventButton ( string fromId )
-{
-	AddPINTelemetryEvent( "store_eventbutton",
-		PIN_StandardHeader(),
-		{
-			fromid = fromId.tolower()
-		}
-	)
-}
 
-void function PIN_Store_Message( string msgType, int status )
-{
-	string msg_status = PIN_GetMessageStatusText( status )
-	AddPINTelemetryEvent( "message",
-		PIN_StandardHeader(),
-		{
-			count = 1
-			custom =
-			{
-				msg_type = msgType
-			}
-			en = "message"
-			sdur = PIN_GetSessionDuration()
-			service = "aruba"
-			status = msg_status
-			type = "in_game"
-		}
-	)
-}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 void function PIN_Customization( ItemFlavor ornull context, ItemFlavor itemFlavor, string customizeAction, int index = 0 )
@@ -581,11 +584,11 @@ void function PIN_Customization( ItemFlavor ornull context, ItemFlavor itemFlavo
 			break
 
 
-		case eItemType.sticker:
-			int consumable = ConsumableStickersPanel_GetCurrentConsumable()
-			customizeType = "sticker"
-			customizeTarget = IsValidEnumValue( "eStickerObjectType", consumable ) ? GetEnumString( "eStickerObjectType", consumable ) : "unknown"
-			break
+
+
+
+
+
 
 	}
 
@@ -681,6 +684,9 @@ string function GetPINRarity( int tier )
 		case 5:
 			return "heirloom"
 
+		case 6:
+			return "iconic"
+
 		default:
 			Assert( false, "Unhandled loot rarity " + tier )
 			return "unknown_" + tier
@@ -690,295 +696,295 @@ string function GetPINRarity( int tier )
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-void function PIN_Club_Create( ClubHeader clubHeader )
+void function OnPINWaypointCreated( entity wp )
 {
-	AddPINTelemetryEvent( "guild",
-		PIN_StandardHeader(),
-		{
-			action = "create"
-			club_name = clubHeader.name
-			club_id = clubHeader.clubID
-			min_rank = Clubs_GetDescStringForMinRank( clubHeader.minRating )
-			min_account_level = Clubs_GetDescStringForMinAccountLevel( clubHeader.minLevel )
-			privacy_level = Clubs_GetDescStringForPrivacyLevel( clubHeader.privacySetting )
-			tags = ClubSearchTag_GetNamesOfSearchTagsFromArray( ClubSearchTag_GetSearchTagNamesFromBitmask( clubHeader.searchTags ) )
+	file.networkWaypoint = wp
 
-			custom = {
-				lobby_session_id = PIN_GetSessionId()
-			}
-		}
-	)
+	RunUIScript( "UpdateMatchPINData", "mid", wp.GetWaypointString( 0 ) )
+	RunUIScript( "UpdateMatchPINData", "map", GetMapName() )
+	RunUIScript( "UpdateMatchPINData", "match_type", GetCurrentPlaylistVarString( "pin_match_type", "survival" ) )
 }
 
-void function PIN_Club_Leave( ClubHeader clubHeader )
-{
-	AddPINTelemetryEvent( "guild",
-		PIN_StandardHeader(),
-		{
-			action = "leave"
-			club_name = clubHeader.name
-			club_id = clubHeader.clubID
-			club_member_count = clubHeader.memberCount - 1
-			custom = {
-				lobby_session_id = PIN_GetSessionId()
-			}
-		}
-	)
-}
 
-void function PIN_Club_Remove( ClubHeader clubHeader, string kickedPlayerID )
-{
-	AddPINTelemetryEvent( "guild",
-		PIN_StandardHeader(),
-		{
-			action = "remove"
-			club_name = clubHeader.name
-			club_id = clubHeader.clubID
-			impacted_player_id = kickedPlayerID
 
-			custom = {
-			lobby_session_id = PIN_GetSessionId()
-			}
-		}
-	)
-}
 
-void function PIN_Club_Invite( ClubHeader clubHeader, string inviteType, string invitedPlayerID )
-{
-	AddPINTelemetryEvent( "guild",
-		PIN_StandardHeader(),
-		{
-			action = "invite"
-			club_name = clubHeader.name
-			club_id = clubHeader.clubID
-			invite_type = inviteType 
-			impacted_player_id = invitedPlayerID
-			club_member_count = clubHeader.memberCount
 
-			custom = {
-			lobby_session_id = PIN_GetSessionId()
-		}
-		}
-	)
-}
 
-void function PIN_Club_Search( string searchTerms, string filters )
-{
-	AddPINTelemetryEvent( "guild",
-		PIN_StandardHeader(),
-		{
-			action = "search"
-			search_term = searchTerms
-			filter = filters
 
-			custom = {
-			lobby_session_id = PIN_GetSessionId()
-		}
-		}
-	)
-}
 
-void function PIN_Club_RequestToJoin( ClubHeader clubHeader )
-{
-	AddPINTelemetryEvent( "guild",
-		PIN_StandardHeader(),
-		{
-			action = "request_to_join"
-			club_name = clubHeader.name
-			club_id = clubHeader.clubID
 
-			custom = {
-			lobby_session_id = PIN_GetSessionId()
-		}
-		}
-	)
-}
 
-void function PIN_Club_Setting( ClubHeader clubHeader )
-{
-	AddPINTelemetryEvent( "guild",
-		PIN_StandardHeader(),
-		{
-			action = "setting"
-			club_name = clubHeader.name
-			club_id = clubHeader.clubID
-			min_rank = Clubs_GetDescStringForMinRank( clubHeader.minRating )
-			min_account_level = Clubs_GetDescStringForMinAccountLevel( clubHeader.minLevel )
-			privacy_level = Clubs_GetDescStringForPrivacyLevel( clubHeader.privacySetting )
-			tags = ClubSearchTag_GetNamesOfSearchTagsFromArray( ClubSearchTag_GetSearchTagNamesFromBitmask( clubHeader.searchTags ) )
 
-			custom = {
-			lobby_session_id = PIN_GetSessionId()
-		}
-		}
-	)
-}
 
-void function PIN_Club_Promote( ClubHeader clubHeader, string promotedPlayerID, string newRank )
-{
-	AddPINTelemetryEvent( "guild",
-		PIN_StandardHeader(),
-		{
-			action = "promote"
-			club_name = clubHeader.name
-			club_id = clubHeader.clubID
-			impacted_player_id = promotedPlayerID
-			club_rank = newRank
-			club_member_count = clubHeader.memberCount
 
-			custom = {
-			lobby_session_id = PIN_GetSessionId()
-		}
-		}
-	)
-}
 
-void function PIN_Club_Demote( ClubHeader clubHeader, string promotedPlayerID, string newRank )
-{
-	AddPINTelemetryEvent( "guild",
-		PIN_StandardHeader(),
-		{
-			action = "demote"
-			club_name = clubHeader.name
-			club_id = clubHeader.clubID
-			impacted_player_id = promotedPlayerID
-			club_rank = newRank
-			club_member_count = clubHeader.memberCount
 
-			custom = {
-			lobby_session_id = PIN_GetSessionId()
-		}
-		}
-	)
-}
 
-void function PIN_Club_AcceptInvite( ClubHeader clubHeader )
-{
-	AddPINTelemetryEvent( "guild",
-		PIN_StandardHeader(),
-		{
-			action = "accept"
-			club_name = clubHeader.name
-			club_id = clubHeader.clubID
-			club_member_count = clubHeader.memberCount
 
-			custom = {
-			lobby_session_id = PIN_GetSessionId()
-		}
-		}
-	)
-}
 
-void function PIN_Club_DeclineInvite( ClubHeader clubHeader )
-{
-	AddPINTelemetryEvent( "guild",
-		PIN_StandardHeader(),
-		{
-			action = "decline"
-			club_name = clubHeader.name
-			club_id = clubHeader.clubID
 
-			custom = {
-			lobby_session_id = PIN_GetSessionId()
-		}
-		}
-	)
-}
 
-void function PIN_BattlepassPurchase( string currentID, bool isBundle )
-{
-	AddPINTelemetryEvent( "battlepass_purchase",
-		PIN_StandardHeader(),
-		{
-			pgid = currentID.tolower()
-			isBundle = isBundle ? "bundle" : "tier"
-		}
-	)
-}
 
-void function PIN_BattlepassMilestonePageView( string currentID, float openDuration, int currentMilestone, bool hasPurchased, array<string> rewardClicked )
-{
-	const float VALID_VIEW_DURATION = 3.0
 
-	if ( openDuration < VALID_VIEW_DURATION )
-		return
 
-	table<string, int> rewardTable = { }
 
-	for( int i = 0; i < rewardClicked.len(); i++ )
-	{
-		string rewardString = rewardClicked[i]
 
-		int colonPos = rewardString.find( ":", 0 )
-		string rewardName = rewardString.slice( 0, colonPos )
-		int rewardCount = rewardString.slice( colonPos + 1, rewardString.len() ).tointeger()
 
-		rewardTable[rewardName] <- rewardCount;
-	}
 
-	AddPINTelemetryEvent( "battlepass_milestone_menu_view",
-		PIN_StandardHeader(),
-		{
-			pgid = currentID.tolower()
-			pgdur = openDuration
-			milestone_level = currentMilestone
-			hasPurchased = hasPurchased
 
-			rewardIndex = rewardTable
-		}
-	)
-}
 
-void function SetCurrentHubForPIN( string val )
-{
-	file.currentHubForPIN = val
-}
 
-void function SetCurrentTabForPIN( string val )
-{
-	file.currentTabForPIN = val
-}
 
-void function SetCachedOfferAlias( string val )
-{
-	file.cachedOfferAlias = val
-}
 
-string function GetLastMenuIDForPIN()
-{
-	return file.pin_lastMenuId
-}
 
-void function SetLastMenuIDForPIN( string val )
-{
-	file.pin_lastMenuId = val
-}
 
-table function GetMatchPINData()
-{
-	return file.matchPinData
-}
 
-void function UpdateMatchPINData( string pinKey, string pinValue )
-{
-	file.matchPinData[pinKey] <- pinValue
-}
 
-void function ClearMatchPINData()
-{
-	file.matchPinData = {}
-}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -993,8 +999,56 @@ void function PIN_UltimateReadyPing( entity player, string pingType, bool isUlti
 	)
 }
 
+void function PIN_DynamicDialogue( string alias )
+{
+	AddPINTelemetryEvent( "tag",
+		PIN_StandardHeader(),
+		{
+			tag_type = alias,
+		}
+	)
+}
+
 void function PIN_NET_TraceRouteResult(entity player, table result)
 {
 	AddPINTelemetryEvent("trace_route_result", PIN_StandardHeader(), result)
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

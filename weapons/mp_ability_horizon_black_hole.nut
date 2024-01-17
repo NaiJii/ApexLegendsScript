@@ -22,6 +22,12 @@ const BLACKHOLE_START_FX = $"Sub_P_black_hole_START"
 const BLACKHOLE_MAIN_FX = $"P_wpn_black_hole_main"
 
 
+
+
+
+
+
+
 int BLACKHOLE_1P_SCREEN_FX_ID
 const asset BLACKHOLE_1P_SCREEN_FX = $"P_black_hole_1p"
 int BLACKHOLE_1P_SCREEN_OTHER_FX_ID
@@ -68,6 +74,13 @@ const string BLACKHOLE_SOUND_PHASE_4 = "Nova_Ultimate_BlackHole_Phase4"
 
 
 
+
+
+
+
+
+
+
 const bool BLACKHOLE_DEBUG = false
 const bool BLACKHOLE_DEBUG_DRONES = false
 const bool BLACKHOLE_DEBUG_TRACE = false
@@ -75,6 +88,9 @@ const bool BLACKHOLE_DEBUG_SIZE = false
 const bool BLACKHOLE_DEBUG_VORTEX = false
 
 const float BLACKHOLE_TROPHY_HEALTH_AMOUNT = 175
+
+
+
 const float BLACKHOLE_TUNING_RADIUS = 400
 const int BLACKHOLE_TUNING_ABOVE_HEIGHT = 200
 const int BLACKHOLE_TUNING_BELOW_HEIGHT = 200
@@ -87,10 +103,25 @@ const float BLACKHOLE_TUNING_CODE_PULL_INNER_SPEED = 400
 const float BLACKHOLE_TUNING_CODE_MOVE_OUTER_SPEED = 85
 const float BLACKHOLE_TUNING_CODE_MOVE_INNER_SPEED = 135
 
+
+
+
+
+
+
+
+
+
+
+
 const float BLACKHOLE_TUNING_DEATHFIELD_DAMAGE_SCALAR = 1.0
 const float BLACKHOLE_TUNING_TAKE_EXPLOSIVE_DAMAGE_MULTIPLIER = 1.5
 
 const float BLACKHOLE_TUNING_ACTIVATION_TIME = 1.75
+
+
+
+
 const float BLACKHOLE_TUNING_PULL_ACTIVATION_FX_LEAD_TIME = 1.0
 const float BLACKHOLE_TUNING_START_FX_STOP_OFFSET = 0.0
 const float BLACKHOLE_TUNING_PULL_TIME = 0.8
@@ -129,6 +160,11 @@ void function MpWeaponBlackHole_Init()
 	PrecacheParticleSystem( BLACKHOLE_START_FX )
 	PrecacheParticleSystem( BLACKHOLE_MAIN_FX )
 
+
+
+
+
+
 	PrecacheModel( BLACKHOLETROPHY_MODEL )
 
 
@@ -148,18 +184,6 @@ void function MpWeaponBlackHole_Init()
 		AddCallback_ModifyDamageFlyoutForScriptName( BLACKHOLE_PROP_SCRIPTNAME, BlackHole_OffsetDamageNumbersLower )
 
 
-
-
-
-
-
-
-
-
-
-
-
-
 }
 
 
@@ -168,6 +192,59 @@ void function MpWeaponBlackHole_Init()
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+float function GetActivationTime( entity player )
+{
+	float result = BLACKHOLE_TUNING_ACTIVATION_TIME
+
+
+
+
+	return result
+}
+
+string function GetActivationSFX( entity player )
+{
+	string result = BLACKHOLE_SOUND_PHASE_1
+
+
+
+
+	return result
+}
+
+float function GetTrophyHealth( entity player )
+{
+	float result = BLACKHOLE_TROPHY_HEALTH_AMOUNT
+
+
+
+
+	return result
+}
+
+float function GetBlackholeRadius( entity player )
+{
+	float result = BLACKHOLE_TUNING_RADIUS
+
+
+
+
+
+
+
+	return result
+}
 
 void function OnWeaponTossPrep_weapon_black_hole( entity weapon, WeaponTossPrepParams prepParams )
 {
@@ -190,7 +267,7 @@ void function ShowBlackHoleRadius( entity weapon )
 	if ( IsValid( weapon ) )
 	{
 		fxHandle = StartParticleEffectInWorldWithHandle( GetParticleSystemIndex( BLACKHOLE_PREVIEW_RING_FX ), weapon.GetOrigin(), ZERO_VECTOR )
-		EffectSetControlPointVector( fxHandle, 1, <BLACKHOLE_TUNING_RADIUS, 0, 0> )
+		EffectSetControlPointVector( fxHandle, 1, < GetBlackholeRadius( weapon.GetOwner() ) , 0, 0> )
 		
 	}
 
@@ -1057,6 +1134,47 @@ void function BLACKHOLE_ProjectileLanded( entity projectile, DeployableCollision
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 void function BLACKHOLE_TriggerEnter( entity trigger, entity ent )
 {
 	if ( !ent.DoesShareRealms( trigger ) )
@@ -1142,6 +1260,9 @@ void function BLACKHOLE_InTriggerThread( entity trigger, entity player )
 	const TICK_RATE = 0.1
 	float currentTime = Time()
 	float frameTime   = 0
+
+
+
 	while( trigger.IsTouching( player ) )
 	{
 		frameTime   = Time() - currentTime
@@ -1186,10 +1307,23 @@ void function BLACKHOLE_InTriggerThread( entity trigger, entity player )
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 		WaitFrame()
 	}
 }
-
 
 
 
@@ -1340,15 +1474,12 @@ void function  Blackhole_1PFXThread( entity player, int fxHandle )
 	OnThreadEnd(
 		function() : ( fxHandle, player )
 		{
-			if ( !EffectDoesExist( fxHandle ) )
-				return
-
-			EffectStop( fxHandle, false, true )
+			if ( EffectDoesExist( fxHandle ) )
+				EffectStop( fxHandle, false, true )
 
 			if ( IsValid( player ) )
-			{
 				StopSoundOnEntity( player, BLACKHOLE_SOUND_PLAYER_INSIDE_1P )
-			}
+
 		}
 	)
 
@@ -1367,7 +1498,7 @@ void function  Blackhole_1PFXThread( entity player, int fxHandle )
 void function AddBlackholeThreatIndicator( entity newtProp )
 {
 	entity player = GetLocalViewPlayer()
-	ShowGrenadeArrow( player, newtProp, BLACKHOLE_TUNING_RADIUS, 0.0 )
+	ShowGrenadeArrow( player, newtProp, GetBlackholeRadius( newtProp.GetOwner() ), 0.0 )
 }
 
 

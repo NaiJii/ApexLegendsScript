@@ -105,30 +105,20 @@ void function QuipsPanel_Update( var panel )
 	var scrollPanel = Hud_GetChild( file.listPanel[ panel ], "ScrollPanel" )
 
 	string hintSub = ""
-	bool useDetailed = false
-	int rows = 3
-	int columns = 1
 
 	if ( file.filterTypes.contains( eItemType.character_emote ) )
 	{
 		UI_SetPresentationType( ePresentationType.CHARACTER_QUIPS )
 		hintSub = "#HINT_SOCIAL_ANTI_PEEK"
-		useDetailed = true
-		columns = 3
 	}
 	else if ( file.filterTypes.contains( eItemType.emote_icon ) )
 	{
 		UI_SetPresentationType( ePresentationType.HOLOSPRAYS )
-		useDetailed = true
-		columns = 3
 	}
 	else
 	{
 		UI_SetPresentationType( ePresentationType.HOLOSPRAYS )
 		hintSub = "#HINT_SOCIAL_QUIPS_ENEMIES"
-		useDetailed = true
-		rows = 9
-
 	}
 	CharacterEmotesPanel_SetHintSub( hintSub )
 
@@ -162,22 +152,7 @@ void function QuipsPanel_Update( var panel )
 		for ( int i = 0; i < MAX_FAVORED_QUIPS; i++ )
 			auxEntries.append( Loadout_FavoredQuip( character, i ) )
 
-		if ( !useDetailed )
-			Hud_InitGridButtons( file.listPanel[ panel ], file.quipList.len() )
-		else
-
-#if PC_PROG_NX_UI
-			if ( !IsNxHandheldMode() )
-			{
-				Hud_InitGridButtonsDetailed( file.listPanel[ panel ], file.quipList.len(), rows, columns )
-			}
-			else
-			{
-				Hud_InitGridButtonsDetailed( file.listPanel[ panel ], file.quipList.len(), rows, columns )
-			}
-#else
-			Hud_InitGridButtonsDetailed( file.listPanel[ panel ], file.quipList.len(), rows, columns )
-#endif
+		Hud_InitGridButtons( file.listPanel[ panel ], file.quipList.len() )
 
 		bool emptyShown = false
 		foreach ( int flavIdx, ItemFlavor flav in file.quipList )
@@ -281,6 +256,12 @@ void function PreviewQuip( ItemFlavor flav )
 			int chGUID = -1
 			if ( character != null )
 			{
+				expect ItemFlavor( character )
+				chGUID = ItemFlavor_GetGUID( character )
+			}
+			else
+			{
+				character = LoadoutSlot_GetItemFlavor( LocalClientEHI(), Loadout_Character() )
 				expect ItemFlavor( character )
 				chGUID = ItemFlavor_GetGUID( character )
 			}

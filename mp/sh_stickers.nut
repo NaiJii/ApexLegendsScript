@@ -2,16 +2,16 @@ global function ShStickers_LevelInit
 global function Loadout_Sticker
 
 
-
-
+global function GetStickerObjectType
+global function GetStickerObjectModel
 
 
 global function GetMaxStickersForObjectType
 
-global function GetAllStickerObjectTypes
-global function GetStickerObjectName
-global function GetStickerPresentationType
-global function CreateNestedRuiForSticker
+
+
+
+
 
 
 global function Sticker_IsTheEmpty
@@ -27,17 +27,11 @@ global function Sticker_GetDecalScale
 
 
 
-
-
-
-
-
-
-
-
-
-
-
+global function Sticker_SetMaterialModForLocalPlayer
+global function Sticker_PlaceDecalForLocalPlayer
+global function Sticker_OnPlaced
+global function Sticker_CreateFlashData
+global function Sticker_FlashOnLoadComplete
 
 
 
@@ -45,8 +39,15 @@ global function Sticker_GetDecalScale
 
 
 #if DEV
-global function DEV_PrintStickerLoadout
+global function DEV_TestCreateStickerMesh
+global function DEV_TestCreateStickerDecal
+global function DEV_StickerTestSetupForLocalPlayer
+global function DEV_ReturnRandomStickerFlavs
 #endif
+
+
+
+
 
 global enum eStickerObjectType
 {
@@ -57,11 +58,11 @@ global enum eStickerObjectType
 }
 
 
+global const asset UNAPPLIED_STICKER_MODEL = $"mdl/props/stickers/flat_sticker.rmdl"
 
-
-
-
-
+const asset SHIELD_CELL_MODEL = $"mdl/weapons/shield_battery/ptpov_shield_battery_small_held.rmdl"
+const asset SHIELD_BATTERY_MODEL = $"mdl/weapons/shield_battery/ptpov_shield_battery_held.rmdl"
+const asset HEALTH_INJECTOR_MODEL = $"mdl/weapons/health_injector/ptpov_health_injector.rmdl"
 
 
 struct StickerFlashData
@@ -87,21 +88,21 @@ void function ShStickers_LevelInit()
 	fileLevel = newFileLevel
 
 
+		PrecacheModel( UNAPPLIED_STICKER_MODEL )
 
-
-
-
-
+		PrecacheModel( SHIELD_CELL_MODEL )
+		PrecacheModel( SHIELD_BATTERY_MODEL )
+		PrecacheModel( HEALTH_INJECTOR_MODEL )
 
 
 	AddCallback_RegisterRootItemFlavors( RegisterStickers )
 
 
+		DEV_SetupStickerNetworking()
 
 
 
-
-
+	thread AutoLoadViewPlayerStickers()
 
 }
 
@@ -122,7 +123,7 @@ void function RegisterStickers()
 		stickerItemList.append( stickerItem )
 	}
 
-	MakeItemFlavorSet( stickerItemList, fileLevel.stickerSortOrdinalMap )
+	MakeItemFlavorSet( stickerItemList, fileLevel.stickerSortOrdinalMap, true )
 
 	foreach ( int stickerObjectType in eStickerObjectType )
 	{
@@ -160,113 +161,113 @@ void function RegisterStickers()
 
 	
 
-
-
-
-
-
-
-
+	foreach ( int stickerObjectType in eStickerObjectType )
+	{
+		foreach( LoadoutEntry entry in fileLevel.stickerSlotMap[stickerObjectType] )
+		{
+			AddCallback_ItemFlavorLoadoutSlotDidChange_AnyPlayer( entry, OnStickerLocalPlayerItemLoadoutChanged )
+		}
+	}
 
 }
 
 
+void function OnStickerLocalPlayerItemLoadoutChanged( EHI playerEHI, ItemFlavor flavor )
+{
+	if ( !IsLocalClientEHIValid() )
+		return
 
+	if ( LocalClientEHI() != playerEHI )
+		return
 
+	if ( !Sticker_IsTheEmpty( flavor ) )
+	{
+		asset stickerAsset = Sticker_GetDecalMaterialAsset( flavor )
+		RequestLoadStickerPak( stickerAsset )
+	}
+}
 
 
 
+void function AutoLoadViewPlayerStickers()
+{
+	entity currentPlayer = GetLocalViewPlayer()
 
+	while(true)
+	{
+		
+		if ( currentPlayer != GetLocalViewPlayer() )
+		{
+			currentPlayer = GetLocalViewPlayer()
 
+			foreach ( int stickerObjectType in eStickerObjectType )
+			{
+				int maxStickersForObjectType = GetMaxStickersForObjectType( stickerObjectType )
 
+				for ( int i = 0; i < maxStickersForObjectType; i++ )
+				{
+					int stickerSlot = stickerObjectType * maxStickersForObjectType + i
 
+					SettingsAssetGUID stickerLoadoutSlotGuid = currentPlayer.GetStickerSlot( stickerSlot )
+					ItemFlavor ornull stickerItemOrNull = GetItemFlavorOrNullByGUID( stickerLoadoutSlotGuid )
 
+					if (stickerItemOrNull == null)
+						continue
 
+					ItemFlavor stickerItem = expect ItemFlavor( stickerItemOrNull )
 
+					if ( !Sticker_IsTheEmpty( stickerItem ) )
+						RequestLoadStickerPak( Sticker_GetDecalMaterialAsset( stickerItem ) )
+				}
+			}
+		}
 
+		WaitFrame()
+	}
+}
 
 
 
+int function GetStickerObjectType( string modName )
+{
+	switch ( modName )
+	{
+		case "shield_small":
+			return eStickerObjectType.shield_cell
 
+		case "shield_large":
+			return eStickerObjectType.shield_battery
 
+		case "phoenix_kit":
+			return eStickerObjectType.phoenix_kit
 
+		case "health_small":
+		case "health_large":
+			return eStickerObjectType.injector
+	}
 
+	return -1
+}
 
 
+asset function GetStickerObjectModel( int stickerObjectType )
+{
+	switch ( stickerObjectType )
+	{
+		case eStickerObjectType.shield_cell:
+			return SHIELD_CELL_MODEL
 
+		case eStickerObjectType.shield_battery:
+		case eStickerObjectType.phoenix_kit:
+			return SHIELD_BATTERY_MODEL
 
+		case eStickerObjectType.injector:
+			return HEALTH_INJECTOR_MODEL
+	}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+	Assert( false, "Unsupported stickerObjectType value " + stickerObjectType + " passed to GetStickerObjectModel()" )
+	unreachable
+}
 
 
 int function GetMaxStickersForObjectType( int stickerObjectType )
@@ -278,65 +279,65 @@ int function GetMaxStickersForObjectType( int stickerObjectType )
 }
 
 
-array<int> function GetAllStickerObjectTypes()
-{
-	array<int> stickerObjectTypes
-	foreach ( int stickerObjectType in eStickerObjectType )
-		stickerObjectTypes.append( stickerObjectType )
-
-	return stickerObjectTypes
-}
 
 
-string function GetStickerObjectName( int stickerObjectType )
-{
-	switch ( stickerObjectType )
-	{
-		case eStickerObjectType.shield_cell:
-			return "#SURVIVAL_PICKUP_HEALTH_COMBO_SMALL"
-
-		case eStickerObjectType.shield_battery:
-			return "#SURVIVAL_PICKUP_HEALTH_COMBO_LARGE"
-
-		case eStickerObjectType.phoenix_kit:
-			return "#SURVIVAL_PICKUP_HEALTH_COMBO_FULL"
-
-		case eStickerObjectType.injector:
-			return "#HEALTH_INJECTOR"
-	}
-
-	Assert( false, "Unsupported stickerObjectType value " + stickerObjectType + " passed to GetStickerObjectName()" )
-	unreachable
-}
 
 
-int function GetStickerPresentationType( int stickerObjectType )
-{
-	switch ( stickerObjectType )
-	{
-		case eStickerObjectType.injector:
-			return ePresentationType.APPLIED_STICKER_INJECTOR
-
-		case eStickerObjectType.shield_cell:
-			return ePresentationType.APPLIED_STICKER_SMALL_CELL
-
-		case eStickerObjectType.shield_battery:
-		case eStickerObjectType.phoenix_kit:
-			return ePresentationType.APPLIED_STICKER_LARGE_CELL
-	}
-
-	Assert( false, "Unsupported stickerObjectType value " + stickerObjectType + " passed to GetStickerPresentationType()" )
-	unreachable
-}
 
 
-var function CreateNestedRuiForSticker( var baseRui, string argName, ItemFlavor stickerItem )
-{
-	var nestedRui = RuiCreateNested( baseRui, argName, $"ui/basic_image.rpak" )
-	RuiSetImage( nestedRui, "basicImage", ItemFlavor_GetIcon( stickerItem ) )	
 
-	return nestedRui
-}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -455,6 +456,10 @@ float function Sticker_GetDecalScale( ItemFlavor stickerItem, int stickerObjectT
 
 
 
+void function DEV_SetupStickerNetworking() 
+{
+	Remote_RegisterServerFunction( "DEV_StickerTestSetupForPlayer" )
+}
 
 
 
@@ -473,101 +478,120 @@ float function Sticker_GetDecalScale( ItemFlavor stickerItem, int stickerObjectT
 
 
 
+#if DEV
+void function DEV_TestCreateStickerMesh( asset stickerMat )
+{
+	entity player = GP()
+	vector origin = player.GetOrigin()
+	vector angles = <0, 0, 0>
 
+	entity model = CreateClientSidePropDynamic( origin, angles, UNAPPLIED_STICKER_MODEL )
+	Sticker_SetMaterialModForLocalPlayer( model, stickerMat )
+}
 
+void function DEV_TestCreateStickerDecal( asset stickerMat, float scale )
+{
+	asset test_model = $"mdl/weapons/shield_battery/ptpov_shield_battery_held.rmdl"
 
+	entity player = GP()
+	vector origin = player.GetOrigin()
+	vector angles = <0, 0, 0>
 
+	entity model = CreateClientSidePropDynamic( origin, angles, test_model )
+	Sticker_PlaceDecalForLocalPlayer( model, stickerMat, "STICKER_1", scale )
+}
 
+void function DEV_StickerTestSetupForLocalPlayer()
+{
+	Remote_ServerCallFunction( "DEV_StickerTestSetupForPlayer" )
+}
+#endif
 
 
 
 
+int function Sticker_SetMaterialModForLocalPlayer( entity ent, asset stickerMat )
+{
+	int stickerInstance = SetEntMaterialToSticker( stickerMat, ent )
+	
 
+	return stickerInstance
+}
 
 
 
+int function Sticker_PlaceDecalForLocalPlayer( entity ent, asset stickerMat, string attachment, float scale )
+{
+	int stickerInstance = AddStickerDecalToEntity( ent, stickerMat, attachment, scale )
+	
 
+	return stickerInstance
+}
 
 
+void function Sticker_OnPlaced( int stickerInstance, void functionref( int ) callbackFunc )
+{
+	thread function() : ( stickerInstance, callbackFunc )
+	{
+		while ( IsValidStickerInstance( stickerInstance ) && !IsStickerInstancePlaced( stickerInstance ) )
+			WaitFrame()
 
+		if ( IsValidStickerInstance( stickerInstance ) )
+			callbackFunc( stickerInstance )
+	}()
+}
 
+void function Sticker_CreateFlashData( int stickerInstance, entity flashEnt, int flashType, vector flashColor )
+{
+	Sticker_CleanUpFlashData()
 
+	
+	Assert( !( stickerInstance in fileLevel.stickerFlashData ) )
 
+	if ( !( stickerInstance in fileLevel.stickerFlashData ) )
+	{
+		StickerFlashData sfd
+		sfd.flashEnt = flashEnt
+		sfd.flashType = flashType
+		sfd.flashColor = flashColor
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+		
+		fileLevel.stickerFlashData[ stickerInstance ] <- sfd
+	}
+}
+
+void function Sticker_CleanUpFlashData()
+{
+	array<int> deleteList
+	foreach ( int stickerInstance, StickerFlashData sdf in fileLevel.stickerFlashData )
+	{
+		if ( !IsValid( sdf.flashEnt ) || !IsValidStickerInstance( stickerInstance ) )
+			deleteList.append( stickerInstance )
+	}
+
+	foreach ( int stickerInstance in deleteList )
+	{
+		
+		delete fileLevel.stickerFlashData[ stickerInstance ]
+	}
+}
+
+void function Sticker_FlashOnLoadComplete( int stickerInstance )
+{
+	if ( !( stickerInstance in fileLevel.stickerFlashData ) )
+		return
+
+	entity flashEnt = fileLevel.stickerFlashData[ stickerInstance ].flashEnt
+
+	if ( IsValid( flashEnt ) && IsValidStickerInstance( stickerInstance ) && IsStickerInstancePlaced( stickerInstance ) )
+	{
+		int flashType        = fileLevel.stickerFlashData[ stickerInstance ].flashType
+		vector flashColor    = fileLevel.stickerFlashData[ stickerInstance ].flashColor
+		bool includeChildren = false
+		bool depthDiscard    = true
+		thread FlashMenuModel( flashEnt, flashType, flashColor, includeChildren, depthDiscard )
+	}
+}
 
 
 
@@ -594,25 +618,12 @@ float function Sticker_GetDecalScale( ItemFlavor stickerItem, int stickerObjectT
 
 
 #if DEV
-void function DEV_PrintStickerLoadout()
+array<ItemFlavor>function DEV_ReturnRandomStickerFlavs( int numRandomStickers )
 {
-	EHI playerEHI = ToEHI( GetLocalClientPlayer() )
-
-	LoadoutEntry injectorStickerSlot = Loadout_Sticker( eStickerObjectType.injector, 0 )
-	ItemFlavor injectorSticker = LoadoutSlot_GetItemFlavor( playerEHI, injectorStickerSlot )
-	printt( "injectorStickerSlot contains:     ", string(ItemFlavor_GetAsset( injectorSticker )) )
-
-	LoadoutEntry shieldCellStickerSlot = Loadout_Sticker( eStickerObjectType.shield_cell, 0 )
-	ItemFlavor shieldCellSticker = LoadoutSlot_GetItemFlavor( playerEHI, shieldCellStickerSlot )
-	printt( "shieldCellStickerSlot contains:   ", string(ItemFlavor_GetAsset( shieldCellSticker )) )
-
-	LoadoutEntry shieldBatteryStickerSlot = Loadout_Sticker( eStickerObjectType.shield_battery, 0 )
-	ItemFlavor shieldBatterySticker = LoadoutSlot_GetItemFlavor( playerEHI, shieldBatteryStickerSlot )
-	printt( "shieldBatteryStickerSlot contains:", string(ItemFlavor_GetAsset( shieldBatterySticker )) )
-
-	LoadoutEntry phoenixKitStickerSlot = Loadout_Sticker( eStickerObjectType.phoenix_kit, 0 )
-	ItemFlavor phoenixKitSticker = LoadoutSlot_GetItemFlavor( playerEHI, phoenixKitStickerSlot )
-	printt( "phoenixKitStickerSlot contains:   ", string(ItemFlavor_GetAsset( phoenixKitSticker )) )
+	array<ItemFlavor> stickers = GetAllItemFlavorsOfType( eItemType.sticker )
+	Assert( numRandomStickers <= stickers.len(), "Tried to get more stickers than are available in the game.")
+	stickers.randomize()
+	return stickers.slice( 0, numRandomStickers )
 }
 #endif
 

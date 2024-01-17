@@ -1,18 +1,6 @@
 global function InitPrivateMatchGameStatusMenu
 
 
-global function EnablePrivateMatchGameStatusMenu
-global function IsPrivateMatchGameStatusMenuOpen
-global function TogglePrivateMatchGameStatusMenu
-global function OpenPrivateMatchGameStatusMenu
-global function ClosePrivateMatchGameStatusMenu
-global function SetChatModeButtonText
-global function SetSpecatorChatModeState
-global function SetChatTargetText
-global function InitPrivateMatchSummaryPanel
-global function InitPrivateMatchOverviewPanel
-global function InitPrivateMatchAdminPanel
-global function OnPrivateMatchStateChange
 
 
 
@@ -25,6 +13,18 @@ global function OnPrivateMatchStateChange
 
 
 
+
+
+
+global function ServerCallback_PrivateMatch_OnEntityKilled
+global function PrivateMatch_PopulateGameStatusMenu
+global function PrivateMatch_GameStatus_GetPlayerButton
+global function PrivateMatch_UpdateChatTarget
+global function PrivateMatch_CycleAdminChatMode
+global function PrivateMatch_ToggleAdminSpectatorChat
+global function PrivateMatch_ToggleUpdatePlayerConnections
+global function PrivateMatch_SquadEliminated
+global function ClientCodeCallback_SpectatorGetOrderedTarget
 
 
 const int TEAM_COUNT_PANEL_ONE 		= 2
@@ -142,1080 +142,1080 @@ void function InitPrivateMatchGameStatusMenu( var menu )
 	file.adminPanel = Hud_GetChild( menu, "PrivateMatchAdminPanel" )
 
 
-		AddMenuEventHandler( menu, eUIEvent.MENU_OPEN, OnOpenPrivateMatchGameStatusMenu )
-		AddMenuEventHandler( menu, eUIEvent.MENU_SHOW, OnShowPrivateMatchGameStatusMenu )
-		AddMenuEventHandler( menu, eUIEvent.MENU_HIDE, OnHidePrivateMatchGameStatusMenu )
-		AddMenuEventHandler( menu, eUIEvent.MENU_CLOSE, OnClosePrivateMatchGameStatusMenu )
-		AddMenuEventHandler( menu, eUIEvent.MENU_NAVIGATE_BACK, OnNavigateBack )
 
 
-		AddCommandForMenuToPassThrough( menu, "toggle_inventory" )
 
-		AddUICallback_OnLevelInit( void function() : ( menu )
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+		file.teamRosters.clear()
+		int maxTeams = PrivateMatch_GetMaxTeamsForSelectedGamemode()
+		if ( IsPrivateMatch() || IsPrivateMatchLobby() )
 		{
-			Assert( CanRunClientScript() )
-			RunClientScript( "InitPrivateMatchGameStatusMenu", menu )
-		} )
-
-		SetTabRightSound( menu, "UI_InGame_InventoryTab_Select" )
-		SetTabLeftSound( menu, "UI_InGame_InventoryTab_Select" )
-
-		file.isInitialized = true
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-}
-
-
-void function RegisterInputs()
-{
-	if( file.inputsRegistered )
-		return
-
-
-	RegisterButtonPressedCallback( BUTTON_TRIGGER_RIGHT_FULL, FocusChat_OnActivate )
-
-
-
-
-	file.inputsRegistered = true
-}
-
-void function DeRegisterInputs()
-{
-	if ( !file.inputsRegistered )
-		return
-
-
-		DeregisterButtonPressedCallback( BUTTON_TRIGGER_RIGHT_FULL, FocusChat_OnActivate )
-
-
-
-
-	file.inputsRegistered = false
-}
-
-void function FocusChat_OnActivate( var button )
-{
-	Hud_SetFocused( file.chatInputLine )
-}
-
-void function EnterText_OnActivate( var button )
-{
-	if ( !HudChat_HasAnyMessageModeStoppedRecently() && Hud_IsVisible( file.textChat ) )
-		Hud_StartMessageMode( file.textChat )
-}
-
-void function EndMatchButton_OnActivate( var button )
-{
-	if ( IsDialog( GetActiveMenu() ) )
-		return
-
-	ConfirmDialogData data
-	data.headerText = "#TOURNAMENT_END_MATCH_DIALOG_HEADER"
-	data.messageText = "#TOURNAMENT_END_MATCH_DIALOG_MSG" 
-	data.resultCallback = void function( int dialogResult ) 
-	{
-		if ( dialogResult == eDialogResult.YES )
-		{
-			ClosePrivateMatchGameStatusMenu( null )
-			if ( HasMatchAdminRole() )
+			file.teamOverviewPanels.clear()
+
+			file.overviewSizeTotal = 0
+			SetupOverviewPanel( 1, TEAM_COUNT_PANEL_ONE, maxTeams )
+			SetupOverviewPanel( 2, TEAM_COUNT_PANEL_TWO, maxTeams )
+			SetupOverviewPanel( 3, TEAM_COUNT_PANEL_THREE, maxTeams )
+
+			
+			if( GetGameState() >= eGameState.Playing )
 			{
-				Remote_ServerCallFunction( "ClientCallback_PrivateMatchEndMatchEarly" )
+				RunUIScript( "EnablePrivateMatchGameStatusMenu", file.enableMenu )
+			}
+
+			if ( GetLocalClientPlayer().HasMatchAdminRole() )
+			{
+				file.adminConfig.chatMode = ACM_ALL_PLAYERS
+				file.adminConfig.spectatorChat = true
+
+				SwitchChatModeButtonText( ACM_ALL_PLAYERS )
+				RunUIScript( "SetSpecatorChatModeState", true, true )
+
+				
+				Remote_ServerCallFunction( "ClientCallback_PrivateMatchSetAdminConfig", file.adminConfig.chatMode, file.adminConfig.spectatorChat )
+			}
+
+			if ( !file.isInitialized )
+			{
+				AddOnSpectatorTargetChangedCallback( OnSpectateTargetChanged )
+
+				AddCallback_OnPlayerMatchStateChanged( OnPlayerMatchStateChanged )
+
+				
+				AddCallback_GameStateEnter( eGameState.Playing, OnGameStateEnter_Playing )
+				AddCallback_GameStateEnter( eGameState.WinnerDetermined, OnGameStateEnter_WinnerDetermined )
+				SwitchChatModeButtonText( file.adminConfig.chatMode )
+
+				PrivateMatch_RestoreDefaultPanels() 
+				PrivateMatch_ClearTeamPresence()
+
+				file.isInitialized = true
 			}
 		}
-	}
 
-	OpenConfirmDialogFromData( data )
-}
-
-void function InitPrivateMatchSummaryPanel( var panel )
-{
-	AddPanelFooterOption( panel ,LEFT, BUTTON_B, true, "#B_BUTTON_BACK", "#B_BUTTON_BACK")
-
-	var teamOneHeaderRui = Hud_GetRui( Hud_GetChild( panel, "TeamOverviewHeader01" ) )
-	RuiSetString( teamOneHeaderRui, "kills", Localize( "#TOURNAMENT_SPECTATOR_TEAM_KILLS" ) )
-	RuiSetString( teamOneHeaderRui, "teamName", Localize( "#TOURNAMENT_SPECTATOR_TEAM_NAME" ) )
-	RuiSetString( teamOneHeaderRui, "playersAlive", Localize( "#TOURNAMENT_SPECTATOR_PLAYERS_ALIVE" ) )
-}
-
-void function InitHeaderTitle( var panel, string headerName, string headerTitle, vector headerColor )
-{
-	var headerRui = Hud_GetRui( Hud_GetChild( panel, headerName ) )
-	RuiSetString( headerRui, "title", Localize( headerTitle ) )
-	RuiSetColorAlpha( headerRui, "backgroundColor", SrgbToLinear( headerColor ), 1.0 )
-}
-
-void function InitPrivateMatchOverviewPanel( var panel )
-{
-	AddPanelFooterOption( panel ,LEFT, BUTTON_B, true, "#B_BUTTON_BACK", "#B_BUTTON_BACK")
-
-	InitHeaderTitle( panel, "AliveSquadsHeader", Localize( "#TOURNAMENT_SPECTATOR_ALIVE_TEAMS_HEADER" ), <36, 36, 36> / 255.0 )
-	InitHeaderTitle( panel, "EliminatedSquadsHeader", Localize( "#TOURNAMENT_SPECTATOR_DEAD_TEAMS_HEADER" ), <121, 25, 26 > / 255.0 )
-
-	var overviewGrid = Hud_GetChild( panel, "TeamOverview" )
-	Hud_InitGridButtons( overviewGrid, 22 )
-
-	
-	var scrollPanel = Hud_GetChild( overviewGrid, "ScrollPanel" )
-	Hud_Hide( Hud_GetChild( scrollPanel, "GridButton0" ) )
-}
-
-void function InitPrivateMatchAdminPanel( var panel )
-{
-	AddPanelFooterOption( panel ,LEFT, BUTTON_B, true, "#B_BUTTON_BACK", "#B_BUTTON_BACK")
-
-	AddUICallback_InputModeChanged( ControllerIconVisibilty )
-
-	file.endMatchButton = Hud_GetChild( panel, "EndMatchButton" )
-	HudElem_SetRuiArg( file.endMatchButton, "buttonText", Localize( "#TOURNAMENT_END_MATCH" ) )
-	Hud_AddEventHandler( file.endMatchButton, UIE_CLICK, EndMatchButton_OnActivate )
-
-	file.textChat = Hud_GetChild( panel, "AdminChatWindow" )
-	file.chatInputLine = Hud_GetChild( file.textChat, "ChatInputLine" )
-
-	file.chatButtonIcon = Hud_GetChild( panel, "AdminChatBoxIcon")
-
-	file.chatModeButton = Hud_GetChild( panel, "AdminChatModeButton" )
-	Hud_AddEventHandler( file.chatModeButton, UIE_CLICK, ChatModeButton_OnActivate )
-
-	file.chatSpectCheckBox = Hud_GetChild( panel, "SpectatorChatCheckBox" )
-	Hud_AddEventHandler( file.chatSpectCheckBox, UIE_CLICK, ChatSpectatorCheckBox_OnActivate )
-
-	file.chatTargetText = Hud_GetChild( panel, "AdminChatTarget" )
-}
-
-void function SetChatModeButtonText( string newText )
-{
-	ToolTipData adminChatModeTooltip
-	adminChatModeTooltip.descText = newText
-	HudElem_SetRuiArg( file.chatModeButton, "buttonText", newText )
 }
 
 
-void function SetSpecatorChatModeState( bool isActive, bool isSelected )
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+void function DirtyAll()
 {
-	HudElem_SetRuiArg( file.chatSpectCheckBox, "isActive", isActive )
-	HudElem_SetRuiArg( file.chatSpectCheckBox, "isSelected", isSelected )
+	file.displayDirtyBit = ~0
 }
 
-void function SetChatTargetText( string target )
+
+void function DirtyBit( int teamIdx )
 {
-	if ( target != "" )
+	file.displayDirtyBit = file.displayDirtyBit | ( 1 << teamIdx )
+}
+
+
+void function DirtyPlayerBit( entity player )
+{
+	DirtyBit( player.GetTeam() )
+}
+
+void function PrivateMatch_SquadEliminated( int teamIdx, int placement )
+{
+	if ( teamIdx in file.teamData )
 	{
-		HudElem_SetRuiArg( file.chatTargetText, "targetText", Localize("#TOURNAMENT_SPECTATOR_CHAT_TARGET" ) + target )
+		file.teamData[ teamIdx ].placement = placement
 	}
 	else
 	{
-		HudElem_SetRuiArg( file.chatTargetText, "targetText", "" )
+		TeamData tData
+		tData.placement = placement
+		file.teamData[ teamIdx ] <- tData
+		file.teamIndices.push( teamIdx )
+		file.teamIndices.sort()
 	}
+	DirtyAll()
 }
 
-void function ControllerIconVisibilty( bool controllerModeActive )
+int function ClientCodeCallback_SpectatorGetOrderedTarget( int targetIndex, int teamIndex )
 {
-	Hud_SetEnabled( file.chatButtonIcon, controllerModeActive )
-	Hud_SetVisible( file.chatButtonIcon, controllerModeActive )
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-void function TryInitializeGameStatusMenu()
-{
-	if ( !file.tabsInitialized )
+	if ( teamIndex in file.teamData )
 	{
-		TabData tabData = GetTabDataForPanel( file.menu )
-		tabData.centerTabs = true
+		array<PlayerData> tData = file.teamData[teamIndex].players
+		if ( targetIndex < tData.len() )
 		{
-			TabDef tabdef = AddTab( file.menu, Hud_GetChild( file.menu, "PrivateMatchScoreboardPanel" ), "#TOURNAMENT_TEAM_STATUS" )		
-			SetTabBaseWidth( tabdef, 240 )
+			PlayerData pData = tData[targetIndex]
+			if ( IsValid( pData.playerEntity ) )
+				return GetPlayerArrayOfTeam( pData.playerEntity.GetTeam() ).find( pData.playerEntity )
 		}
-
-		{
-			TabDef tabdef = AddTab( file.menu, Hud_GetChild( file.menu, "PrivateMatchOverviewPanel" ), "#TOURNAMENT_MATCH_STATS" )		
-			SetTabBaseWidth( tabdef, 240 )
-		}
-
-		{
-			TabDef tabdef = AddTab( file.menu, Hud_GetChild( file.menu, "PrivateMatchSummaryPanel" ), "#TOURNAMENT_MATCH_STATS" )		
-			SetTabBaseWidth( tabdef, 240 )
-		}
-
-		{
-			TabDef tabdef = AddTab( file.menu, Hud_GetChild( file.menu, "PrivateMatchAdminPanel" ), "#TOURNAMENT_ADMIN_CONTROLS" )
-			SetTabBaseWidth( tabdef, 300 )
-
-			tabdef.visible = false
-			tabdef.enabled = false
-		}    
-
-		SetTabDefsToSeasonal(tabData)
-		SetTabBackground( tabData, Hud_GetChild( file.menu, "TabsBackground" ), eTabBackground.STANDARD )
-
-		file.tabsInitialized = true
 	}
+
+	return -1
 }
 
-
-void function OnOpenPrivateMatchGameStatusMenu()
+void function SwitchChatModeButtonText( int chatMode )
 {
-	if ( !IsFullyConnected() )
+	string chatModeText = ""
+	switch ( chatMode )
 	{
-		CloseActiveMenu()
+		case ACM_PLAYER:
+		{
+			chatModeText = Localize( "#TOURNAMENT_PLAYER_CHAT" ) 
+		}
+		break
+		case ACM_TEAM:
+		{
+			chatModeText = Localize( "#TOURNAMENT_TEAM_CHAT" ) 
+		}
+		break
+		case ACM_SPECTATORS:
+		{
+			chatModeText = Localize( "#TOURNAMENT_SPECTATOR_CHAT" ) 
+		}
+		break
+		case ACM_ALL_PLAYERS:
+		{
+			chatModeText = Localize( "#TOURNAMENT_ALL_CHAT" ) 
+		}
+		break
+	}
+
+	RunUIScript( "SetChatModeButtonText", chatModeText )
+}
+
+void function SetupOverviewPanel( int panelNum, int panelSize, int maxTeams )
+{
+	var teamOverview = Hud_GetChild( file.postGameSummaryPanel, "TeamOverview0" + panelNum )
+
+	if ( maxTeams <= file.overviewSizeTotal )
+	{
+		Hud_Hide( teamOverview )
 		return
 	}
 
-	TryInitializeGameStatusMenu()
+	Hud_Show( teamOverview )
+	file.overviewSizeTotal += panelSize
+	Hud_InitGridButtons( teamOverview, panelSize )
+	var scrollPanel = Hud_GetChild( teamOverview, "ScrollPanel" )
 
-	bool isAdmin = HasMatchAdminRole()
-	TabData tabData       = GetTabDataForPanel( file.menu )
-	TabDef adminTab       = Tab_GetTabDefByBodyName( tabData, "PrivateMatchAdminPanel" )
-	adminTab.visible 	  = isAdmin
-	adminTab.enabled  	  = isAdmin
-
-	UpdateMenuTabs()
-
-	ActivateTab( tabData, eGameStatusPanel.PM_GAMEPANEL_ROSTER )
-
-	SetTabNavigationEnabled( file.menu, true )
-
-	RunClientScript( "PrivateMatch_PopulateGameStatusMenu", file.menu )
-
+	for ( int i = 0; i < panelSize; i++ )
+	{
+		var panel = Hud_GetChild( scrollPanel, "GridButton" + i )
+		HudElem_SetRuiArg( panel, "teamPosition", file.teamOverviewPanels.len() + 1 )
+		file.teamOverviewPanels.insert( file.teamOverviewPanels.len(), panel )
+	}
 }
 
-void function OnShowPrivateMatchGameStatusMenu()
+void function ServerCallback_PrivateMatch_OnEntityKilled( entity attacker, entity victim )
 {
-	SetMenuReceivesCommands( file.menu, PROTO_Survival_DoInventoryMenusUseCommands() && !IsControllerModeActive() )
-	if ( !HasMatchAdminRole() )
-		return
+	bool attackerIsPlayer = IsValid( attacker ) && attacker.IsPlayer()
+	bool victimIsPlayer = IsValid( victim ) && victim.IsPlayer()
 
-	RegisterInputs()
-
-	ControllerIconVisibilty( IsControllerModeActive() )
-
-	RunClientScript( "PrivateMatch_ToggleUpdatePlayerConnections", true )
-}
-
-void function OnHidePrivateMatchGameStatusMenu()
-{
 	
-	if ( !HasMatchAdminRole() )
+	if ( !victimIsPlayer )
 		return
 
-	DeRegisterInputs()
+	
+	if ( attackerIsPlayer && ( attacker != victim ) )
+	{
+		string uid = attacker.GetUserID()
+		if ( uid in file.playerData )
+		{
+			DirtyPlayerBit( attacker )
+		}
+	}
 
-	RunClientScript( "PrivateMatch_ToggleUpdatePlayerConnections", false )
-}
-
-void function OnPrivateMatchStateChange( int gameState )
-{
-	TryInitializeGameStatusMenu()
-
-	TabData tabData        	= GetTabDataForPanel( file.menu )
-	TabDef inGameSummary 	= Tab_GetTabDefByBodyName( tabData, "PrivateMatchOverviewPanel" )
-	TabDef postGameSummary 	= Tab_GetTabDefByBodyName( tabData, "PrivateMatchSummaryPanel" )
-
-	bool summaryActive 		= tabData.activeTabIdx == eGameStatusPanel.PM_GAMEPANEL_INGAME_SUMMARY
-
-	bool midGame = gameState < eGameState.WinnerDetermined
-	bool isBattleRoyale = ( GetCurrentPlaylistVarString( "stats_match_type", "survival" ) == "survival" )
-	bool isStandardBR = ( GetCurrentPlaylistVarInt( "max_teams", 20 ) <= 20 )
-	SetTabDefVisible( inGameSummary, midGame && isBattleRoyale && isStandardBR)
-	SetTabDefVisible( postGameSummary, isBattleRoyale && !midGame && isStandardBR )
-
-	if ( !midGame && summaryActive )
-		ActivateTab( tabData, eGameStatusPanel.PM_GAMEPANEL_POSTGAME_SUMMARY )
+	DirtyPlayerBit( victim )
 }
 
 
-void function OnClosePrivateMatchGameStatusMenu()
+int function SortPlayers( PlayerData a, PlayerData b )
 {
-	if ( !HasMatchAdminRole() )
-		return
-
-	DeRegisterInputs()
-
-	file.updateConnections = false
+	return a.playerName > b.playerName ? 1 : -1
 }
 
-
-bool function CanNavigateBack()
+int function SortTeams( TeamDetailsData a, TeamDetailsData b )
 {
-	return file.disableNavigateBack != true
+	if ( a.teamValue < b.teamValue )
+		return 1
+
+	if ( a.teamValue > b.teamValue )
+		return -1
+
+	return a.teamName > b.teamName ? 1 : -1
 }
 
-
-void function OnNavigateBack()
+PlayerData function PrivateMatch_ExtractPlayerData( entity player )
 {
-	ClosePrivateMatchGameStatusMenu( null )
+	Assert( IsValid( player ) )
+
+	PlayerData pData
+	pData.playerEntity = player
+	ItemFlavor character = LoadoutSlot_WaitForItemFlavor( ToEHI( player ), Loadout_Character() )
+	pData.characterPortrait = CharacterClass_GetGalleryPortrait( character )
+	pData.killCount = player.GetPlayerNetInt( "kills" )
+	pData.playerName = player.GetPlayerNameWithClanTag()
+
+	return pData
 }
 
-
-void function EnablePrivateMatchGameStatusMenu( bool doEnable )
+void function PrivateMatch_PopulateGameStatusMenu( var menu )
 {
-	file.enableMenu = doEnable
-}
-
-
-bool function IsPrivateMatchGameStatusMenuOpen()
-{
-	return GetActiveMenu() == file.menu
-}
-
-void function TogglePrivateMatchGameStatusMenu( var button )
-{
-	if ( !IsPrivateMatch() )
-		return
-
-	if ( GetActiveMenu() == file.menu )
-		thread CloseActiveMenu()
-
-	if ( file.enableMenu == true )
-		AdvanceMenu( file.menu )
-}
-
-
-void function OpenPrivateMatchGameStatusMenu( var button )
-{
-	if ( !IsPrivateMatch() )
-		return
-
 	if ( file.enableMenu == false )
 		return
 
-	CloseAllMenus()
-	AdvanceMenu( file.menu )
+	DirtyAll() 
+	thread UpdateTeamOverviewMenus() 
 }
 
-void function ChatModeButton_OnActivate( var button )
+void function PrivateMatch_RestoreDefaultPanels()
 {
-	if ( HasMatchAdminRole() )
+	Hud_Hide( Hud_GetChild( file.inGameSummaryPanel, "EliminatedSquadsHeader" ) )
+
 	{
-		RunClientScript( "PrivateMatch_CycleAdminChatMode" )
+		var overviewPanel  = Hud_GetChild( file.inGameSummaryPanel, "TeamOverview" )
+		var scrollingPanel = Hud_GetChild( overviewPanel, "ScrollPanel" )
+		for ( int i = 0; i < file.maxTeamSize + 2; ++i )
+		{
+			var button = Hud_GetChild( scrollingPanel, "GridButton" + i )
+			HudElem_SetRuiArg( button, "teamPosition", 0 )
+			Hud_Hide( button )
+		}
+	}
+
+	{
+		foreach ( panel in file.teamOverviewPanels )
+		{
+			Hud_Hide( panel )
+		}
+	}
+
+	{
+		foreach ( teamRoster in file.teamRosters )
+		{
+			Hud_Hide( teamRoster.listPanel )
+			Hud_Hide( teamRoster.headerPanel )
+			Hud_Hide( teamRoster.framePanel )
+		}
+	}
+
+	DirtyAll()
+}
+
+void function PrivateMatch_ClearTeamPresence()
+{
+	file.teamIndices.clear()
+	file.teamData.clear()
+	file.playerData.clear()
+	DirtyAll()
+}
+
+void function PrivateMatch_UpdateTeamPresence()
+{
+	foreach( player in GetPlayerArray() )
+	{
+		if ( !IsValid( player ) )
+			continue
+
+		if ( player.IsObserver() )
+			continue
+
+		PlayerData pData
+		if ( player.GetUserID() in file.playerData )
+		{
+			pData = file.playerData[ player.GetUserID() ]
+			pData.playerEntity = player
+		}
+		else
+		{
+			pData = PrivateMatch_ExtractPlayerData( player )
+			file.playerData[ player.GetUserID() ] <- pData
+		}
+
+		TeamData tData
+		if ( player.GetTeam() in file.teamData )
+			tData = file.teamData[ player.GetTeam() ]
+		else
+		{
+			file.teamData[ player.GetTeam() ] <- tData
+			file.teamIndices.push( player.GetTeam() )
+			file.teamIndices.sort()
+			DirtyAll()
+		}
+
+		if ( !tData.players.contains( pData ) )
+		{
+			tData.players.append( pData )
+			tData.players.sort( SortPlayers )
+			DirtyPlayerBit( player )
+		}
 	}
 }
 
-void function ChatSpectatorCheckBox_OnActivate( var button )
+void function PrivateMatch_GameStatus_Update( int dirtyBit )
 {
-	if ( HasMatchAdminRole() )
+	if ( dirtyBit == 0 )
+		return
+
+	array< TeamDetailsData > teamOrderArray
+	foreach ( teamIndex, tData in file.teamData )
 	{
-		RunClientScript( "PrivateMatch_ToggleAdminSpectatorChat" )
+		TeamDetailsData tDetails
+		tDetails.teamIndex = teamIndex
+		tDetails.teamName = PrivateMatch_GetTeamName( teamIndex )
+		tDetails.teamPlacement = tData.placement
+		tDetails.playerAlive = 0
+		tDetails.teamKills = 0
+
+		foreach ( pData in tData.players )
+		{
+			if( IsValid( pData.playerEntity ) )
+			{
+				if ( tData.placement == 0 && IsAlive( pData.playerEntity ) )
+					tDetails.playerAlive++
+
+				pData.killCount = pData.playerEntity.GetPlayerNetInt( "kills" )
+			}
+
+			tDetails.teamKills += pData.killCount
+		}
+
+		tDetails.teamValue = ( tDetails.playerAlive * 1000 ) + tDetails.teamKills - ( tDetails.teamPlacement * 100000 )
+		teamOrderArray.append( tDetails )
+	}
+
+	teamOrderArray.sort( SortTeams )
+
+	PrivateMatch_GameStatus_MidGame_Configure( teamOrderArray )
+	PrivateMatch_GameStatus_PostGame_Configure( teamOrderArray )
+}
+
+void function PrivateMatch_GameStatus_MidGame_Configure( array<TeamDetailsData> teamOrderArray )
+{
+	foreach ( int i, panel in file.teamOverviewPanels )
+	{
+		if ( i < teamOrderArray.len() )
+			thread PrivateMatch_GameStatus_TeamDetails_Configure( panel, teamOrderArray[i], true )
+		else
+			Hud_Hide( panel )
 	}
 }
 
-void function ClosePrivateMatchGameStatusMenu( var button )
+void function PrivateMatch_GameStatus_PostGame_Configure( array<TeamDetailsData> teamOrderArray )
 {
-	if ( GetActiveMenu() == file.menu )
-		thread CloseActiveMenu()
+	
+	
+	int[22] gridIdxBinding = [
+		0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20,
+		1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21
+	]
+
+	bool showElimHeader = false
+	var overviewPanel = Hud_GetChild( file.inGameSummaryPanel, "TeamOverview" )
+	var scrollPanel = Hud_GetChild( overviewPanel, "ScrollPanel" )
+	for ( int i = 0; i < ROSTER_LIST_SIZE; ++i )
+	{
+		int buttonIdx = showElimHeader ? gridIdxBinding[i + 2] : gridIdxBinding[i + 1]
+		if ( i < teamOrderArray.len() )
+		{
+			TeamDetailsData team = teamOrderArray[i]
+			if ( !showElimHeader && team.playerAlive == 0 )
+			{
+				PrivateMatch_GameStatus_ElimHeader_Configure( buttonIdx, scrollPanel )
+				showElimHeader = true
+				buttonIdx      = gridIdxBinding[i + 2]
+			}
+
+			var button = Hud_GetChild( scrollPanel, "GridButton" + buttonIdx )
+			HudElem_SetRuiArg( button, "teamPosition", teamOrderArray[i].teamPlacement )
+			thread PrivateMatch_GameStatus_TeamDetails_Configure( button, teamOrderArray[i] )
+		}
+		else
+		{
+			Hud_Hide( Hud_GetChild( scrollPanel, "GridButton" + buttonIdx ) )
+		}
+	}
+
+	if ( !showElimHeader )
+		Hud_Hide( Hud_GetChild( scrollPanel, "GridButton21" ) )
 }
+
+void function PrivateMatch_GameStatus_ElimHeader_Configure ( int idxLocation, var buttonPanel )
+{
+	var elimHeader = Hud_GetChild( file.inGameSummaryPanel, "EliminatedSquadsHeader" )
+	Hud_Show( elimHeader )
+
+	var button = Hud_GetChild( buttonPanel, "GridButton" + idxLocation )
+	Hud_Hide( button )
+
+	UIPos pos1 = REPLACEHud_GetAbsPos( button )
+	UIPos pos2 = REPLACEHud_GetAbsPos( file.inGameSummaryPanel )
+	Hud_SetPos( elimHeader, pos2.x - pos1.x, pos2.y - pos1.y )
+}
+
+void function PrivateMatch_GameStatus_TeamDetails_Configure( var panel, TeamDetailsData tData, bool postGame = false )
+{
+	array<PlayerData> teamPlayers = file.teamData[ tData.teamIndex ].players
+	Hud_Show( panel )
+
+	var panelRui = Hud_GetRui( panel )
+	RuiSetString( panelRui, "teamName", tData.teamName )
+	RuiSetInt( panelRui, "playersAlive", tData.playerAlive )
+	RuiSetInt( panelRui, "kills", tData.teamKills )
+
+	int idx = 0
+	foreach ( int i, pData in teamPlayers )
+	{
+		if ( i < file.maxTeamSize )
+		{
+			RuiSetImage( panelRui, "playerImage" + i, pData.characterPortrait )
+			RuiSetBool( panelRui, "playerAlive" + i, postGame || ( IsValid( pData.playerEntity ) && IsAlive( pData.playerEntity ) ) )
+			idx = i
+		}
+	}
+
+	for ( ++idx; idx < file.maxTeamSize; ++idx )
+	{
+		RuiSetImage( panelRui, "playerImage" + idx, $"" )
+		RuiSetBool( panelRui, "playerAlive" + idx, false )
+	}
+}
+
+void function PrivateMatch_GameStatus_ConfigurePlayerButton( var button, PlayerData pData )
+{
+	var buttonRui = Hud_GetRui( button )
+	if ( IsValid( pData.playerEntity ) )
+	{
+		RuiSetInt( buttonRui, "playerState", GetPlayerHealthStatus( pData.playerEntity ) )
+		RuiSetBool( buttonRui, "isObserveTarget", GetLocalClientPlayer().GetObserverTarget() == pData.playerEntity )
+	}
+	else
+	{
+		RuiSetInt( buttonRui, "playerState", ePlayerHealthStatus.PM_PLAYERSTATE_ELIMINATED )
+		RuiSetBool( buttonRui, "isObserveTarget", false )
+	}
+
+	RuiSetString( buttonRui, "buttonText",  pData.playerName )
+	RuiSetImage( buttonRui, "playerPortrait", pData.characterPortrait )
+	RuiSetInt( buttonRui, "killCount", pData.killCount )
+}
+
+var function PrivateMatch_GameStatus_GetPlayerButton( entity player )
+{
+	foreach ( teamRoster in file.teamRosters )
+	{
+		foreach ( var button, entity buttonPlayer in teamRoster.buttonPlayerMap )
+		{
+			if ( !IsValid( button ) || !IsValid( buttonPlayer ) )
+				continue
+
+			if ( buttonPlayer == player )
+			{
+				return button
+			}
+		}
+	}
+}
+
+void function OnRosterButton_Click( var button )
+{
+	entity observerTarget = null
+	foreach ( teamRoster in file.teamRosters )
+	{
+		if ( button in teamRoster.buttonPlayerMap )
+			observerTarget = teamRoster.buttonPlayerMap[ button ]
+	}
+
+	if ( !IsValid( observerTarget ) )
+		return
+
+	if ( !IsAlive( observerTarget ) )
+		return
+
+	if ( GetLocalClientPlayer().GetObserverTarget() == observerTarget )
+		return
+
+	Remote_ServerCallFunction( "ClientCallback_PrivateMatchChangeObserverTarget", observerTarget )
+	RunUIScript( "ClosePrivateMatchGameStatusMenu", null )
+}
+
+void function RefreshEntityReference( entity player )
+{
+	if ( IsValid( player ) && player.IsPlayer() )
+	{
+		
+		string uid = player.GetUserID()
+		if ( uid in file.playerData )
+			file.playerData[uid].playerEntity = player
+
+		
+		DirtyPlayerBit( player )
+	}
+}
+
+
+void function OnSpectateTargetChanged( entity spectatingPlayer, entity oldSpectatorTarget, entity newSpectatorTarget )
+{
+	RefreshEntityReference( oldSpectatorTarget )
+	RefreshEntityReference( newSpectatorTarget )
+}
+
+int function GetPlayerHealthStatus( entity player )
+{
+	int healthStatus = ePlayerHealthStatus.PM_PLAYERSTATE_ALIVE
+
+	if ( !IsAlive( player ) )
+	{
+		int respawnStatus = GetRespawnStatus( player )
+		switch ( respawnStatus )
+		{
+			case eRespawnStatus.PICKUP_DESTROYED:
+			case eRespawnStatus.SQUAD_ELIMINATED:
+				healthStatus = ePlayerHealthStatus.PM_PLAYERSTATE_ELIMINATED
+				break
+
+			case eRespawnStatus.WAITING_FOR_DELIVERY:
+			case eRespawnStatus.WAITING_FOR_DROPPOD:
+			case eRespawnStatus.WAITING_FOR_PICKUP:
+			case eRespawnStatus.WAITING_FOR_RESPAWN:
+				healthStatus = ePlayerHealthStatus.PM_PLAYERSTATE_DEAD
+				break
+
+			case eRespawnStatus.NONE:
+			default:
+				healthStatus = ePlayerHealthStatus.PM_PLAYERSTATE_ALIVE
+				break
+		}
+	}
+
+	if ( Bleedout_IsBleedingOut( player ) )
+	{
+		int bleedoutState = player.GetBleedoutState()
+
+		switch ( bleedoutState )
+		{
+			case BS_BLEEDING_OUT:
+			case BS_ENTERING_BLEEDOUT:
+				healthStatus = ePlayerHealthStatus.PM_PLAYERSTATE_BLEEDOUT
+				break
+
+			case BS_EXITING_BLEEDOUT:
+				healthStatus = ePlayerHealthStatus.PM_PLAYERSTATE_REVIVING
+				break
+		}
+	}
+
+	return healthStatus
+}
+
+void function OnGameStateEnter_Playing()
+{
+	DirtyAll() 
+	TryEnablePrivateMatchGameStatusMenu()
+
+	RunUIScript( "OnPrivateMatchStateChange", eGameState.Playing )
+}
+
+void function OnGameStateEnter_WinnerDetermined()
+{
+	RunUIScript( "OnPrivateMatchStateChange", eGameState.WinnerDetermined )
+}
+
+void function OnPlayerMatchStateChanged( entity player, int newState )
+{
+	if ( newState > ePlayerMatchState.SKYDIVE_PRELAUNCH )
+	{
+		DirtyAll() 
+		TryEnablePrivateMatchGameStatusMenu()
+	}
+	else
+	{
+		PrivateMatch_RestoreDefaultPanels() 
+		PrivateMatch_ClearTeamPresence()
+	}
+}
+
+void function TryEnablePrivateMatchGameStatusMenu()
+{
+	if ( file.enableMenu )
+		return
+
+	if ( !IsPrivateMatch() )
+		return
+
+	if ( GetLocalClientPlayer().GetTeam() != TEAM_SPECTATOR )
+		return
+
+	if ( GetGameState() < eGameState.Playing )
+		return
+
+	RunUIScript( "EnablePrivateMatchGameStatusMenu", true )
+	file.enableMenu = true
+
+	PrivateMatch_PopulateGameStatusMenu( file.menu )
+}
+
+void function UpdateTeamOverviewMenus()
+{
+	while ( true )
+	{
+		PrivateMatch_UpdateTeamPresence()
+
+		
+		int dirtyBit = file.displayDirtyBit
+		file.displayDirtyBit = 0
+
+		PrivateMatch_GameStatus_Update( dirtyBit )
+
+		wait 0.1
+	}
+}
+
+void function PrivateMatch_UpdateChatTarget()
+{
+	int chatMode = file.adminConfig.chatMode
+
+	entity observerTarget = GetLocalClientPlayer().GetObserverTarget()
+
+	if( observerTarget == null )
+	{
+		RunUIScript( "SetChatTargetText", "" )
+	}
+	else if ( chatMode == ACM_PLAYER )
+	{
+		RunUIScript( "SetChatTargetText", observerTarget.GetPlayerName() )
+	}
+	else if ( chatMode == ACM_TEAM )
+	{
+		RunUIScript( "SetChatTargetText", PrivateMatch_GetTeamName( observerTarget.GetTeam() ) )
+	}
+	else
+	{
+		RunUIScript( "SetChatTargetText", "" )
+	}
+
+	Remote_ServerCallFunction( "ClientCallback_PrivateMatchSetAdminConfig", file.adminConfig.chatMode, file.adminConfig.spectatorChat )
+}
+
+void function PrivateMatch_CycleAdminChatMode()
+{
+	if ( !GetLocalClientPlayer().HasMatchAdminRole() )
+		return
+
+	if ( ++file.adminConfig.chatMode == ACM_COUNT )
+		file.adminConfig.chatMode = 0
+
+	SwitchChatModeButtonText( file.adminConfig.chatMode )
+	PrivateMatch_UpdateChatTarget()
+
+	RunUIScript( "SetSpecatorChatModeState", file.adminConfig.chatMode == ACM_ALL_PLAYERS, file.adminConfig.spectatorChat )
+}
+
+void function PrivateMatch_ToggleAdminSpectatorChat()
+{
+	if ( !GetLocalClientPlayer().HasMatchAdminRole() )
+		return
+
+	file.adminConfig.spectatorChat = !file.adminConfig.spectatorChat
+
+	RunUIScript( "SetSpecatorChatModeState", file.adminConfig.chatMode == ACM_ALL_PLAYERS, file.adminConfig.spectatorChat )
+	Remote_ServerCallFunction( "ClientCallback_PrivateMatchSetAdminConfig", file.adminConfig.chatMode, file.adminConfig.spectatorChat )
+}
+
+void function PrivateMatch_ToggleUpdatePlayerConnections( bool isActive )
+{
+	if ( isActive && file.updateConnections == false )
+	{
+		file.updateConnections = true
+		thread UpdatePrivateMatchPlayerConnections()
+	}
+	else
+	{
+		file.updateConnections = false
+	}
+}
+
+void function UpdatePrivateMatchPlayerConnections()
+{
+	while ( file.updateConnections )
+	{
+		foreach ( int idx, teamRoster in file.teamRosters )
+		{
+			foreach ( var button, entity buttonPlayer in teamRoster.buttonPlayerMap )
+			{
+				if ( IsValid( button ) )
+				{
+					int connectionQuality0 = ( button in teamRoster ) ? teamRoster.connectionMap[ button ] : -1
+					int connectionQuality1 = IsValid( buttonPlayer ) ? buttonPlayer.GetConnectionQualityIndex() : 5
+
+					if ( connectionQuality0 != connectionQuality1 )
+					{
+						teamRoster.connectionMap[ button ] <- connectionQuality1
+						DirtyBit( TEAM_MULTITEAM_FIRST + idx )
+					}
+				}
+			}
+		}
+		wait 1
+	}
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

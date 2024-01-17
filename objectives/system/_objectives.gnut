@@ -536,7 +536,7 @@ void function InitObjectiveTypes()
 
 
 
-
+	InitObjectiveType_DropDownFight()
 
 
 

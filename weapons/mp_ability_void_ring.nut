@@ -285,6 +285,10 @@ var function OnWeaponTossReleaseAnimEvent_void_ring( entity weapon, WeaponPrimar
 			Signal( weapon, "VoidRing_EndPreview" )
 
 	}
+	else
+	{
+		return 0
+	}
 
 	return ammoReq
 }
@@ -398,6 +402,31 @@ void function OnVoidRingPlanted( entity projectile, DeployableCollisionParams co
 
 
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1867,6 +1896,12 @@ void function OnWaypointCreated( entity wp )
 	{
 		thread VoidRing_WaypointUI_Thread( wp )
 		AddRefEntAreaToInvalidOriginsForPlacingPermanentsOnto( wp, VOID_RING_INVALID_PLACEMENT_MIN_AREA, VOID_RING_INVALID_PLACEMENT_MAX_AREA )
+		AddEntityDestroyedCallback( wp,
+			void function( entity ent ) : ( wp )
+			{
+				RemoveRefEntAreaFromInvalidOriginsForPlacingPermanentsOnto( ent )
+			}
+		)
 	}
 
 }

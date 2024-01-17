@@ -430,8 +430,6 @@ void function OnWeaponActivate_incap_shield( entity weapon )
 
 
 
-
-
 }
 
 void function OnWeaponDeactivate_incap_shield( entity weapon )
@@ -463,6 +461,14 @@ void function OnWeaponChargeEnd_weapon_incap_shield( entity weapon )
 {
 	weapon.Signal( "OnChargeEnd" )
 }
+
+
+
+
+
+
+
+
 
 
 

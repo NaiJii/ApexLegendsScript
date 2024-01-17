@@ -82,6 +82,9 @@ void function OnWeaponCooldown_weapon_lstar( entity weapon, bool isFirstTimeCool
 
 
 
+				GoldenHorseGreen_OnWeaponReload( weapon, 0 )
+
+
 
 
 
@@ -126,6 +129,10 @@ void function OnWeaponActivate_weapon_lstar( entity weapon )
 
 
 
+
+
+
+		GoldenHorseGreen_OnWeaponActivate( weapon )
 
 }
 

@@ -130,12 +130,20 @@ ObitEntityInfo function Obituary_GetEntityInfo( entity ent, int damageSourceId, 
 		}
 		else if ( GamemodeUtility_IsPlayerOnTeamObserver( localClientPlayer )  ) 
 		{
-			info.displayColor = Teams_GetTeamColor( AllianceProximity_GetAllianceFromTeam( entTeam ) ) * 255
+			info.displayColor = Teams_GetTeamColor( entTeam ) * 255
 		}
 		else if ( localViewPlayerTeam != entTeam && IsFriendlyTeam( localViewPlayerTeam, entTeam ) ) 
 		{
 			info.displayColor = TEAM_COLOR_FRIENDLY
 		}
+
+		
+
+			if ( IsRevTakeover() )
+			{
+				info.displayColor = Teams_GetTeamColor( entTeam ) * 255
+			}
+
 	}
 
 	return info

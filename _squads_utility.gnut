@@ -19,15 +19,15 @@ global function Squads_GetNonLinearSquadColor
 
 
 
+global function Squads_GetSquadUIIndex
 
 
 
+global function Squads_GetTeamsUIId
+global function Squads_GetReorderedTeamsUIId
 
-
-
-
-
-
+global function Squads_SetCustomPlayerInfo
+global function ServerCallback_Squad_SetIsNessie
 
 
 
@@ -99,7 +99,7 @@ void function Sh_Squads_Init()
 
 
 
-
+		Cl_Squads_Init()
 
 
 }
@@ -159,20 +159,20 @@ void function Squads_RegisterNetworking()
 
 
 
+void function Cl_Squads_Init()
+{
+
+}
 
 
 
+int function Squads_GetSquadUIIndex(int squadIndex)
+{
+	int index    = Squads_GetArrayIndexForTeam( squadIndex )
+	Assert( index >= 0, "Local Squad index out of range. Original index = " + squadIndex )
 
-
-
-
-
-
-
-
-
-
-
+	return index
+}
 
 
 
@@ -202,7 +202,7 @@ vector function Squads_GetNonLinearSquadColor( int squadIndex, bool forceWinterE
 		GetKeyColor( COLORID_LTM_SQUAD_3 )
 	]
 
-	return squad_colors[ squadIndex ]
+	return squad_colors[ int( clamp( squadIndex, 0, squad_colors.len() - 1 ) ) ]
 }
 
 
@@ -217,7 +217,7 @@ asset function Squads_GetSquadIcon( int squadIndex, bool forceWinterExpress = fa
 	if( squadIndex + TEAM_IMC == file.squadIdIsNessie )
 		return $"rui/gamemodes/tdm/tdm_squad_icon0_easteregg"
 
-	return SQUAD_ICONS[ squadIndex ]
+	return SQUAD_ICONS[ int( clamp( squadIndex, 0, SQUAD_ICONS.len() - 1 ) ) ]
 }
 
 
@@ -232,7 +232,7 @@ string function Squads_GetSquadName( int squadIndex, bool forceWinterExpress = f
 	if( squadIndex + TEAM_IMC == file.squadIdIsNessie )
 		return "#TEAM_NAME_0_EASTEREGG"
 
-	return SQUAD_NAMES[ squadIndex ]
+	return SQUAD_NAMES[ int( clamp( squadIndex, 0, SQUAD_NAMES.len() - 1 ) ) ]
 }
 
 int function Squads_GetMax()
@@ -251,41 +251,49 @@ string function Squads_GetSquadNameLong( int squadIndex, bool forceWinterExpress
 		return "#TEAM_NAME_LONG_0_EASTEREGG"
 
 
-	return SQUAD_NAMES_LONG[ squadIndex ]
+	return SQUAD_NAMES_LONG[ int( clamp( squadIndex, 0, SQUAD_NAMES_LONG.len() - 1 ) ) ]
 }
 
 
+void function Squads_SetCustomPlayerInfo( entity player )
+{
+	entity localPlayer = GetLocalViewPlayer()
+	if ( !IsValid(player) || player == null || !IsValid(localPlayer) || localPlayer == null)
+		return
 
+	int team = player.GetTeam()
+	if( team == TEAM_SPECTATOR || team == TEAM_UNASSIGNED )
+		return
 
+	int myTeam = localPlayer.GetTeam()
+	bool isUsingAlliances   = AllianceProximity_IsUsingAlliances()
+	int allianceOrTeam      = ( isUsingAlliances )? AllianceProximity_GetAllianceFromTeam( team ): team
+	int myAllianceOrTeam    = ( isUsingAlliances )? AllianceProximity_GetAllianceFromTeam( myTeam ): myTeam
+	bool sameAllianceOrTeam = allianceOrTeam == myAllianceOrTeam
 
+	if( !IsSurvivalMode() || ( IsSurvivalMode() && Survival_ShouldChangeTeamUI() ) )
+	{
+		vector color = Teams_GetTeamColor( team )
 
+		SetCustomPlayerInfoColor( player, LinearToSrgb( color ) * 255 )
 
+		int scoreboardTeam = isUsingAlliances ? allianceOrTeam : team - TEAM_IMC
+		player.SetTargetInfoIcon( Teams_GetTeamIcon( scoreboardTeam ) )
+		player.SetTargetInfoIconColor( color, 1.0 )
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+		if( sameAllianceOrTeam )
+		{
+			SetUnitFrameCustomColor( player, color )
+			Minimap_SetPlayerColorOverride( player, color )
+			FullMap_SetPlayerColorOverride( player, color )
+		}
+	}
+	if ( LoadoutSlot_IsReady( ToEHI( player ), Loadout_Character() ) )
+	{
+		ItemFlavor character = LoadoutSlot_GetItemFlavor( ToEHI( player ), Loadout_Character() )
+		player.SetTargetInfoCharacterPortrait( CharacterClass_GetGalleryPortrait( character ) )
+	}
+}
 
 
 int function Squads_GetArrayIndexForTeam( int team )
@@ -294,38 +302,38 @@ int function Squads_GetArrayIndexForTeam( int team )
 }
 
 
+void function ServerCallback_Squad_SetIsNessie( int squadIdIsNessie )
+{
+	file.squadIdIsNessie = squadIdIsNessie
+}
 
 
 
 
 
+int function Squads_GetTeamsUIId( int team )
+{
+	int teamsUIId      = team
+	entity localPlayer = GetLocalViewPlayer()
+	if( IsValid( localPlayer ) )
+	{
+		int localTeam = localPlayer.GetTeam()
+		if( localTeam != TEAM_SPECTATOR ) 
+			if( localTeam == team )       
+				teamsUIId = TEAM_IMC
+			else if ( team == TEAM_IMC )  
+				teamsUIId = localTeam
+	}
+
+	return teamsUIId
+}
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+int function Squads_GetReorderedTeamsUIId( int team )
+{
+	int uiSquad = Squads_GetTeamsUIId( team )
+	return Squads_GetArrayIndexForTeam( uiSquad )
+}
 
 

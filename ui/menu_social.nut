@@ -34,7 +34,7 @@ global function CanSendClubInvite
 
 
 global function JoinMatchAsPartySpectatorDialog
-
+global function PIN_GetSocialSettings
 
 #if DEV
 global function DebugDiscoverability
@@ -2756,8 +2756,16 @@ void function OnPlayerSendFriendRequest( var button )
 	if ( IsUserOnSamePlatform( friend.hardware ) && !s_socialFile.actionFriendForceEADP )
 	{
 		
-		printt( "#EADP - OnPlayerSendFriendRequest - NATIVE" )
-		DoInviteToBeFriend( friend.id )
+		printt( "#EADP - OnPlayerSendFriendRequest - NATIVE, id", friend.id, "unspoofedid", friend.unspoofedid )
+
+		if ( GetConVarBool( "disable_use_unspoofedid_social" ) )
+		{
+			DoInviteToBeFriend( friend.id )
+		}
+		else
+		{
+			DoInviteToBeFriend( ( friend.unspoofedid == "" || GetHardwareFromName( GetUnspoofedPlayerHardware() ) == HARDWARE_PC ) ? friend.id : friend.unspoofedid )
+		}
 	}
 	else if ( FriendHasEAPDData( friend ) )
 	{
@@ -2799,12 +2807,16 @@ bool function CanSendEADPFriendRequest()
 		return false
 
 	CommunityFriends friends = GetFriendInfo()
+	bool use_unspoofedid_social = !GetConVarBool( "disable_use_unspoofedid_social" )
 	foreach ( id in friends.ids )
 	{
 		if ( s_socialFile.actionFriend.id == id )
 		{
 			return false
 		}
+
+		if ( use_unspoofedid_social && s_socialFile.actionFriend.unspoofedid == id )
+			return false
 	}
 
 	if ( GetLocalClientPlayer() == null )
@@ -3280,5 +3292,32 @@ string function GetProfileString()
 	string profileString = Localize( "#INSPECT_MENU_HEADER_NAME_PLAT", s_socialFile.actionFriend.name, platformString ).toupper()
 
 	return profileString
+}
+
+table function PIN_GetSocialSettings()
+{
+	table social = {
+		party_privacy  = GetConVarString( "party_privacy" ),
+		last_squad     = PIN_GetLastSquadSetting(),
+		friend_request = PIN_GetCrossplayInviteSetting(),
+	}
+
+	return social
+}
+
+string function PIN_GetLastSquadSetting()
+{
+	if ( IsBitFlagSet( s_socialFile.cachedMatchPreferenceFlags, eMatchPreferenceFlags.LAST_SQUAD_INVITE_OPT_OUT ) )
+		return "opt_out"
+
+	return "allow_invites"
+}
+
+string function PIN_GetCrossplayInviteSetting()
+{
+	if ( IsBitFlagSet( s_socialFile.cachedMatchPreferenceFlags, eMatchPreferenceFlags.CROSSPLAY_INVITE_AUTO_DENY ) )
+		return "deny_all"
+
+	return "display"
 }
 

@@ -15,15 +15,15 @@ global function _ToolTips_HasToolTipData
 global function _ToolTips_ClearToolTipData
 
 
-global function ToolTips_AddMenu
-global function ToolTips_MenuOpened
-global function ToolTips_MenuClosed
 
-global function ToolTips_SetMenuTooltipVisible
-global function ToolTips_HideTooltipUntilRefocus
 
-global function ClientToUI_Tooltip_MarkForClientUpdate
-global function ClientToUI_Tooltip_Clear
+
+
+
+
+
+
+
 
 
 
@@ -68,7 +68,7 @@ void function Sh_InitToolTips()
 	file.enabled = GetConVarBool( "gameCursor_ModeActive" )
 
 
-	UpdateTooltipRui( $"ui/generic_tooltip.rpak" )
+
 
 
 	ToolTipInfo tooltipInfo
@@ -138,89 +138,6 @@ void function Sh_InitToolTips()
 	style = eTooltipStyle.STORE_CONFIRM
 	file.tooltipInfos[ style ].ruiAsset = $"ui/cannot_afford_tooltip.rpak"
 	file.tooltipInfos[ style ].hasActionText = true
-
-
-
-
-
-
-}
-
-
-void function ToolTips_AddMenu( var menu )
-{
-	if ( !Hud_HasChild( menu, "ToolTip" ) )
-		return
-
-	ToolTipMenuData menuData
-	menuData.menu = menu
-
-	file.menusWithToolTips[string(menu)] <- menuData
-
-	menuData.toolTip = Hud_GetChild( menu, "ToolTip" )
-
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-
-	AddMenuThinkFunc( menu, OnToolTipMenuThink )
-}
-
-
-void function ToolTips_MenuOpened( var menu )
-{
-	if ( !(string( menu ) in file.menusWithToolTips) )
-		return
-
-	ToolTipMenuData menuData = file.menusWithToolTips[string(menu)]
-
-	if ( !GetConVarBool( "gameCursor_ModeActive" ) )
-	{
-		return
-	}
-}
-
-
-void function ToolTips_MenuClosed( var menu )
-{
-	if ( !(string( menu ) in file.menusWithToolTips) )
-		return
-
-	ToolTipMenuData menuData = file.menusWithToolTips[string(menu)]
-}
-
-
-void function ToolTips_SetMenuTooltipVisible( var panel, bool visible )
-{
-	var menu = panel
-	while ( ( menu != null ) && !( string( menu ) in file.menusWithToolTips ) )
-	{
-		menu = Hud_GetParent( menu )
-	}
-
-	if ( string( menu ) in file.menusWithToolTips )
-	{
-		ToolTipMenuData menuData = file.menusWithToolTips[ string( menu ) ]
-		UpdateTooltipFlag( menuData, eToolTipFlag.HIDDEN, !visible )
-	}
-	else
-	{
-		Warning( "No tooltip found for panel: %s", string( panel ) )
-	}
-}
-
-void function UpdateTooltipFlag( ToolTipMenuData menuData, int flag, bool enabled )
-{
-	menuData.toolTipFlags = enabled ? ( menuData.toolTipFlags | flag ) : ( menuData.toolTipFlags & ~flag )
 }
 
 
@@ -244,52 +161,129 @@ void function UpdateTooltipFlag( ToolTipMenuData menuData, int flag, bool enable
 
 
 
-var s_hideElement = null
-void function ToolTips_HideTooltipUntilRefocus( var element )
-{
-	s_hideElement = element
-}
 
 
-void function OnToolTipMenuThink( var menu )
-{
-	ToolTipMenuData menuData = file.menusWithToolTips[string(menu)]
 
-	if ( IsBitFlagSet( menuData.toolTipFlags, eToolTipFlag.HIDDEN ) )
-	{
-		s_hideElement = null
-		HideTooltipRui();
-		return
-	}
 
-	var focusElement = GetMouseFocus()
-	if ( focusElement == null || !Hud_HasToolTipData( focusElement ) )
-	{
-		s_hideElement = null
-		HideTooltipRui();
-		return
-	}
 
-	if ( (s_hideElement != null) && (s_hideElement == focusElement) )
-	{
-		HideTooltipRui();
-		return
-	}
-	s_hideElement = null
 
-	UpdateToolTipElement( menuData.toolTip, focusElement )
 
-	
-}
 
-var function UpdateTooltipRui( asset ruiAsset )
-{
-	if ( file.currentTooltipRui == ruiAsset )
-		return
 
-	file.currentTooltipRui = ruiAsset
-	file.tooltipRui = SetTooltipRui( string( ruiAsset ) )
-}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 void function Hud_SetToolTipData( var element, ToolTipData toolTipData )
@@ -364,15 +358,15 @@ void function UpdateToolTipElement( var toolTipElement, var focusElement )
 	asset ruiAsset = file.tooltipInfos[ dt.tooltipStyle ].ruiAsset
 
 
-		UpdateTooltipRui( ruiAsset )
-		ShowTooltipRui()
 
-		if ( IsBitFlagSet( dt.tooltipFlags, eToolTipFlag.CLIENT_UPDATE ) )
-		{
-			if ( IsFullyConnected() )
-				RunClientScript( "UpdateToolTipElement", toolTipElement, focusElement )
-			return
-		}
+
+
+
+
+
+
+
+
 
 
 	if ( IsBitFlagSet( dt.tooltipFlags, eToolTipFlag.HIDDEN ) )
@@ -452,17 +446,10 @@ void function UpdateToolTipElement( var toolTipElement, var focusElement )
 		RuiSetFloat3( rui, "descTextAltColor", dt.storeTooltipData.tooltipAltDescColor )
 	}
 
-
-
-
-
-
-
-
-
-
-
-
+	if ( dt.tooltipStyle == eTooltipStyle.CURRENCY )
+	{
+		RuiSetBool( rui, "premiumCurrencyIsNegative", dt.currencyToolTipData.premiumCurrencyIsNegative )
+	}
 
 }
 
@@ -478,21 +465,21 @@ void function AddCallback_OnUpdateTooltip( int style, void functionref(int style
 
 
 
-void function ClientToUI_Tooltip_MarkForClientUpdate( var button, int style )
-{
-	ToolTipData dt
-	dt.tooltipFlags = dt.tooltipFlags | eToolTipFlag.CLIENT_UPDATE
-	dt.tooltipStyle = style
-	Hud_SetToolTipData( button, dt )
-}
 
 
 
 
-void function ClientToUI_Tooltip_Clear( var button )
-{
-	Hud_ClearToolTipData( button )
-}
+
+
+
+
+
+
+
+
+
+
+
 
 
 

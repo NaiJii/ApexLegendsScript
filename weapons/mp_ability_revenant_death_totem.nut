@@ -1340,6 +1340,12 @@ void function DeathTotem_DisableWallClimbWhileDeployingTotem( entity ownerPlayer
 
 
 
+
+
+
+
+
+
 void function DeathTotem_UseTotem( entity player, entity totemProxy )
 {
 	if ( !DeathTotem_PlayerCanRecall( player ) )

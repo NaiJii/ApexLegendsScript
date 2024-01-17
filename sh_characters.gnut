@@ -76,8 +76,8 @@ global function GetCharactersByRole
 global function SortByMenuButtonIndex
 
 
-
-
+global function GetPlayerSettingBaseHealth
+global function GetPlayerSettingBaseShield
 
 
 global const asset CHARACTER_DUMMIE = $"settings/itemflav/character/dummie.rpak"
@@ -338,7 +338,7 @@ void function OnRegisterRootItemFlavors()
 		characterList.append( expect ItemFlavor(characterOrNull) )
 	}
 
-	MakeItemFlavorSet( characterList, fileLevel.characterFlavorSortOrdinalMap )
+	MakeItemFlavorSet( characterList, fileLevel.characterFlavorSortOrdinalMap, true )
 
 	entry.validItemFlavorList = characterList
 
@@ -357,12 +357,12 @@ void function OnRegisterRootItemFlavors()
 	entry.defaultItemFlavor = fileLevel.nonGRXCharacters.getrandom()
 
 
-
-
-
-
-
-
+		if ( IsLobby() )
+		{
+			AddCallback_ItemFlavorLoadoutSlotDidChange_AnyPlayer( entry, void function( EHI playerEHI, ItemFlavor character ) {
+				UpdateMenuCharacterModel( FromEHI( playerEHI ) )
+			} )
+		}
 
 
 	foreach ( character in characterList )
@@ -394,16 +394,14 @@ void function OnItemFlavorRegistered_Character( ItemFlavor character )
 	fileLevel.characterRefMap[ tmp[ "character_ref" ] ] <- character
 
 
+		asset bodyModel = GetGlobalSettingsAsset( CharacterClass_GetSetFile( character ), "bodyModel" )
+		asset loadingBodyModel = GetGlobalSettingsAsset( CharacterClass_GetSetFile( character ), "loadingBodyModel" )
+		asset armsModel = GetGlobalSettingsAsset( CharacterClass_GetSetFile( character ), "armsModel" )
+		asset loadingArmsModel = GetGlobalSettingsAsset( CharacterClass_GetSetFile( character ), "loadingArmsModel" )
+		string pak = string(GetGlobalSettingsAsset( CharacterClass_GetSetFile( character ), "pak" ))
 
-
-
-
-
-
-
-
-
-
+		PrecacheOnDemandLoadModel( ODL_SKINS, pak, bodyModel, loadingBodyModel )
+		PrecacheOnDemandLoadModel( ODL_SKINS, pak, armsModel, loadingArmsModel )
 
 
 
@@ -888,14 +886,14 @@ array<string> function CharacterClass_GetReadyUpVoicelineEventList( ItemFlavor f
 bool function Survival_HasPlayerLockedInCharacter( EHI playerEHI )
 {
 
+		entity player = FromEHI( playerEHI )
+		if ( player == null || !IsValid( player ) )
+			return false
 
+		if ( Time() > GetGlobalNetTime( "allSquadsPresentationStartTime" ) && GetGlobalNetTime( "allSquadsPresentationStartTime" ) != -1 )
+			return true
 
-
-
-
-
-
-
+		return player.GetPlayerNetBool( CHARACTER_SELECT_NETVAR_HAS_LOCKED_IN_CHARACTER )
 
 	return false
 }
@@ -1080,7 +1078,9 @@ bool function IsCharacterGRXUnlockedForLoadoutSlot( EHI playerEHI, ItemFlavor it
 		case eTristate.FALSE:
 			return false
 		default:
-			return GetCurrentPlaylistVarBool( "all_characters_unlocked", false ) || Character_IsCharacterOwnedByPlayer( itemFlavor, FromEHI( playerEHI ) )
+			return 	GetCurrentPlaylistVarBool( "all_characters_unlocked", false ) ||
+					Character_IsCharacterUnlockedForCalevent( itemFlavor ) ||
+					Character_IsCharacterOwnedByPlayer( itemFlavor, FromEHI( playerEHI ) )
 	}
 	unreachable
 }
@@ -1093,11 +1093,11 @@ bool function Character_IsCharacterOwnedByPlayer( ItemFlavor character, entity p
 
 
 
-
-
-
 		if ( player == null )
 			player = GetLocalClientPlayer()
+
+
+
 
 
 	if( GRX_HasInventoryEverBeenReady( player ) )
@@ -1202,15 +1202,15 @@ int function SortByRoleAndMenuIndex( ItemFlavor a, ItemFlavor b )
 
 
 
+int function GetPlayerSettingBaseHealth( entity player )
+{
+	return int( player.GetPlayerSettingFloat( "health" ) )
+}
 
-
-
-
-
-
-
-
-
+int function GetPlayerSettingBaseShield( entity player )
+{
+	return int( player.GetPlayerSettingFloat( "healthShield" ) )
+}
 
 
 bool function WIP_CharacterClass_ShouldTrackStats( ItemFlavor character )

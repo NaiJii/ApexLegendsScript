@@ -202,6 +202,9 @@ float function HuntMode_GetDuration( entity player )
 
 
 
+
+
+
 void function MpAbilityHuntModeWeapon_OnWeaponTossPrep( entity weapon, WeaponTossPrepParams prepParams )
 {
 	entity weaponOwner = weapon.GetWeaponOwner()

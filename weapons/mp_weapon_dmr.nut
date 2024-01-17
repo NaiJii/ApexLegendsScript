@@ -1,6 +1,11 @@
 global function OnWeaponActivate_weapon_dmr
 global function OnWeaponDeactivate_weapon_dmr
 global function OnProjectileCollision_weapon_dmr
+
+
+global function OnWeaponPrimaryAttack_weapon_dmr
+
+
 global function MpWeaponDmr_Init
 
 global function OnClientAnimEvent_weapon_dmr
@@ -26,6 +31,19 @@ void function OnProjectileCollision_weapon_dmr( entity projectile, vector pos, v
 
 
 }
+
+
+var function OnWeaponPrimaryAttack_weapon_dmr( entity weapon, WeaponPrimaryAttackParams attackParams )
+{
+	GoldenHorsePurple_OnWeaponPrimaryAttack( weapon, attackParams )
+
+	weapon.FireWeapon_Default( attackParams.pos, attackParams.dir, 1.0, 1.0, false )
+
+	GoldenHorsePurple_PostFire( weapon )
+
+	return weapon.GetWeaponSettingInt( eWeaponVar.ammo_per_shot )
+}
+
 
 void function MpWeaponDmr_Init()
 {

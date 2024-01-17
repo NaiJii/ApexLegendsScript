@@ -71,8 +71,15 @@ const float FUSE_MORTAR_SCAN_LENGTH_BASE 	= 1000.0
 const float FUSE_MORTAR_SCAN_LENGTH_MIN		= 350.0
 
 
+
+
+
+
 struct
 {
+
+
+
 
 
 
@@ -105,19 +112,6 @@ void function MpWeapon_Mortar_Ring_Missile_Init()
 
 	StatusEffect_RegisterEnabledCallback( eStatusEffect.mortar_ring_reveal, MortarRingReveal_RevealStatusChanged )
 	StatusEffect_RegisterDisabledCallback( eStatusEffect.mortar_ring_reveal, MortarRingReveal_RevealStatusChanged )
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -193,6 +187,66 @@ void function OnProjectileCollision_ability_mortar_ring_missile( entity projecti
 
 
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

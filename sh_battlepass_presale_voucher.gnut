@@ -8,6 +8,9 @@ global function GetDisplayImageAssetFromBPPresaleVoucher
 
 
 
+
+
+
 void function ShBattlepassPresaleVoucher_LevelInit()
 {
 	AddCallback_RegisterRootItemFlavors( RegisterAllBattlepassPresaleVouchersAsItemFlavors )
@@ -38,9 +41,31 @@ void function RegisterAllBattlepassPresaleVouchersAsItemFlavors()
 
 
 
+
+
+
+string function GetLocStringForSeasonName( int season )
+{
+	return format("#BP_S%d_NAME", season)
+}
+
+
+
+
+
+
+
 asset function GetDisplayImageAssetFromBPPresaleVoucher( ItemFlavor flavor )
 {
 	Assert( ItemFlavor_GetType( flavor ) == eItemType.battlepass_presale_voucher )
 
 	return GetGlobalSettingsAsset( ItemFlavor_GetAsset( flavor ), "displayImage" )
 }
+
+
+
+
+
+
+
+

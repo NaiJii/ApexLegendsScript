@@ -62,6 +62,18 @@ global function ShEHI_LevelInit_End
 
 
 
+global function ShEHI_OnPlayerCreated
+global function ShEHI_OnPlayerChangedTeam
+global function ShEHI_OnPlayerDisconnected
+global function UIToClient_UIVMIsShuttingDown
+global function UIToClient_UIVMJustStarted
+global function GetDisplayablePlayerName
+global function GetDisplayablePlayerNameFromEHI
+global function GetKillerNameFromEHI
+global function GetPlayerRankScoreFromEHI
+global function GetPlayerLadderPosFromEHI
+global function GetPlayerRankScorePrevSeasonFromEHI
+global function GetPlayerLadderPosPrevSeasonFromEHI
 
 
 
@@ -72,21 +84,9 @@ global function ShEHI_LevelInit_End
 
 
 
-
-
-
-
-
-
-
-
-global function ClientToUI_OnPlayerCreatedOrUpdated
-
-
-
-
-
-
+global function GetPlayerNameUnlessAnonymized
+global function ShouldPlayerNameBeAnonymized
+global function GetCachedObsfuscatedNameByName
 
 
 
@@ -107,16 +107,16 @@ struct FileStruct_LifetimeLevel
 
 
 
-
+		bool uiVMIsResetting = false
 
 
 	table signalDummy
 }
 
 
+FileStruct_LifetimeLevel fileLevel
 
 
-FileStruct_LifetimeLevel& fileLevel
 
 
 
@@ -135,15 +135,15 @@ void function ShEHI_LevelInit_Begin()
 
 
 
-	FileStruct_LifetimeLevel newFileLevel
-	fileLevel = newFileLevel
-
-	if ( !(uiGlobal.uiShutdownCallbacks.contains( ShEHI_VMShutdown )) )
-		AddUICallback_UIShutdown( ShEHI_VMShutdown )
 
 
 
 
+
+
+
+
+		AddCallback_GameStateEnter( eGameState.Playing, EHI_GameStatePlaying )
 
 }
 
@@ -153,19 +153,19 @@ void function ShEHI_LevelInit_Begin()
 void function ShEHI_LevelInit_End()
 {
 
-		if ( CanRunClientScript() )
-			RunClientScript( "UIToClient_UIVMJustStarted" )
+
+
 
 }
 
 
 
 
-void function ShEHI_VMShutdown()
-{
-	if ( CanRunClientScript() )
-		RunClientScript( "UIToClient_UIVMIsShuttingDown" )
-}
+
+
+
+
+
 
 
 
@@ -181,14 +181,14 @@ EHI function ToEHI( entity ent )
 
 
 
+		if ( !IsValid( ent ) )
+			return EHI_null
+
+		return ent.GetEncodedEHandle()
 
 
 
 
-
-		Assert( ent == GetLocalClientPlayer() )
-		Assert( fileLevel.localClientEHI != EHI_null )
-		return fileLevel.localClientEHI
 
 }
 
@@ -200,14 +200,14 @@ entity function FromEHI( EHI ent )
 
 
 
+		if ( ent == EHI_null )
+			return null
+
+		return GetEntityFromEncodedEHandle( ent )
 
 
 
 
-
-		Assert( fileLevel.localClientEHI != EHI_null )
-		Assert( ent == fileLevel.localClientEHI )
-		return GetLocalClientPlayer()
 
 }
 
@@ -548,9 +548,9 @@ bool function IsLocalClientEHIValid()
 EHI function LocalClientEHI()
 {
 
+		Assert( fileLevel.localClientEHI != EHI_null, "LocalClientEHI called too early. The client VM doesn't have the local client player yet." )
 
 
-		Assert( fileLevel.localClientEHI != EHI_null, "LocalClientEHI called too early. The UI VM hasn't been told about the local player yet." )
 
 	return fileLevel.localClientEHI
 }
@@ -566,9 +566,9 @@ EHI function WaitForLocalClientEHI()
 	while ( fileLevel.localClientEHI == EHI_null )
 	{
 
+			WaitSignal( clGlobal.signalDummy, "OnLocalClientEHIValid" )
 
 
-			WaitSignal( uiGlobal.signalDummy, "OnLocalClientEHIValid" )
 
 	}
 	return fileLevel.localClientEHI
@@ -594,111 +594,76 @@ EHI function WaitForLocalClientEHI()
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-void function ClientToUI_OnPlayerCreatedOrUpdated( EHI ehi,
-bool isLocalClientPlayer,
-bool isConnected,
-string name,
-int team,
-int teamMemberIndex,
-int intValue
-)
+void function ShEHI_OnPlayerCreated( entity ent )
 {
+	
+
+	EHI ehi            = ToEHI( ent )
+	EncodedEHandle eeh = EHIToEncodedEHandle( ehi )
+
 	EHIScriptStruct ehiss
-	if ( ehi in fileLevel.eehScriptStructMap )
-		ehiss = fileLevel.eehScriptStructMap[ehi]
-	else
-		fileLevel.eehScriptStructMap[ehi] <- ehiss
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+		if ( eeh in fileLevel.eehScriptStructMap )
+			ehiss = fileLevel.eehScriptStructMap[eeh]
+		ent.e.ehiss = ehiss
+
+
+	fileLevel.eehScriptStructMap[eeh] <- ehiss
+
+	ehiss.ehi = ehi
 	ehiss.isPlayer = true
-	ehiss.isConnected = isConnected
-	ehiss.isLocalClientPlayer = isLocalClientPlayer
-	ehiss.name = name
-	ehiss.team = team
-	ehiss.teamMemberIndex = teamMemberIndex
-	ehiss.platformID = intValue
+	ehiss.isConnected = true
+	ehiss.name = ent.GetPlayerName()
+	ehiss.team = ent.GetTeam()
+	ehiss.teamMemberIndex = ent.GetTeamMemberIndex()
+	ehiss.platformID = GetHardwareFromName( ent.GetHardwareName() )
 
-	if ( isLocalClientPlayer )
-	{
-		fileLevel.localClientEHI = ehi
-		Signal( uiGlobal.signalDummy, "OnLocalClientEHIValid" )
-	}
+		ehiss.isLocalClientPlayer = IsLocalClientPlayer( ent )
+		ehiss.obfuscatedID = GetObfuscatedIdFromPlayer( ent )
 
-	Signal( fileLevel.signalDummy, "EHISignalDummyCreated" )
+		if ( fileLevel.localClientEHI == EHI_null && ehiss.isLocalClientPlayer )
+		{
+			fileLevel.localClientEHI = ehi
+			Signal( clGlobal.signalDummy, "OnLocalClientEHIValid" )
+		}
+
+		Signal( fileLevel.signalDummy, "EHISignalDummyCreated" )
+
 
 	
 	ShLoadouts_OnPlayerEHICreated( ehi )
+
+	int pID = -1
+	pID = ehiss.platformID
+
+
+		Assert( ehi != EHI_null )
+		RunUIScript( "ClientToUI_OnPlayerCreatedOrUpdated", ehi,
+			ehiss.isLocalClientPlayer,
+			ehiss.isConnected,
+			ehiss.name,
+			ehiss.team,
+			ehiss.teamMemberIndex,
+			pID
+		)
+
+
+	
+	
 }
 
 
@@ -739,85 +704,278 @@ int intValue
 
 
 
+void function ShEHI_OnPlayerChangedTeam( entity player, int oldTeam, int newTeam )
+{
+	player.e.ehiss.team = newTeam
 
 
+		int pID = -1
+		pID = player.e.ehiss.platformID
 
+		Assert( player.e.ehiss.ehi != EHI_null )
+		RunUIScript( "ClientToUI_OnPlayerCreatedOrUpdated", player.e.ehiss.ehi,
+			player.e.ehiss.isLocalClientPlayer,
+			player.e.ehiss.isConnected,
+			player.e.ehiss.name,
+			player.e.ehiss.team,
+			player.e.ehiss.teamMemberIndex,
+			pID
+		)
 
+}
 
 
 
 
+void function ShEHI_OnPlayerDisconnected( entity player )
+{
+	if ( player.e.ehiss.ehi == EHI_null )
+	{
+		Warning( "R5DEV-52416: OnPlayerDisconnected happened before OnPlayerCreated, %s", string(player) )
+		return
+	}
 
+	player.e.ehiss.isConnected = false
 
+	WORKAROUND_PreventScriptErrors( void function() : ( player ) {
 
+		int pID = -1
+		pID = player.e.ehiss.platformID
 
+		RunUIScript( "ClientToUI_OnPlayerCreatedOrUpdated", player.e.ehiss.ehi,
+			player.e.ehiss.isLocalClientPlayer,
+			player.e.ehiss.isConnected,
+			player.e.ehiss.name,
+			player.e.ehiss.team,
+			player.e.ehiss.teamMemberIndex,
+			pID
+		)
+	} )
+}
 
 
 
 
+void function UIToClient_UIVMIsShuttingDown()
+{
+	fileLevel.uiVMIsResetting = true
+}
+void function UIToClient_UIVMJustStarted()
+{
+	if ( !fileLevel.uiVMIsResetting )
+		return
 
+	fileLevel.uiVMIsResetting = false
 
+	foreach ( EHI ehi, EHIScriptStruct ehiss in fileLevel.eehScriptStructMap )
+	{
+		Assert( ehi != EHI_null )
 
+		int pID = -1
+		pID = ehiss.platformID
 
+		RunUIScript( "ClientToUI_OnPlayerCreatedOrUpdated", ehi,
+			ehiss.isLocalClientPlayer,
+			ehiss.isConnected,
+			ehiss.name,
+			ehiss.team,
+			ehiss.teamMemberIndex,
+			pID
+		)
 
+		ShLoadouts_OnPlayerEHICreated( ehi, true )
+	}
+}
 
 
 
 
+string function GetObsfuscatedName( EHI playerEHI )
+{
+	string playerName = EHI_GetName( playerEHI )
+	if ( !(playerName in fileLevel.obfuscatedNameMap) )
+	{
+		int randomAppend = RandomIntRange( 1000, 9999 )
+		string obsName   = ""
 
+		LoadoutEntry characterSlot = Loadout_Character()
+		if ( GetGameState() >= eGameState.Playing && LoadoutSlot_IsReady( playerEHI, characterSlot ) )
+		{
+			ItemFlavor ornull characterOrNull = LoadoutSlot_GetItemFlavor( playerEHI, characterSlot )
+			if ( characterOrNull != null )
+				obsName = Localize( ItemFlavor_GetShortName( expect ItemFlavor( characterOrNull ) ) )
+		}
 
+		if ( obsName == "" )
+			obsName = "Player"
 
+		obsName = obsName + string( randomAppend )
+		fileLevel.obfuscatedNameMap[playerName] <- obsName
+	}
 
+	return fileLevel.obfuscatedNameMap[playerName]
+}
 
+string function GetCachedObsfuscatedNameByName( string playerName )
+{
+	if ( playerName in fileLevel.obfuscatedNameMap )
+		return fileLevel.obfuscatedNameMap[playerName]
 
+	return "Player"
+}
 
 
 
 
+string function GetKillerNameFromEHI( EHI playerEHI )
+{
+	string clubTag = GetPlayerClubTag( playerEHI )
 
+	string playerName = EHI_GetName( playerEHI )
+	if ( (ShouldPlayerNameBeAnonymized( playerEHI ) || !DisplayKillerName()) && playerEHI != LocalClientEHI() && EHI_GetTeam( playerEHI ) != EHI_GetTeam( LocalClientEHI() ) )
+	{
+#if DEV
+		printt( "GetKillerNameFrom ShouldPlayerNameBeAnonymized[" + ShouldPlayerNameBeAnonymized( playerEHI ) + "]  ---"  + playerName)
+		printt( "GetKillerNameFrom DisplayKillerName[" + DisplayKillerName() + "]")
+		printt( "GetKillerNameFrom EHI_GetTeam[" + EHI_GetTeam( playerEHI )  + "]")
+		printt( "GetKillerNameFrom EHI_GetTeam( LocalClientEHI() )[" + EHI_GetTeam( LocalClientEHI() )  + "]")
+#endif
+		return GetObsfuscatedName( playerEHI )
+	}
 
+	return clubTag + " " + playerName
+}
 
 
 
 
+string function GetDisplayablePlayerName( entity player )
+{
+	
+	return GetDisplayablePlayerNameFromEHI( ToEHI( player ) )
+}
 
 
 
 
+string function GetDisplayablePlayerNameFromEHI( EHI playerEHI )
+{
+	string clubTag = GetPlayerClubTag( playerEHI )
 
+	string playerName = EHI_GetName( playerEHI )
+	bool isSetToObsfuscatedName = ( ShouldPlayerNameBeAnonymized( playerEHI ) || !DisplayObituaryName() )
+	bool isPlayerEHISameAsLocalClientEHI = playerEHI == LocalClientEHI()
 
+	int playerTeam = EHI_GetTeam( playerEHI )
+	int localPlayerTeam = EHI_GetTeam( LocalClientEHI() )
+	if ( AllianceProximity_IsUsingAlliances() )
+	{
+		
+		
+		
+		playerTeam = AllianceProximity_GetOriginalPlayerTeam_FromPlayerEHI( playerEHI )
+		localPlayerTeam = AllianceProximity_GetOriginalPlayerTeam_FromPlayerEHI( LocalClientEHI() )
+	}
 
+	if ( isSetToObsfuscatedName && !isPlayerEHISameAsLocalClientEHI && !IsFriendlyTeam( playerTeam, localPlayerTeam ) )
+	{
+#if DEV
+		printt( "GetPlayerNameFromEHI DisplayObituaryName[" + DisplayObituaryName() + "] ------- " + playerName)
+		printt( "GetPlayerNameFromEHI ShouldPlayerNameBeAnonymized( playerEHI )[" + ShouldPlayerNameBeAnonymized( playerEHI ) + "]")
+		printt( "GetPlayerNameFromEHI isSetToObsfuscatedName[" + isSetToObsfuscatedName + "]")
+		printt( "GetPlayerNameFromEHI isPlayerEHISameAsLocalClientEHI[" + isPlayerEHISameAsLocalClientEHI + "]")
+		printt( "GetPlayerNameFromEHI EHI_GetTeam[" + EHI_GetTeam( playerEHI )  + "]")
+		printt( "GetPlayerNameFromEHI EHI_GetTeam( LocalClientEHI() )[" + EHI_GetTeam( LocalClientEHI() )  + "]")
+#endif
 
+		return GetObsfuscatedName( playerEHI )
+	}
 
+	return clubTag + " " + playerName
+}
 
 
 
 
+string function GetPlayerClubTag( EHI playerEHI )
+{
+	if ( Clubs_AreObituaryTagsEnabledByPlaylist() == false )
+	{
+		printf( "ClubDataDebug: No Club Tag (Disabled by Playlist)" )
+		return ""
+	}
 
+	string clubTag = ""
+	entity player = FromEHI( playerEHI )
+	if( !IsValid( player ) )
+	{
+		if ( GetEHIScriptStruct(playerEHI ).clubTag  != "" )
+			clubTag = "[" + GetEHIScriptStruct(playerEHI ).clubTag + "]"
+		return clubTag
+	}
 
+#if DEV
+	if ( player.IsBot() )
+	{
+		clubTag = ""
+		return clubTag
+	}
+#endif
 
+	clubTag = player.GetClubTag()
+	if ( GetEHIScriptStruct(playerEHI ).clubTag == "" && clubTag != "")
+		GetEHIScriptStruct(playerEHI ).clubTag = clubTag
 
+	if(clubTag != "")
+		clubTag = "[" + clubTag + "]"
 
+	
+	return clubTag
+}
 
 
 
 
+void function EHI_GameStatePlaying()
+{
+	fileLevel.obfuscatedNameMap.clear()
+}
 
 
 
+int function GetPlayerRankScoreFromEHI( EHI playerEHI )
+{
+	int rankScore = EHI_GetRankScore( playerEHI )
 
+	return rankScore
+}
 
 
 
+int function GetPlayerLadderPosFromEHI( EHI playerEHI )
+{
+	int rankScore = EHI_GetRankedLadderPos( playerEHI )
 
+	return rankScore
+}
 
 
 
+int function GetPlayerRankScorePrevSeasonFromEHI( EHI playerEHI )
+{
+	int rankScore = EHI_GetRankScorePrevSeason( playerEHI )
 
+	return rankScore
+}
 
 
 
+int function GetPlayerLadderPosPrevSeasonFromEHI( EHI playerEHI )
+{
+	int rankScore = EHI_GetRankedLadderPosPrevSeason( playerEHI )
 
+	return rankScore
+}
 
 
 
@@ -844,200 +1002,48 @@ int intValue
 
 
 
+string function GetPlayerNameUnlessAnonymized( EHI playerEHI )
+{
+	if ( ShouldPlayerNameBeAnonymized( playerEHI ) )
+		return GetObsfuscatedName( playerEHI )
 
+	return GetDisplayablePlayerNameFromEHI( playerEHI )
+}
 
+bool function ShouldPlayerNameBeAnonymized( EHI playerEHI )
+{
+	
+	if ( GetLocalClientPlayer().GetTeam() == TEAM_SPECTATOR )
+		return false
 
+	
+	
+	if ( IsPrivateMatch() )
+		return ShouldPrivateMatchBeAnonymized()
 
+	
+	if ( IsViewingDeathScreen() )
+		return false
 
+	if ( IsLobby() )
+		return false
 
+	if ( GetCurrentPlaylistVarBool( "DisablePlayerAnonymity", false ) == true )
+		return false
 
+	entity player = FromEHI( playerEHI )
+	if ( !IsValid( player ) )
+		return false
 
+	return player.GetPlayerNetBool( "anonymizePlayerName" )
+}
 
+bool function ShouldPrivateMatchBeAnonymized()
+{
+	if ( IsPrivateMatchLobby() )
+		return false
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+	return GetConVarBool( CUSTOM_ANONYMOUS_MODE_CONVAR_NAME )
+}
 
 

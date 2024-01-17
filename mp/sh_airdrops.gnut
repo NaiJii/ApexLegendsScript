@@ -55,6 +55,8 @@ global function OnAirdropUse
 
 
 
+
+
 const bool DEBUG_DROP_POINTS = false
 
 const string SOUND_CARE_PACKAGE_MARKER = "Survival_LootPod_Beacon_Marker"
@@ -111,6 +113,10 @@ global enum eAirdropType
 	CHARACTER_CAREPACKAGE,	
 
 	CRAFTING_REPLICATOR,	
+
+
+
+
 
 
 	_count
@@ -237,6 +243,94 @@ entity function GetAirdropForHitEnt( entity hitEnt )
 
 	return null
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

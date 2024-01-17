@@ -245,7 +245,7 @@ ToolTipData function CreateBadgeToolTip( ItemFlavor badge, ItemFlavor ornull cha
 							entity player = FromEHI( LocalClientEHI() )
 							if ( Challenge_IsAssigned( player, parentChallengeFlav ) )
 							{
-								int tier = 0 
+								int tier = GladiatorCardBadge_GetRewardParentChallengeTier( parentChallengeFlav, badge ) 
 								int challengeProgressvalue = Challenge_GetProgressValue( player, parentChallengeFlav, tier )
 								int challengeGoalValue = Challenge_GetGoalVal( parentChallengeFlav, tier )
 								if ( challengeGoalValue > 1 && !Challenge_IsComplete( player, parentChallengeFlav ) )

@@ -4,40 +4,60 @@ global function EventShop_Init
 
 
 
-global function GetActiveEventShop
+global function EventShop_GetCurrentActiveEventShop
+global function EventShop_CurrentActiveEventShopHasDailyChallenges
+global function EventShop_GetCurrentActiveEventShopDailyChallenges
+global function EventShop_CurrentActiveEventShopHasEventChallenges
+global function EventShop_GetCurrentActiveEventShopEventChallenges
+global function EventShop_GetShowEventChallengesInLobby
 global function EventShop_GetEventShopCurrency
 global function EventShop_GetEventShopGRXCurrency
+global function EventShop_HasSweepstakesOffers
 global function EventShop_GetGRXOfferLocation
 global function EventShop_GetEventMainIcon
 global function EventShop_GetLeftCornerHeaderBackground
 global function EventShop_GetRightPanelBackground
 global function EventShop_GetShopPageItemsBackground
+global function EventShop_GetSweepstakesPrizeImage
 global function EventShop_GetLobbyButtonImage
 global function EventShop_GetEventShopData
 global function EventShop_GetBadges
 global function EventShop_GetRewards
 global function EventShop_GetRadioPlays
 global function EventShop_GetOffers
+global function EventShop_GetOfferData
+global function EventShop_GetOfferByCoreItem
+global function EventShop_GetTutorials
+global function EventShop_GetCurrencyProgressionType
 global function EventShop_GetMainChallenge
 global function EventShop_GetTierRewards
 global function EventShop_GetTierBadges
 global function EventShop_GetTierRadioPlays
 global function EventShop_GetTierUnlockValue
 global function EventShop_GetTiersData
+global function EventShop_GetGridTitle
+global function EventShop_GetRewardsTitle
 global function EventShop_GetBarsColor
 global function EventShop_GetLinesColor
 global function EventShop_GetLeftPanelTitleColor
 global function EventShop_GetLeftPanelEventNameColor
 global function EventShop_GetLeftPanelTimeRemainingColor
+global function EventShop_GeTooltipsColor
 global function EventShop_GetBackgroundDarkeningOpacity
 global function EventShop_GetRightPanelOpacity
 global function EventShop_GetLeftPanelOpacity
 
 
 
-global function EventShop_GetCoreItemFlav
-global function EventShop_GetItemPrice
-global function EventShop_GetCoreItemQuantity
+
+
+
+
+
+
+
+
+
 
 
 
@@ -49,16 +69,12 @@ global function EventShop_GetCoreItemQuantity
 global struct EventShopBadgeData
 {
 	ItemFlavor& badge
-	int         x = 0
-	int         y = 0
 	int         size = 118
 }
 
 global struct EventShopRewardData
 {
 	ItemFlavor& reward
-	int         x = 0
-	int         y = 0
 }
 
 global struct EventShopRadioPlayData
@@ -66,9 +82,20 @@ global struct EventShopRadioPlayData
 	ItemFlavor& radioPlay
 }
 
+global struct EventShopTutorialData
+{
+	asset icon
+	string title
+	string desc
+}
+
 global struct EventShopOfferData
 {
 	ItemFlavor& offer
+	bool isSweepstakesOffer
+	bool isLockedOffer
+	bool isFeaturedOffer
+	asset gridIcon
 }
 
 global struct EventShopTierData
@@ -85,7 +112,12 @@ global struct EventShopData
 	array<EventShopBadgeData> badges
 	array<EventShopRewardData> rewards
 	array<EventShopRadioPlayData> radioPlays
+	array<EventShopTutorialData> tutorials
 	array<EventShopOfferData> offers
+	array<ItemFlavor> dailyChallenges
+	array<ItemFlavor> eventChallenges
+	ItemFlavor ornull eventCurrency
+	string eventShopButtonText
 }
 
 
@@ -100,19 +132,22 @@ global struct EventShopData
 struct FileStruct_LifetimeLevel
 {
 	table<ItemFlavor, EventShopData> eventShopDataMap
+
+	int eventShopStaleTimestamp
+	ItemFlavor ornull activeEventShop
 }
 
 
 
 
 
+FileStruct_LifetimeLevel fileLevel 
 
 
-FileStruct_LifetimeLevel& fileLevel 
 
-struct {
-	
-} fileVM 
+
+
+
 
 
 
@@ -126,8 +161,8 @@ struct {
 void function EventShop_Init()
 {
 
-		FileStruct_LifetimeLevel newFileLevel
-		fileLevel = newFileLevel
+
+
 
 
 	AddCallback_OnItemFlavorRegistered( eItemType.calevent_event_shop, void function( ItemFlavor event ) {
@@ -158,8 +193,6 @@ void function EventShop_Init()
 
 				EventShopBadgeData badge
 				badge.badge = badgeFlav
-				badge.x     = GetSettingsBlockInt( badgeBlock, "badgeX" )
-				badge.y     = GetSettingsBlockInt( badgeBlock, "badgeY" )
 				badge.size  = GetSettingsBlockInt( badgeBlock, "badgeSize" )
 
 				eventShopData.badges.append( badge )
@@ -176,8 +209,6 @@ void function EventShop_Init()
 
 				EventShopRewardData reward
 				reward.reward = rewardFlav
-				reward.x     = GetSettingsBlockInt( rewardBlock, "rewardX" )
-				reward.y     = GetSettingsBlockInt( rewardBlock, "rewardY" )
 
 				eventShopData.rewards.append( reward )
 			}
@@ -208,21 +239,60 @@ void function EventShop_Init()
 
 				EventShopOfferData offer
 				offer.offer = offerFlav
-
+				offer.isLockedOffer = GetSettingsBlockBool( offerBlock, "isLockedOffer" )
+				offer.isSweepstakesOffer = GetSettingsBlockBool( offerBlock, "isSweepstakesOffer" )
+				offer.isFeaturedOffer = GetSettingsBlockBool( offerBlock, "isFeaturedOffer" )
+				offer.gridIcon = GetSettingsBlockAsset( offerBlock, "offerGridIcon" )
 				eventShopData.offers.append( offer )
 			}
 		}
 
-		fileLevel.eventShopDataMap[event] <- eventShopData
-		
-		
-		
-	} )
+		foreach ( int index, var tutorialBlock in IterateSettingsAssetArray( ItemFlavor_GetAsset( event ), "tutorialItems" ) )
+		{
+			EventShopTutorialData tutorial
+			tutorial.icon = GetSettingsBlockAsset( tutorialBlock, "tutorialIcon" )
+			tutorial.title = GetSettingsBlockString( tutorialBlock, "tutorialTitleLocString" )
+			tutorial.desc = GetSettingsBlockString( tutorialBlock, "tutorialBodyTextLocString" )
 
-	
-	
-	
-	
+			eventShopData.tutorials.append( tutorial )
+		}
+
+		asset eventCurrencyAsset = GetGlobalSettingsAsset( ItemFlavor_GetAsset( event ), "eventShopCurrencyFlav" )
+		if ( eventCurrencyAsset != $"" )
+		{
+			eventShopData.eventCurrency = expect ItemFlavor( RegisterItemFlavorFromSettingsAsset( eventCurrencyAsset ) )
+		}
+
+		foreach ( int index, var challengeBlock in IterateSettingsAssetArray( ItemFlavor_GetAsset( event ), "dailyChallengeFlavs" ) )
+		{
+			ItemFlavor ornull challengeFlav = RegisterItemFlavorFromSettingsAsset( GetSettingsBlockAsset( challengeBlock, "dailyChallengeFlav" ) )
+			Assert( challengeFlav != null, "Bad daily challenge in event shop: " + string(ItemFlavor_GetAsset( event )) )
+			if ( challengeFlav != null )
+			{
+				Assert( Challenge_GetTimeSpanKind( expect ItemFlavor( challengeFlav ) ) == eChallengeTimeSpanKind.EVENTSHOP_DAILY_CHALLENGE, "Event shop daily challenges must be configured with timespan EVENTSHOP_DAILY_CHALLENGE." )
+
+				eventShopData.dailyChallenges.append( expect ItemFlavor( challengeFlav ) )
+				RegisterChallengeSource( expect ItemFlavor( challengeFlav ), event, 0 )
+			}
+		}
+
+		foreach ( int index, var challengeBlock in IterateSettingsAssetArray( ItemFlavor_GetAsset( event ), "eventChallengeFlavs" ) )
+		{
+			ItemFlavor ornull challengeFlav = RegisterItemFlavorFromSettingsAsset( GetSettingsBlockAsset( challengeBlock, "eventChallengeFlav" ) )
+			Assert( challengeFlav != null, "Bad event challenge in event shop: " + string(ItemFlavor_GetAsset( event )) )
+			if ( challengeFlav != null )
+			{
+				Assert( Challenge_GetTimeSpanKind( expect ItemFlavor( challengeFlav ) ) == eChallengeTimeSpanKind.EVENTSHOP_EVENT_CHALLENGE, "Event shop event challenges must be configured with timespan EVENTSHOP_EVENT_CHALLENGE." )
+
+				eventShopData.eventChallenges.append( expect ItemFlavor( challengeFlav ) )
+				RegisterChallengeSource( expect ItemFlavor( challengeFlav ), event, 0 )
+			}
+		}
+
+		eventShopData.eventShopButtonText = GetGlobalSettingsString( ItemFlavor_GetAsset( event ), "eventShopButtonText" )
+
+		fileLevel.eventShopDataMap[event] <- eventShopData
+	} )
 }
 
 
@@ -234,19 +304,75 @@ void function EventShop_Init()
 
 
 
-ItemFlavor ornull function GetActiveEventShop( int t )
+ItemFlavor ornull function EventShop_GetCurrentActiveEventShop()
 {
 	Assert( IsItemFlavorRegistrationFinished() )
-	ItemFlavor ornull event = null
-	foreach ( ItemFlavor ev in GetAllItemFlavorsOfType( eItemType.calevent_event_shop ) )
-	{
-		if ( !CalEvent_IsActive( ev, t ) )
-			continue
 
-		Assert( event == null, format( "Multiple event shops are active!! (%s, %s)", string(ItemFlavor_GetAsset( expect ItemFlavor(event) )), string(ItemFlavor_GetAsset( ev )) ) )
-		event = ev
+	int now = GetUnixTimestamp()
+	if ( now > fileLevel.eventShopStaleTimestamp )
+	{
+		RefreshActiveEventShopIfRequired( now )
 	}
-	return event
+
+	return fileLevel.activeEventShop
+}
+
+
+
+bool function EventShop_CurrentActiveEventShopHasDailyChallenges()
+{
+	Assert( IsItemFlavorRegistrationFinished() )
+	ItemFlavor ornull currentShop = EventShop_GetCurrentActiveEventShop()
+	return currentShop != null && fileLevel.eventShopDataMap[ expect ItemFlavor( currentShop ) ].dailyChallenges.len() > 0
+}
+
+
+
+array< ItemFlavor > function EventShop_GetCurrentActiveEventShopDailyChallenges()
+{
+	Assert( IsItemFlavorRegistrationFinished() )
+
+	ItemFlavor ornull currentEventShop = EventShop_GetCurrentActiveEventShop()
+	array< ItemFlavor > challenges     = []
+	if ( currentEventShop != null )
+	{
+		challenges.extend( fileLevel.eventShopDataMap[ expect ItemFlavor( currentEventShop ) ].dailyChallenges )
+	}
+
+	return challenges
+}
+
+
+
+bool function EventShop_CurrentActiveEventShopHasEventChallenges()
+{
+	Assert( IsItemFlavorRegistrationFinished() )
+	ItemFlavor ornull currentShop = EventShop_GetCurrentActiveEventShop()
+	return currentShop != null && fileLevel.eventShopDataMap[ expect ItemFlavor( currentShop ) ].eventChallenges.len() > 0
+}
+
+
+
+array< ItemFlavor > function EventShop_GetCurrentActiveEventShopEventChallenges()
+{
+	Assert( IsItemFlavorRegistrationFinished() )
+
+	ItemFlavor ornull currentEventShop = EventShop_GetCurrentActiveEventShop()
+	array< ItemFlavor > challenges     = []
+	if ( currentEventShop != null )
+	{
+		challenges.extend( fileLevel.eventShopDataMap[ expect ItemFlavor( currentEventShop ) ].eventChallenges )
+	}
+
+	return challenges
+}
+
+
+
+bool function EventShop_GetShowEventChallengesInLobby( ItemFlavor event )
+{
+	Assert( ItemFlavor_GetType( event ) == eItemType.calevent_event_shop )
+	return GetGlobalSettingsBool( ItemFlavor_GetAsset( event ), "showEventChallengesInLobby" )
 }
 
 
@@ -261,7 +387,20 @@ ItemFlavor function EventShop_GetEventShopCurrency( ItemFlavor event )
 
 ItemFlavor function EventShop_GetEventShopGRXCurrency()
 {
-	return GRX_CURRENCIES[GRX_CURRENCY_SEASON02_EVENT01]
+	return GRX_CURRENCIES[GRX_CURRENCY_EVENT]
+}
+
+
+
+bool function EventShop_HasSweepstakesOffers( ItemFlavor event )
+{
+	Assert( ItemFlavor_GetType( event ) == eItemType.calevent_event_shop )
+	foreach ( EventShopOfferData offer in fileLevel.eventShopDataMap[event].offers )
+	{
+		if ( offer.isSweepstakesOffer )
+			return true
+	}
+	return false
 }
 
 
@@ -279,6 +418,14 @@ asset function EventShop_GetEventMainIcon( ItemFlavor event )
 	Assert( ItemFlavor_GetType( event ) == eItemType.calevent_event_shop )
 	return GetGlobalSettingsAsset( ItemFlavor_GetAsset( event ), "eventMainIcon" )
 }
+
+
+
+
+
+
+
+
 
 
 
@@ -310,6 +457,14 @@ asset function EventShop_GetLobbyButtonImage( ItemFlavor event )
 {
 	Assert( ItemFlavor_GetType( event ) == eItemType.calevent_event_shop )
 	return GetGlobalSettingsAsset( ItemFlavor_GetAsset( event ), "eventShopLobbyButtonImage" )
+}
+
+
+
+asset function EventShop_GetSweepstakesPrizeImage( ItemFlavor event )
+{
+	Assert( ItemFlavor_GetType( event ) == eItemType.calevent_event_shop )
+	return GetGlobalSettingsAsset( ItemFlavor_GetAsset( event ), "sweepstakesPrizeImage" )
 }
 
 
@@ -350,6 +505,48 @@ array<EventShopOfferData> function EventShop_GetOffers( ItemFlavor event )
 {
 	Assert( ItemFlavor_GetType( event ) == eItemType.calevent_event_shop )
 	return fileLevel.eventShopDataMap[event].offers
+}
+
+
+
+EventShopOfferData function EventShop_GetOfferData( ItemFlavor event, int index )
+{
+	Assert( ItemFlavor_GetType( event ) == eItemType.calevent_event_shop )
+	return fileLevel.eventShopDataMap[event].offers[index]
+}
+
+
+
+EventShopOfferData function EventShop_GetOfferByCoreItem( ItemFlavor event, ItemFlavor flavor )
+{
+	Assert( ItemFlavor_GetType( event ) == eItemType.calevent_event_shop )
+
+	foreach ( EventShopOfferData offer in fileLevel.eventShopDataMap[event].offers )
+	{
+		if ( offer.offer == flavor )
+		{
+			return offer
+		}
+	}
+
+	Assert( false, "Attempted to find offer for core item without an event shop offer." )
+	return fileLevel.eventShopDataMap[event].offers[0]
+}
+
+
+
+array<EventShopTutorialData> function EventShop_GetTutorials( ItemFlavor event )
+{
+	Assert( ItemFlavor_GetType( event ) == eItemType.calevent_event_shop )
+	return fileLevel.eventShopDataMap[event].tutorials
+}
+
+
+
+int ornull function EventShop_GetCurrencyProgressionType( ItemFlavor event )
+{
+	Assert( ItemFlavor_GetType( event ) == eItemType.calevent_event_shop )
+	return GetGlobalSettingsInt( ItemFlavor_GetAsset( event ), "eventShopCurrencyProgression" )
 }
 
 
@@ -472,6 +669,22 @@ array<EventShopTierData> function EventShop_GetTiersData( ItemFlavor event )
 
 
 
+string function EventShop_GetGridTitle( ItemFlavor event )
+{
+	Assert( ItemFlavor_GetType( event ) == eItemType.calevent_event_shop )
+	return GetGlobalSettingsString( ItemFlavor_GetAsset( event ), "gridLocString" )
+}
+
+
+
+string function EventShop_GetRewardsTitle( ItemFlavor event )
+{
+	Assert( ItemFlavor_GetType( event ) == eItemType.calevent_event_shop )
+	return GetGlobalSettingsString( ItemFlavor_GetAsset( event ), "rewardsLocString" )
+}
+
+
+
 vector function EventShop_GetBarsColor( ItemFlavor event )
 {
 	Assert( ItemFlavor_GetType( event ) == eItemType.calevent_event_shop )
@@ -512,6 +725,14 @@ vector function EventShop_GetLeftPanelTimeRemainingColor( ItemFlavor event )
 
 
 
+vector function EventShop_GeTooltipsColor( ItemFlavor event )
+{
+	Assert( ItemFlavor_GetType( event ) == eItemType.calevent_event_shop )
+	return GetGlobalSettingsVector( ItemFlavor_GetAsset( event ), "eventShopTooltipsColor" )
+}
+
+
+
 float function EventShop_GetBackgroundDarkeningOpacity( ItemFlavor event )
 {
 	Assert( ItemFlavor_GetType( event ) == eItemType.calevent_event_shop )
@@ -536,57 +757,168 @@ float function EventShop_GetLeftPanelOpacity( ItemFlavor event )
 
 
 
-ItemFlavor ornull function EventShop_GetCoreItemFlav( GRXScriptOffer offer )
-{
-	
-	for ( int offerIndex = 0; offerIndex < offer.items.len(); offerIndex++ )
-	{
-		if ( offer.offerType != GRX_OFFERTYPE_BUNDLE || offer.items[offerIndex].itemType == GRX_OFFERITEMTYPE_CORE )
-		{
-			ItemFlavor coreItemFlav = GetItemFlavorByGRXIndex( offer.items[offerIndex].itemIdx )
 
-			if (ItemFlavor_GetGRXMode( coreItemFlav ) == eItemFlavorGRXMode.REGULAR)
-				return coreItemFlav
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+void function RefreshActiveEventShopIfRequired( int timestamp )
+{
+
+		if ( !IsConnected() )
+		{
+			return
 		}
+
+
+	if ( timestamp < fileLevel.eventShopStaleTimestamp )
+	{
+		return
 	}
 
-	
-	return GetItemFlavorByGRXIndex( offer.items[0].itemIdx )
+	fileLevel.eventShopStaleTimestamp = 0
+
+	ItemFlavor ornull event = null
+	foreach ( ItemFlavor ev in GetAllItemFlavorsOfType( eItemType.calevent_event_shop ) )
+	{
+		if ( !CalEvent_IsActive( ev, timestamp ) )
+		{
+			continue
+		}
+
+		Assert( event == null, format( "Multiple event shops are active!! (%s, %s)", string(ItemFlavor_GetAsset( expect ItemFlavor(event) )), string(ItemFlavor_GetAsset( ev )) ) )
+		event = ev
+	}
+	fileLevel.activeEventShop = event
+
+	if ( fileLevel.activeEventShop != null )
+	{
+		ItemFlavor eventShopCurrencyFlav = EventShop_GetEventShopCurrency( expect ItemFlavor( fileLevel.activeEventShop ) )
+		fileLevel.eventShopStaleTimestamp = CalEvent_GetFinishUnixTime( expect ItemFlavor( fileLevel.activeEventShop ) )
+		GRXCurrency_RegisterNewCurrencyAssetInEventSlot( eventShopCurrencyFlav )
+		GRX_SetEventCurrency( ItemFlavor_GetGRXAlias( eventShopCurrencyFlav ) )
+	}
 }
 
 
 
-int function EventShop_GetItemPrice( GRXScriptOffer offer )
-{
-	foreach ( ItemFlavorBag price in offer.prices )
-	{
-		Assert( price.flavors.len() == 1, "No price given for ItemFlavor bag in GRX offer." )
-		if ( price.flavors[0] == EventShop_GetEventShopGRXCurrency() )
-		{
-			return price.quantities[0]
-		}
-	}
-	return 0
-}
 
 
 
-int function EventShop_GetCoreItemQuantity( GRXScriptOffer offer )
-{
-	for ( int offerIndex = 0; offerIndex < offer.items.len(); offerIndex++ )
-	{
-		if ( offer.offerType != GRX_OFFERTYPE_BUNDLE || offer.items[offerIndex].itemType == GRX_OFFERITEMTYPE_CORE )
-		{
-			ItemFlavor coreItemFlav = GetItemFlavorByGRXIndex( offer.items[offerIndex].itemIdx )
-
-			if (ItemFlavor_GetGRXMode( coreItemFlav ) == eItemFlavorGRXMode.REGULAR)
-				return offer.items[offerIndex].itemQuantity
-		}
-	}
-
-	
-	return offer.items[0].itemQuantity
-}
 
 
-      
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

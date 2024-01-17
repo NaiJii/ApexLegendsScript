@@ -1,6 +1,10 @@
 global function InitCharacterSkinsPanel
 
 
+global function MeleeSkinButton_ToggleDeathboxState
+global function MeleeSkinButton_ClientToUI_UpdateDeathboxEquipState
+
+
 struct
 {
 	var               panel
@@ -18,6 +22,9 @@ struct
 	var mythicTrackingButton
 	var mythicEquipButton
 	var mythicGridButton
+
+	var challengeLinkButton
+
 	InputDef& giftFooter
 
 	int activeMythicSkinTier = 1
@@ -101,17 +108,29 @@ void function InitCharacterSkinsPanel( var panel )
 	file.mythicRightButton = Hud_GetChild( panel, "MythicSkinRightButton" )
 	Hud_AddEventHandler( file.mythicRightButton, UIE_CLICK, RightMythicSkinButton_OnActivate )
 
+	file.challengeLinkButton = Hud_GetChild( panel, "ChallengeLinkButton" )
+	HudElem_SetRuiArg( file.challengeLinkButton, "centerText", "#UNLOCK_LEGEND_CHALLENGES" )
+	Hud_AddEventHandler( file.challengeLinkButton, UIE_CLICK, ChallengeLinkButton_OnActivate )
+
+	Hud_AddEventHandler( file.mythicEquipButton, UIE_CLICK, MythicEquipButton_OnActivate )
 	Hud_SetVisible( file.mythicSelection, false )
 	Hud_SetVisible( file.mythicLeftButton, false )
 	Hud_SetVisible( file.mythicRightButton, false )
 	Hud_SetVisible( file.mythicTrackingButton, false )
 	Hud_SetVisible( file.mythicPanel, false )
+	Hud_SetVisible( file.challengeLinkButton, false )
 
 	file.equipButton = Hud_GetChild( panel, "ActionButton" )
 	file.blurbPanel = Hud_GetChild( panel, "SkinBlurb" )
 
 	Hud_SetVisible( file.blurbPanel, false )
 }
+
+void function ChallengeLinkButton_OnActivate( var button )
+{
+	JumpToSeasonTab( "ChallengesPanel" )
+}
+
 void function CharacterSkinsPanel_OnShow( var panel )
 {
 	SetCurrentTabForPIN( Hud_GetHudName( panel ) )
@@ -230,6 +249,11 @@ void function PreviewCharacterSkin( ItemFlavor flav )
 		}
 #endif
 
+	if( Character_IsCharacterUnlockedForCalevent( GetTopLevelCustomizeContext() ) )
+		Hud_SetVisible( file.challengeLinkButton, true )
+	else
+		Hud_SetVisible( file.challengeLinkButton, false )
+
 	
 	if ( CharacterSkin_HasStoryBlurb( flav ) )
 	{
@@ -322,17 +346,17 @@ void function UpdateMythicSkinInfo()
 	bool isTier2Completed    = ownedEvolvedSkinCount > 0
 	bool isTier3Completed    = ownedEvolvedSkinCount == challengeTierCount
 
-	bool showTick            = true
-	bool showProgressBar     = false
-	bool showEquipButton     = false
-	bool showTrackingButton  = false
+	bool showTick           = true
+	bool showProgressBar    = false
+	bool showActionButton   = false
+	bool showTrackingButton = false
 	string extraItemType
 
 		
 		switch ( file.activeMythicSkinTier )
 		{
 			case 1:
-				showEquipButton = isOwned && !isEquipped
+				showActionButton = !isOwned || !isEquipped
 				showTrackingButton = false
 				if ( Mythics_SkinHasCustomSkydivetrail( previewSkin ) )
 					extraItemType = "#PRESTIGE_PLUS_SKYDIVE_TRAIL"
@@ -341,15 +365,15 @@ void function UpdateMythicSkinInfo()
 			case 2:
 				showTick = isTier2Completed
 				showProgressBar = !showTick
-				showEquipButton = isOwned && isTier2Completed && !isEquipped
-				showTrackingButton = !isTier2Completed
+				showActionButton = !isOwned || ( isTier2Completed && !isEquipped )
+				showTrackingButton = !isTier2Completed && !showActionButton
 				break
 
 			case 3:
 				showTick = isTier3Completed
 				showProgressBar = !showTick && isTier2Completed
-				showEquipButton = isOwned && isTier3Completed && !isEquipped
-				showTrackingButton = isTier2Completed && !isTier3Completed
+				showActionButton = !isOwned || ( isTier3Completed && !isEquipped )
+				showTrackingButton = ( isTier2Completed && !isTier3Completed ) && !showActionButton
 				extraItemType = "#itemtype_character_execution_NAME"
 				break
 
@@ -358,7 +382,7 @@ void function UpdateMythicSkinInfo()
 		}
 
 		Hud_SetVisible( file.mythicTrackingButton, showTrackingButton )
-		Hud_SetVisible( file.equipButton, showEquipButton )
+		Hud_SetVisible( file.equipButton, showActionButton )
 		RuiSetInt( rui, "challengeTierProgress", currentProgress )
 		RuiSetInt( rui, "challengeTierGoal", goalProgress )
 		RuiSetBool( rui, "showTickbox", showTick )
@@ -369,6 +393,82 @@ void function UpdateMythicSkinInfo()
 		var ruisel = Hud_GetRui( file.mythicSelection )
 		RuiSetInt( ruisel, "selectionID", file.activeMythicSkinTier - 1)
 }
+
+
+void function MeleeSkinButton_ToggleDeathbox( var button )
+{
+	Assert( meleeSkinData.selectableMeleeSkins.len() > 0 )
+	Assert( meleeSkinData.selectedIndex >= 0 )
+	Assert( meleeSkinData.selectedIndex < meleeSkinData.selectableMeleeSkins.len() )
+
+	ItemFlavor selectedMeleeSkin = meleeSkinData.selectableMeleeSkins[meleeSkinData.selectedIndex]
+
+
+
+
+
+
+	PIN_Customization( meleeSkinData.character, selectedMeleeSkin, "deathbox_equip" )
+	RequestToggleGoldenHorseDeathboxEquipForMeleeSkin( LocalClientEHI(), meleeSkinData.loadoutSlot, selectedMeleeSkin )
+}
+
+
+
+bool function MeleeSkinButton_SkinHasGoldenHorseBoxEquipped( ItemFlavor meleeSkin )
+{
+	EHI playerEHI = LocalClientEHI()
+	LoadoutEntry skinSlot = Loadout_MeleeSkin( GetTopLevelCustomizeContext() )
+	LoadoutEntry boxSlot  = Loadout_Deathbox( GetTopLevelCustomizeContext() )
+
+	array<ItemFlavor> skinBackups = LoadoutSlot_GetBackups( playerEHI, skinSlot )
+	array<ItemFlavor> boxBackups  = LoadoutSlot_GetBackups( playerEHI, boxSlot )
+	bool hasBox = false
+	for ( int i = 0; i < skinBackups.len(); i++ )
+	{
+		if ( skinBackups[i] == meleeSkin )
+		{
+			if ( boxBackups.isvalidindex( i ) )
+				hasBox = ( boxBackups[i] == Deathbox_GetGoldenHorseDeathbox() )
+			break
+		}
+	}
+	return hasBox
+}
+
+
+
+void function MeleeSkinButton_ClientToUI_UpdateDeathboxEquipState( int characterGUID, int meleeSkinGUID )
+{
+	ItemFlavor character = GetItemFlavorByGUID( characterGUID )
+	ItemFlavor meleeSkin = GetItemFlavorByGUID( meleeSkinGUID )
+
+	if ( GetTopLevelCustomizeContext() != character )
+		return
+
+	EHI playerEHI 	      = LocalClientEHI()
+	LoadoutEntry skinSlot = Loadout_MeleeSkin( character )
+	LoadoutEntry boxSlot  = Loadout_Deathbox( character )
+
+	array<ItemFlavor> skinBackups = LoadoutSlot_GetBackups( playerEHI, skinSlot )
+	array<ItemFlavor> boxBackups  = LoadoutSlot_GetBackups( playerEHI, boxSlot )
+	for ( int i = 0; i < skinBackups.len(); i++ )
+	{
+		if ( skinBackups[i] == meleeSkin )
+		{
+			bool hasBox = boxBackups.isvalidindex( i ) ? boxBackups[i] == Deathbox_GetGoldenHorseDeathbox() : false
+			MeleeSkinButton_ToggleDeathboxState( hasBox )
+			break
+		}
+	}
+}
+
+
+
+void function MeleeSkinButton_ToggleDeathboxState( bool hasDeathbox )
+{
+	HudElem_SetRuiArg( meleeSkinData.button, "hasDeathbox", hasDeathbox, eRuiArgType.BOOL )
+}
+
 
 void function OnMeleeSkinChanged( EHI playerEHI, ItemFlavor flavor )
 {
@@ -435,7 +535,7 @@ int function MeleeSkinButton_GetSelectedIndex()
 
 void function MeleeSkinButton_Update()
 {
-	bool showButton = meleeSkinData.selectableMeleeSkins.len() > 0
+	bool showButton = meleeSkinData.selectableMeleeSkins.len() > 0 && !GetCurrentPlaylistVarBool( "allow_legend_melee_tab", true )
 
 	if ( showButton )
 	{
@@ -445,7 +545,11 @@ void function MeleeSkinButton_Update()
 		if ( !meleeSkinData.onShowCallbacksRegistered )
 		{
 			Hud_AddEventHandler( meleeSkinData.button, UIE_CLICK, MeleeSkinButton_OnActivate )
-			Hud_AddEventHandler( meleeSkinData.button, UIE_CLICKRIGHT, MeleeSkinButton_OnActivate )
+
+			Hud_AddEventHandler( meleeSkinData.button, UIE_CLICKRIGHT, MeleeSkinButton_ToggleDeathbox)
+
+
+
 			Hud_AddEventHandler( meleeSkinData.button, UIE_GET_FOCUS, MeleeSkinButton_OnGetFocus )
 			Hud_AddEventHandler( meleeSkinData.button, UIE_LOSE_FOCUS, MeleeSkinButton_OnLoseFocus )
 			meleeSkinData.onShowCallbacksRegistered = true
@@ -459,7 +563,11 @@ void function MeleeSkinButton_Update()
 		if ( meleeSkinData.onShowCallbacksRegistered )
 		{
 			Hud_RemoveEventHandler( meleeSkinData.button, UIE_CLICK, MeleeSkinButton_OnActivate )
-			Hud_RemoveEventHandler( meleeSkinData.button, UIE_CLICKRIGHT, MeleeSkinButton_OnActivate )
+
+			Hud_RemoveEventHandler( meleeSkinData.button, UIE_CLICKRIGHT, MeleeSkinButton_ToggleDeathbox )
+
+
+
 			Hud_RemoveEventHandler( meleeSkinData.button, UIE_GET_FOCUS, MeleeSkinButton_OnGetFocus )
 			Hud_RemoveEventHandler( meleeSkinData.button, UIE_LOSE_FOCUS, MeleeSkinButton_OnLoseFocus )
 			meleeSkinData.onShowCallbacksRegistered = false
@@ -470,6 +578,7 @@ void function MeleeSkinButton_Update()
 
 	ItemFlavor selectedMeleeSkin = meleeSkinData.selectableMeleeSkins[meleeSkinData.selectedIndex]
 	ItemFlavor equippedMeleeSkin = LoadoutSlot_GetItemFlavor( LocalClientEHI(), meleeSkinData.loadoutSlot )
+
 	bool isEquipped = selectedMeleeSkin == equippedMeleeSkin
 
 	int equippedIndex = -1
@@ -482,12 +591,39 @@ void function MeleeSkinButton_Update()
 		break
 	}
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 	HudElem_SetRuiArg( meleeSkinData.button, "buttonImage", MeleeSkin_GetEquipImage( selectedMeleeSkin ), eRuiArgType.IMAGE )
 	HudElem_SetRuiArg( meleeSkinData.button, "itemName", Localize( ItemFlavor_GetLongName( selectedMeleeSkin ) ).toupper(), eRuiArgType.STRING )
 	HudElem_SetRuiArg( meleeSkinData.button, "isEquipped", isEquipped, eRuiArgType.BOOL )
 	HudElem_SetRuiArg( meleeSkinData.button, "pageCount", meleeSkinData.selectableMeleeSkins.len(), eRuiArgType.INT )
 	HudElem_SetRuiArg( meleeSkinData.button, "activePage", meleeSkinData.selectedIndex, eRuiArgType.INT )
 	HudElem_SetRuiArg( meleeSkinData.button, "equippedPage", equippedIndex, eRuiArgType.INT )
+
+
+	MeleeSkinButton_ToggleDeathboxState( MeleeSkinButton_SkinHasGoldenHorseBoxEquipped( selectedMeleeSkin ) )
+
 }
 
 void function MeleeSkinButton_OnActivate( var button )
@@ -697,7 +833,10 @@ void function FocusOnMythicSkinIfAnyTierEquiped()
 {
 	ItemFlavor equippedSkin = LoadoutSlot_GetItemFlavor( LocalClientEHI(), Loadout_CharacterSkin( GetTopLevelCustomizeContext() ) )
 	if( Mythics_IsItemFlavorMythicSkin( equippedSkin ) && file.mythicGridButton != null)
+	{
+		file.activeMythicSkinTier = Mythics_GetSkinTierIntForSkin( equippedSkin )
 		CustomizeButton_OnClick( file.mythicGridButton )
+	}
 	else
 	{
 		var scrollPanel = Hud_GetChild( file.listPanel, "ScrollPanel" )

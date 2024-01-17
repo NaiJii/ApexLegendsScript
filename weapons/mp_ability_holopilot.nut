@@ -20,6 +20,8 @@ const float ULTIMATE_DECOY_DURATION = 5.0
 const float BAMBOOZLE_DURATION = 3.5
 
 
+
+
 global const vector HOLOPILOT_ANGLE_SEGMENT = <0, 60, 0>
 global function Decoy_Init
 
@@ -185,6 +187,23 @@ void function Decoy_Init()
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 void function CodeCallback_PlayerDecoyStateChange( entity decoy, int previousState, int currentState )
 {
 	
@@ -236,6 +255,36 @@ var function OnWeaponPrimaryAttack_holopilot( entity weapon, WeaponPrimaryAttack
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 		if ( chargeLevel == 1 )
 			CreateARIndicator( weaponOwner )
 
@@ -244,6 +293,16 @@ var function OnWeaponPrimaryAttack_holopilot( entity weapon, WeaponPrimaryAttack
 
 	return weapon.GetWeaponSettingInt( eWeaponVar.ammo_min_to_fire ) 
 }
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -363,6 +422,24 @@ void function DestroyAfterTime( int fxHandle, float time )
 	)
 	wait(time)
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1273,6 +1350,13 @@ void function AttemptToggleDecoys( entity player )
 	if ( !TryCharacterButtonCommonReadyChecks( player ) )
 		return
 
+	
+	if ( IsControllerModeActive() )
+	{
+		if ( TryOnscreenPromptFunction( player, "quickchat" ) )
+			return
+	}
+
 	Remote_ServerCallFunction( "ClientCallback_ToggleDecoys" )
 }
 
@@ -1292,8 +1376,8 @@ void function ServerToClient_ShowHolopilotDestroyedText()
 void function OnWeaponActivate_holopilot( entity weapon )
 {
 
-
-
+		if (weapon.HasMod(COPYCAT_MOD))
+			return
 
 
 	weapon.PlayWeaponEffect( HOLO_EMITTER_CHARGE_FX_1P, HOLO_EMITTER_CHARGE_FX_3P, "FX_EMITTER_L_01" )

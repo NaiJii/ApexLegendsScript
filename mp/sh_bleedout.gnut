@@ -17,10 +17,8 @@ global function Bleedout_PlayerInValidSeldResState
 global function Bleedout_GetPlayerBleedoutType
 global function Bleedout_GetPlayerBleedoutTypeCount
 global function Bleedout_GetRevivingPlayer
-
-
-
-
+global function Bleedout_GetIsInfiniteSelfResEnabled
+global function Bleedout_GetShouldAlliancePlayerBleedout
 
 global function BleedoutState_GetPlayerBleedoutState
 global function Bleedout_GetCanForceBleedoutTimeout
@@ -39,15 +37,12 @@ global function Bleedout_IsReviverFriendlyToVictim
 
 
 
-
 #if DEV
 global function Bleedout_OverrideBleedoutTime
 #endif
 
 
-
-
-
+global function Bleedout_ServerCallback_DisplaySelfResDelayHintForPlayer
 
 
 
@@ -74,10 +69,7 @@ global const bool VOID_RING_CAN_FAST_REVIVE = true
 
 
 
-
-
-
-
+const float INFINITE_SELFRES_UNSET_DELAY_TIME = -1.0
 
 global enum eReviveTypes
 {
@@ -176,15 +168,14 @@ void function BleedoutShared_Init()
 	AddCallback_CheckPlayerCanUse( CheckPlayerCanUse )
 	file.bleedoutLogicActive = true
 
+	if ( Bleedout_GetIsInfiniteSelfResEnabled() )
+	{
+		Remote_RegisterClientFunction( "Bleedout_ServerCallback_DisplaySelfResDelayHintForPlayer", "float", 0.0, Bleedout_GetMaxInfiniteSelfResDelay(), 32 )
 
 
 
 
-
-
-
-
-
+	}
 }
 
 bool function CheckPlayerCanUse( entity player, entity target )
@@ -441,6 +432,32 @@ void function OnPlayerCreated( entity player )
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 float function Bleedout_GetBleedoutTime( entity player )
 {
 	
@@ -468,10 +485,28 @@ void function Bleedout_OverrideBleedoutTime( entity player, float time )
 }
 #endif
 
+
+
+
+
+
+
+
 float function Bleedout_GetFirstAidTime( entity player )
 {
-	int type = player.GetPlayerNetInt( "bleedoutType" )
+	float firstAidTimeScaler = 1.0
 
+
+
+
+
+
+	return Bleedout_GetBaseFirstAidTime( player ) * firstAidTimeScaler
+}
+
+float function Bleedout_GetBaseFirstAidTime( entity player )
+{
+	int type = player.GetPlayerNetInt( "bleedoutType" )
 
 
 
@@ -497,6 +532,12 @@ float function Bleedout_GetFirstAidTimeSelf( entity player )
 		{
 			return GetCurrentPlaylistVarFloat( "heatshield_self_revive_time", VOID_RING_SELF_REVIVE_TIME)
 		}
+
+
+
+
+
+
 
 
 
@@ -571,7 +612,15 @@ bool function Bleedout_GetSelfResEnabled( entity player )
 
 	
 	if ( PlayerHasPassive( player, ePassives.PAS_SELF_REVIVE ) )
+	{
+		if ( Bleedout_GetIsInfiniteSelfResEnabled() )
+			return true
+
+
+
+
 		return true
+	}
 
 	int type = player.GetPlayerNetInt( "bleedoutType" )
 	return file.bleedoutTypes[ type ].enableSelfRes
@@ -619,10 +668,11 @@ bool function Bleedout_PlayerCanRes( entity player )
 		}
 	}
 
-
-
-
-
+	if ( GetCurrentPlaylistVarBool( "interrupted_stops_revive", false ) )
+	{
+		if ( StatusEffect_HasSeverity( player, eStatusEffect.interrupted ) )
+			return false
+	}
 
 	return true
 }
@@ -699,6 +749,25 @@ bool function Bleedout_PlayerCanSelfRes( entity player )
 
 	return true
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 int function Bleedout_GetPlayerBleedoutType( entity player )
@@ -807,51 +876,63 @@ bool function Bleedout_CheckPlayerUseTargetDist( entity player, entity useTarget
 }
 
 
+bool function Bleedout_GetShouldAlliancePlayerBleedout( entity player )
+{
+	if ( !AllianceProximity_IsUsingAlliances() )
+		return false
+
+	if ( !IsValid( player ) )
+		return false
+
+	if ( !GetCurrentPlaylistVarBool( "bleedout_is_alliance_bleedout_enabled", false ) )
+		return false
+
+	int playerAlliance = AllianceProximity_GetAllianceFromTeam( player.GetTeam() )
+	return AllianceProximity_GetNumPlayersInAlliance( playerAlliance, IsEliminationBased() ) > 1
+}
 
 
+bool function Bleedout_GetIsInfiniteSelfResEnabled()
+{
+	return GetCurrentPlaylistVarBool( "bleedout_has_infinite_self_res", false )
+}
 
 
+bool function Bleedout_GetIsInfiniteSelfResOnlyAvailableWithLivingSquad()
+{
+	return GetCurrentPlaylistVarBool( "bleedout_infinite_self_res_only_with_living_squad", true )
+}
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+bool function Bleedout_ShouldBleedingOutSquadBeEliminatedEvenWithInfiniteSelfRes()
+{
+	return GetCurrentPlaylistVarBool( "bleedout_infinite_self_res_eliminate_with_self_res", true )
+}
 
 
 bool function Bleedout_IsReviveOnlyAllowedOnSquadmates()
 {
 	return GetCurrentPlaylistVarBool( "bleedout_limited_to_squadmates", false )
+}
+
+
+float function Bleedout_GetDefaultInfiniteSelfResDelay()
+{
+	return GetCurrentPlaylistVarFloat( "bleedout_infinite_self_res_default_delay", 0.0 )
+}
+
+
+
+
+
+
+
+
+
+
+float function Bleedout_GetMaxInfiniteSelfResDelay()
+{
+	return GetCurrentPlaylistVarFloat( "bleedout_infinite_self_res_max_delay", Bleedout_GetDefaultInfiniteSelfResDelay() )
 }
 
 
@@ -875,18 +956,12 @@ bool function Bleedout_IsReviveOnlyAllowedOnSquadmates()
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
+const float HINT_DURATION = 5.0
+void function Bleedout_ServerCallback_DisplaySelfResDelayHintForPlayer( float delay )
+{
+	string hintString = delay > 0 ? Localize( "#BLEEDOUT_SELF_RES_DELAY", delay ) : Localize( "#BLEEDOUT_SELF_RES_AVAILABLE" )
+	AddPlayerHint( HINT_DURATION, 0.5, $"", hintString )
+}
 
 
 

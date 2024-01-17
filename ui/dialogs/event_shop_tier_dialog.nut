@@ -26,7 +26,15 @@ void function InitEventShopTierDialog( var newMenuArg )
 
 void function EventShopTierDialog_OnOpen()
 {
-	RuiSetString( Hud_GetRui( file.contentElm ), "messageText", Localize( "#EVENTS_EVENT_SHOP_STORY_PROGRESSION" ) )
+	ItemFlavor ornull activeEventShop = EventShop_GetCurrentActiveEventShop()
+	Assert ( activeEventShop != null, "Cannot open dialog with a null current active event shop." )
+	expect ItemFlavor( activeEventShop )
+
+	string currencyName = ItemFlavor_GetShortName( EventShop_GetEventShopCurrency( activeEventShop ) )
+
+	RuiSetString( Hud_GetRui( file.contentElm ), "messageText", Localize( EventShop_GetRewardsTitle( activeEventShop ), Localize( currencyName ) ) )
+	int currencyProgression = expect int( EventShop_GetCurrencyProgressionType( activeEventShop ) )
+	RuiSetString( Hud_GetRui( file.contentElm ), "messageText", Localize( currencyProgression == eShopCurrencyProgression.GAMEPLAY ? "#EVENTS_EVENT_SHOP_TIER_DIALOG_TITLE_1" : "#EVENTS_EVENT_SHOP_TIER_DIALOG_TITLE_2" ) )
 	EmitUISound( SFX_MENU_OPENED )
 }
 

@@ -386,9 +386,24 @@ void function OnRisableWallPanelActivate( RisableWallData data, entity helper, e
 
 
 	foreach ( brush in wallBrushes )
+	{
 		AddEntToInvalidEntsForPlacingPermanentsOnto( brush )
+		AddEntityDestroyedCallback( brush,
+			void function( entity ent ) : ( brush )
+			{
+				RemoveEntFromInvalidEntsForPlacingPermanentsOnto( ent )
+			}
+		)
+	}
 
 	AddRefEntAreaToInvalidOriginsForPlacingPermanentsOnto( data.moverBase, < -94, -896, -32 >, < 122, 890, 24 > )
+	entity moverBase = data.moverBase
+	AddEntityDestroyedCallback( data.moverBase,
+		void function( entity ent ) : ( moverBase )
+		{
+			RemoveRefEntAreaFromInvalidOriginsForPlacingPermanentsOnto( ent )
+		}
+	)
 
 
 

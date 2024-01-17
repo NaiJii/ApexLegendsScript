@@ -509,16 +509,23 @@ void function OnWaypointCreated( entity wp )
 {
 	int wpType = wp.GetWaypointType()
 
-	if ( wpType == eWaypoint.EMOTE_ICON )
+	if ( wpType == eWaypoint.EMOTE_ICON || wpType == eWaypoint.SKYDIVE_EMOTE_ICON )
 	{
 		int guid = wp.GetWaypointInt( EMOTE_GUID_INDEX )
 
-		entity myParent = wp.GetParent()
+		if ( wpType == eWaypoint.EMOTE_ICON )
+		{
+			entity myParent = wp.GetParent()
 
-		if ( !IsValid( myParent ) )
-			return
+			if ( !IsValid( myParent ) )
+				return
 
-		thread ClientSideEmoteIconThink( myParent, guid, wp.WaypointGetCreationTime() )
+			thread ClientSideEmoteIconThink( myParent, guid, wp.WaypointGetCreationTime() )
+		}
+		else
+		{
+			thread ClientSideEmoteIconThink( wp, guid, wp.WaypointGetCreationTime() )
+		}
 
 		wp.WaypointFocusTracking_Register()
 		wp.WaypointFocusTracking_SetDisabled( false )

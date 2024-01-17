@@ -2,7 +2,6 @@ global function MpWeaponShotgun_Init
 global function OnWeaponActivate_weapon_shotgun
 global function OnWeaponDeactivate_weapon_shotgun
 global function OnWeaponPrimaryAttack_weapon_shotgun
-global function OnWeaponReload_weapon_shotgun
 
 
 
@@ -22,17 +21,18 @@ void function OnWeaponActivate_weapon_shotgun( entity weapon )
 	OnWeaponActivate_weapon_basic_bolt( weapon )
 
 	UpdateDoubleTapShotgunBoltPairing( weapon )
+
+
+		GoldenHorseGreen_OnWeaponActivate( weapon )
+
 }
 
 void function OnWeaponDeactivate_weapon_shotgun( entity weapon )
 {
 	UpdateDoubleTapShotgunBoltPairing( weapon )
-}
-
-void function OnWeaponReload_weapon_shotgun( entity weapon, int milestoneIndex )
-{
 
 
+		GoldenHorseGreen_OnWeaponDeactivate( weapon )
 
 }
 

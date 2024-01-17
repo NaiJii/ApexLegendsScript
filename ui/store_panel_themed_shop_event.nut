@@ -60,10 +60,6 @@ void function ThemedShopPanel_OnShow( var panel )
 
 	AddCallbackAndCallNow_OnGRXInventoryStateChanged( ThemedShopPanel_UpdateGRXDependantElements )
 	AddCallbackAndCallNow_OnGRXOffersRefreshed( ThemedShopPanel_UpdateGRXDependantElements )
-	AddCallback_OnGRXBundlesRefreshed( ThemedShopPanel_UpdateBundleOffers )
-
-	if( GRX_HasUpToDateBundleOffers() )
-		ThemedShopPanel_UpdateBundleOffers()
 }
 
 
@@ -75,7 +71,6 @@ void function ThemedShopPanel_OnHide( var panel )
 
 	RemoveCallback_OnGRXInventoryStateChanged( ThemedShopPanel_UpdateGRXDependantElements )
 	RemoveCallback_OnGRXOffersRefreshed( ThemedShopPanel_UpdateGRXDependantElements )
-	RemoveCallback_OnGRXBundlesRefreshed( ThemedShopPanel_UpdateBundleOffers )
 }
 
 
@@ -202,20 +197,6 @@ void function ThemedShopPanel_UpdateGRXDependantElements()
 	UpdateFocusStuff( focus )
 }
 
-void function ThemedShopPanel_UpdateBundleOffers()
-{
-	foreach ( int offerButtonIdx, var offerButton in file.offerButtons )
-	{
-		if( offerButton in file.offerButtonToOfferMap )
-		{
-			GRXScriptOffer offer = file.offerButtonToOfferMap[offerButton]
-
-			if ( GRX_CheckBundleAndUpdateOfferPrices( offer ) )
-				OfferButton_SetPrice( offerButton, offer )
-		}
-	}
-}
-
 void function OfferButton_SetPrice( var button, GRXScriptOffer offer )
 {
 	var rui = Hud_GetRui( button )
@@ -316,6 +297,7 @@ void function OfferButton_OnActivate( var btn )
 	GRXScriptOffer offer = file.offerButtonToOfferMap[btn]
 	Assert( offer.output.flavors.len() > 0 )
 
+	
 	bool canAllItemsBePresented = true
 	foreach( ItemFlavor flav in offer.output.flavors )
 	{

@@ -15,10 +15,10 @@ global function SkydiveTrail_GetPackageForIndex
 
 
 
-
-
-
-
+global function ClientCodeCallback_OnSkydiveStateChanged
+global function UpdatePlayerSkydiveTrailFriendlyEnemyFX
+global function StartFriendlyEnemySkydiveTrailFXForPlayer
+global function CleanupFriendlyEnemySkydiveTrailFXForPlayer
 
 
 global const asset SKYDIVE_TRAIL_S02_APEX_PREDATOR = $"settings/itemflav/skydive_trail/s02_apex_predator.rpak"
@@ -53,6 +53,11 @@ global const asset SKYDIVE_TRAIL_S06_DIAMOND = $"settings/itemflav/skydive_trail
 global const asset SKYDIVE_TRAIL_S07_DIAMOND = $"settings/itemflav/skydive_trail/s07_diamond.rpak"
 
 
+global const asset SKYDIVE_TRAIL_SHADOWARMY_REV = $"settings/itemflav/skydive_trail/shadow_default.rpak"
+global const asset SKYDIVE_TRAIL_SHADOWARMY_FULLREV = $"settings/itemflav/skydive_trail/shadow_special.rpak"
+
+
+
 
 
 
@@ -74,6 +79,7 @@ global struct SkyDiveTrailPropStruct
 	string attachName = ""
 	vector offset = <0, 0, 0>
 	vector angle = <0, 0, 0>
+	asset animSeq = $""
 }
 
 global struct SkyDiveTrailPackage
@@ -121,8 +127,8 @@ struct FileStruct_LifetimeLevel
 	table<int, SkyDiveTrailPackage> skyDiveTrailPackageIndexTable 
 
 
-
-
+		table< EHI, array< int > > EHIToFriendlyJumpJetFXHandlesTable 
+		table< EHI, array< int > > EHIToEnemyJumpJetFXHandlesTable
 
 }
 FileStruct_LifetimeLevel& fileLevel
@@ -145,8 +151,8 @@ void function ShSkydiveTrails_LevelInit()
 
 
 
-
-
+		RegisterScriptAnimWindowCallbacks( "SkydiveTrailFX", CleanupFriendlyEnemySkydiveTrailFXForPlayer, StartFriendlyEnemySkydiveTrailFXForPlayer )
+		RegisterSignal( "Skydivetrail_DestroyProp" )
 
 }
 
@@ -259,6 +265,7 @@ void function RegisterSkydiveTrails()
 			prop.attachName = GetSettingsBlockString( propBlock, "attachName" )
 			prop.offset = GetSettingsBlockVector( propBlock, "offset" )
 			prop.angle = GetSettingsBlockVector( propBlock, "angle" )
+			prop.animSeq = GetSettingsBlockAsset( propBlock, "animSequence" )
 
 
 
@@ -292,7 +299,7 @@ void function RegisterSkydiveTrails()
 		fileLevel.skyDiveTrailPackageIndexTable[ skyDiveTrailPackageIndex++ ] <- trailPackage
 	}
 
-	MakeItemFlavorSet( trailFlavs, fileLevel.skyDiveTrailsSortOrdinalMap )
+	MakeItemFlavorSet( trailFlavs, fileLevel.skyDiveTrailsSortOrdinalMap, true )
 
 	LoadoutEntry entry = RegisterLoadoutSlot( eLoadoutEntryType.ITEM_FLAVOR, "skydive_trail", eLoadoutEntryClass.ACCOUNT )
 	entry.category     = eLoadoutCategory.SKYDIVE_TRAIL
@@ -309,6 +316,9 @@ void function RegisterSkydiveTrails()
 
 	fileLevel.loadoutSkydiveTrailSlot = entry
 }
+
+
+
 
 
 
@@ -458,161 +468,175 @@ SkyDiveTrailPackage function SkydiveTrail_GetPackageForIndex( int skydiveTrailIn
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+void function ClientCodeCallback_OnSkydiveStateChanged( entity skyDivingPlayer )
+{
+	UpdatePlayerSkydiveTrailFriendlyEnemyFX( skyDivingPlayer )
+}
+
+void function UpdatePlayerSkydiveTrailFriendlyEnemyFX( entity player )
+{
+	if ( !IsValid( player ) )
+		return
+
+	CleanupFriendlyEnemySkydiveTrailFXForPlayer( player, "" )
+
+	StartFriendlyEnemySkydiveTrailFXForPlayer( player, "" )
+}
+
+void function StartFriendlyEnemySkydiveTrailFXForPlayer( entity skyDivingPlayer, string parameter )
+{
+	Assert( parameter == "", "allows only empty parameter" )
+
+	if ( !skyDivingPlayer.Player_IsSkydiving()  )
+		return
+
+	if ( skyDivingPlayer.Player_IsSkydiveAnticipating() )
+		return
+
+	thread StartFriendlyEnemySkydiveTrailFXForPlayer_threaded (skyDivingPlayer )
+}
+
+void function StartFriendlyEnemySkydiveTrailFXForPlayer_threaded( entity skyDivingPlayer )
+{
+	
+
+	EHI skyDivingPlayerEHI = ToEHI( skyDivingPlayer  )
+	if ( !( skyDivingPlayerEHI in fileLevel.EHIToFriendlyJumpJetFXHandlesTable  )  )
+		fileLevel.EHIToFriendlyJumpJetFXHandlesTable[ skyDivingPlayerEHI ] <- []
+
+	if ( !( skyDivingPlayerEHI in fileLevel.EHIToEnemyJumpJetFXHandlesTable  )  )
+		fileLevel.EHIToEnemyJumpJetFXHandlesTable[ skyDivingPlayerEHI ] <- []
+
+	LoadoutEntry entry = Loadout_SkydiveTrail()
+
+
+	while( !IsLocalClientEHIValid() )
+	{
+		WaitFrame()
+	}
+
+
+	while ( !LoadoutSlot_IsReady( ToEHI( skyDivingPlayer ), entry ) )
+	{
+		WaitFrame()
+	}
+
+	SkyDiveTrailPackage package = GetSkyDiveTrailPackageForPlayerWithOverrides( skyDivingPlayer )
+
+	entity localViewPlayer = GetLocalViewPlayer()
+	if ( IsValid( localViewPlayer ) && skyDivingPlayer.GetTeam() == localViewPlayer.GetTeam() )
+	{
+		array<SkyDiveTrailFXStruct> friendlyJumpJetFX = package.friendlyJumpJet
+		foreach( fxStruct in friendlyJumpJetFX )
+		{
+			string attachment = fxStruct.attachName
+			int friendlyID = GetParticleSystemIndex( fxStruct.fx )
+			int attachmentID = skyDivingPlayer.LookupAttachment( attachment )
+
+			
+			if ( attachmentID == 0 )
+				continue
+
+			int friendlyFXHandle = StartParticleEffectOnEntity( skyDivingPlayer, friendlyID, fxStruct.attachType, attachmentID )
+
+			vector smokeColor
+			if ( fxStruct.useSkyDiveSmokeColorForTeam  )
+				smokeColor = GetSkydiveSmokeColorForTeam( skyDivingPlayer.GetTeam() )
+			else
+				smokeColor = fxStruct.controlPoint
+
+			EffectSetControlPointVector( friendlyFXHandle, 1, smokeColor )
+			fileLevel.EHIToFriendlyJumpJetFXHandlesTable[ skyDivingPlayerEHI ].append( friendlyFXHandle  )
+		}
+	}
+	else
+	{
+		array<SkyDiveTrailFXStruct> enemyJumpJetFX =  package.enemyJumpJet
+		foreach( fxStruct in enemyJumpJetFX )
+		{
+			string attachment = fxStruct.attachName
+			int enemyID = GetParticleSystemIndex( fxStruct.fx )
+			int attachmentID = skyDivingPlayer.LookupAttachment( attachment )
+
+			
+			if ( attachmentID == 0 )
+				continue
+
+			int enemyFXHandle = StartParticleEffectOnEntity( skyDivingPlayer, enemyID, fxStruct.attachType, attachmentID )
+
+			vector smokeColor
+			if ( fxStruct.useSkyDiveSmokeColorForTeam  )
+				smokeColor = GetSkydiveSmokeColorForTeam( skyDivingPlayer.GetTeam()  )
+			else
+				smokeColor = fxStruct.controlPoint
+
+			EffectSetControlPointVector( enemyFXHandle, 1, smokeColor )
+			fileLevel.EHIToEnemyJumpJetFXHandlesTable[ skyDivingPlayerEHI ].append( enemyFXHandle  )
+		}
+	}
+
+	array<SkyDiveTrailPropStruct> skydiveProps = package.props
+	foreach ( prop in skydiveProps )
+	{
+		thread CreateSkydiveTrailProp_Thread( skyDivingPlayer, prop )
+	}
+}
+
+void function CreateSkydiveTrailProp_Thread( entity skyDivingPlayer, SkyDiveTrailPropStruct propStruct )
+{
+	wait propStruct.createTime
+
+	entity prop = CreateClientSidePropDynamic( skyDivingPlayer.GetOrigin() , skyDivingPlayer.GetAngles(), propStruct.model )
+	prop.SetParent( skyDivingPlayer, propStruct.attachName )
+	prop.SetLocalOrigin( propStruct.offset )
+	prop.SetLocalAngles( propStruct.angle )
+	prop.EndSignal( "OnDestroy" )
+	if ( propStruct.animSeq != $""  )
+		prop.Anim_PlayOnly( propStruct.animSeq )
+
+	OnThreadEnd(
+		function() : ( prop )
+		{
+			if ( IsValid( prop ) )
+				prop.Destroy()
+		}
+	)
+
+	if ( propStruct.destroyTime > 0 )
+	{
+		wait propStruct.destroyTime
+
+		return
+	}
+
+	WaitSignal( skyDivingPlayer, "Skydivetrail_DestroyProp" )
+}
+
+void function CleanupFriendlyEnemySkydiveTrailFXForPlayer( entity skyDivingPlayer, string parameter )
+{
+	Assert( parameter == "", "allows only empty parameter" )
+
+	
+	EHI skyDivingPlayerEHI = ToEHI( skyDivingPlayer  )
+
+	if ( skyDivingPlayerEHI in fileLevel.EHIToFriendlyJumpJetFXHandlesTable )
+	{
+		foreach( int friendlyFXHandle in fileLevel.EHIToFriendlyJumpJetFXHandlesTable[ skyDivingPlayerEHI ] )
+			EffectStop(  friendlyFXHandle, true, false ) 
+
+		fileLevel.EHIToFriendlyJumpJetFXHandlesTable[ skyDivingPlayerEHI ].clear()
+	}
+
+	if (  skyDivingPlayerEHI in fileLevel.EHIToEnemyJumpJetFXHandlesTable )
+	{
+		foreach( int enemyFXHandle in fileLevel.EHIToEnemyJumpJetFXHandlesTable[ skyDivingPlayerEHI ] )
+			EffectStop(  enemyFXHandle, true, false ) 
+
+		fileLevel.EHIToEnemyJumpJetFXHandlesTable[ skyDivingPlayerEHI ].clear()
+	}
+
+	Signal( skyDivingPlayer, "Skydivetrail_DestroyProp" )
+}
 
 
 

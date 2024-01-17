@@ -514,8 +514,6 @@ bool function SniperRecon_IsTracking( entity owner )
 
 
 
-
-
 float function GetReconInfoFOV( entity weapon )
 {
 	if ( !IsValid( weapon ) )
@@ -630,7 +628,7 @@ void function CL_SniperRecon_UI_Thread( entity owner )
 			RuiSetBool( file.scopeRui, "isWeaponMelee", DoesWeaponTriggerMeleeAttack( activeWeapon ) )
 
 		bool isSilenced = StatusEffect_HasSeverity( owner, eStatusEffect.silenced )
-		bool isValidGameState =  GetGameState() >= eGameState.Playing && GetGameState() < eGameState.Resolution
+		bool isValidGameState = ( GetGameState() >= eGameState.Playing && GetGameState() < eGameState.Resolution ) || ( IsFiringRangeGameMode() )
 		bool isADS = owner.GetZoomFrac() > 0.99
 		RuiSetBool( file.scopeRui, "visible", !isSilenced && isValidGameState && isADS )
 		entity bestScopeTarget = owner.GetPlayerNetEnt( SNIPER_RECON_TARGET_NETVAR )

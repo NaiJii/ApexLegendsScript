@@ -1,7 +1,7 @@
 
-
-global function MedBay_MapInit
-global function MedBay_PreMapInit
+global function MedBay_Init
+global function MedBay_NetworkRegistration
+global function IsMedBayEnabled
 
 
 global function ServerToClient_MedBayHealVisualsEnabled
@@ -123,19 +123,19 @@ const vector RUI_HEALING_COLOR = MEDBAY_HEALING_COLOR / RUI_COLOR_DIVISOR
 const vector RUI_COOLDOWN_COLOR = MEDBAY_COOLDOWN_COLOR / RUI_COLOR_DIVISOR
 
 
-const asset RUI_MEDBAY_INDICATOR_RING = $"ui/medbay_cooldown.rpak"
+const string RUI_MEDBAY_INDICATOR_RING = "ui/medbay_cooldown.rpak"
 
 
-const asset MDL_MEDBAY_RING = $"mdl/fx/LifelineTT_medbay_ring.rmdl"
-const asset MDL_MEDBAY_EYE_JOINT = $"mdl/olympus/olympus_ll_tt_building_interior_medbay_eye_01.rmdl"
-const asset MDL_MEDBAY_EYE_STALK = $"mdl/olympus/olympus_ll_tt_building_interior_medbay_eye_02.rmdl"
+global const string MDL_MEDBAY_RING = "mdl/fx/LifelineTT_medbay_ring.rmdl"
+global const string MDL_MEDBAY_EYE_JOINT = "mdl/olympus/olympus_ll_tt_building_interior_medbay_eye_01.rmdl"
+global const string MDL_MEDBAY_EYE_STALK = "mdl/olympus/olympus_ll_tt_building_interior_medbay_eye_02.rmdl"
 
 
-const VFX_MEDBAY_HEAL_COCKPIT_1P = $"P_heal_loop_screen"
-const VFX_MEDBAY_SPARKS = $"P_lifelineTT_medbay_sparks"
-const VFX_MEDBAY_PLATFORM = $"P_LifelineTT_medbay_platform"
-const VFX_MEDBAY_CROSS = $"P_LifelineTT_medbay_cross"
-const VFX_MEDBAY_CROSS_PULSE = $"P_LifelineTT_medbay_cross_pulse"
+global const string VFX_MEDBAY_HEAL_COCKPIT_1P = "P_heal_loop_screen"
+global const string VFX_MEDBAY_SPARKS = "P_lifelineTT_medbay_sparks"
+global const string VFX_MEDBAY_PLATFORM = "P_LifelineTT_medbay_platform"
+global const string VFX_MEDBAY_CROSS = "P_LifelineTT_medbay_cross"
+global const string VFX_MEDBAY_CROSS_PULSE = "P_LifelineTT_medbay_cross_pulse"
 
 
 const string SFX_MEDBAY_REGEN_POWER_DOWN = "Olympus_LifelineTT_MedBay_PowerDown"
@@ -224,12 +224,6 @@ struct
 } file
 
 
-void function MedBay_PreMapInit()
-{
-	AddCallback_OnNetworkRegistration( MedBay_NetworkRegistration )
-}
-
-
 void function MedBay_NetworkRegistration()
 {
 	Remote_RegisterClientFunction( "ServerToClient_MedBayHealVisualsEnabled", "entity" )
@@ -240,11 +234,15 @@ void function MedBay_NetworkRegistration()
 	Remote_RegisterClientFunction( "ServerToClient_MedBayRuiTriggerLeave" )
 }
 
-
-void function MedBay_MapInit()
+void function MedBay_Init()
 {
 	if ( GetCurrentPlaylistVarBool( MEDBAY_PLAYLIST_ENABLED, true ) )
 	{
+
+			AddCallback_EntitiesDidLoad( EntitiesDidLoad )
+
+
+		RegisterSignal( SIG_OUT_OF_RUI_RANGE )
 		RegisterSignal( SIG_LEFT_MEDBAY_TRIGGER )
 		RegisterSignal( SIG_PLAYER_ENTER_MEDBAY )
 		RegisterSignal( SIG_PLAYER_FULL_HEALTH )
@@ -252,37 +250,6 @@ void function MedBay_MapInit()
 		RegisterSignal( SIG_NO_ONE_IN_MEDBAY )
 		RegisterSignal( SIG_OUT_OF_RING )
 		RegisterSignal( SIG_OUT_OF_EYE_RANGE )
-		RegisterSignal( SIG_OUT_OF_RUI_RANGE )
-
-		PrecacheScriptString( MEDBAY_PING_SCRIPT_NAME )
-		PrecacheScriptString( MEDBAY_EYE_TRIGGER_SCRIPT_NAME )
-		PrecacheScriptString( MEDBAY_RUI_TRIGGER_SCRIPT_NAME )
-		PrecacheScriptString( MEDBAY_INDICATOR_PROP_SCRIPT_NAME )
-		PrecacheScriptString( MEDBAY_INDICATOR_PROP_SCRIPT_NAME_INTERIOR )
-
-		PrecacheModel( MDL_MEDBAY_RING )
-		PrecacheModel( MDL_MEDBAY_EYE_JOINT )
-		PrecacheModel( MDL_MEDBAY_EYE_STALK )
-
-		PrecacheParticleSystem( VFX_MEDBAY_HEAL_COCKPIT_1P )
-		PrecacheParticleSystem( VFX_MEDBAY_PLATFORM )
-		PrecacheParticleSystem( VFX_MEDBAY_SPARKS )
-		PrecacheParticleSystem( VFX_MEDBAY_CROSS )
-		PrecacheParticleSystem( VFX_MEDBAY_CROSS_PULSE )
-
-
-
-
-
-
-
-
-
-
-
-
-			AddCallback_EntitiesDidLoad( EntitiesDidLoad )
-
 
 
 
@@ -298,6 +265,27 @@ void function MedBay_MapInit()
 
 void function EntitiesDidLoad()
 {
+	if ( !IsMedBayEnabled() )
+	{
+		return
+	}
+
+	PrecacheScriptString( MEDBAY_PING_SCRIPT_NAME )
+	PrecacheScriptString( MEDBAY_EYE_TRIGGER_SCRIPT_NAME )
+	PrecacheScriptString( MEDBAY_RUI_TRIGGER_SCRIPT_NAME )
+	PrecacheScriptString( MEDBAY_INDICATOR_PROP_SCRIPT_NAME )
+	PrecacheScriptString( MEDBAY_INDICATOR_PROP_SCRIPT_NAME_INTERIOR )
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -556,13 +544,19 @@ void function MedBay_InitEye()
 	if ( !GetCurrentPlaylistVarBool( MEDBAY_PLAYLIST_EYE_ENABLED, true ) )
 		return
 
+#if DEV
+	
+	if ( Dev_CommandLineHasParm( "-survival_preprocess" ) )
+		return
+#endif
+
 	entity eyeJoint
 	entity eyeStalk
 	array<entity> eyes = GetEntArrayByScriptName( MEDBAY_EYE_JOINT_SCRIPT_NAME )
 	if ( eyes.len() == 1 )
 	{
 		entity target = eyes[0]
-		eyeJoint = CreateClientSidePropDynamic( target.GetOrigin(), target.GetAngles(), MDL_MEDBAY_EYE_JOINT )
+		eyeJoint = CreateClientSidePropDynamic( target.GetOrigin(), target.GetAngles(), GetAssetFromString( MDL_MEDBAY_EYE_JOINT ) )
 		eyeJoint.SetFadeDistance( MEDBAY_EYE_TRIGGER_RADIUS )
 		target.Destroy()
 	}
@@ -571,7 +565,7 @@ void function MedBay_InitEye()
 	if ( eyes.len() == 1 )
 	{
 		entity target = eyes[0]
-		eyeStalk = CreateClientSidePropDynamic( target.GetOrigin(), target.GetAngles(), MDL_MEDBAY_EYE_STALK )
+		eyeStalk = CreateClientSidePropDynamic( target.GetOrigin(), target.GetAngles(), GetAssetFromString( MDL_MEDBAY_EYE_STALK ) )
 		eyeStalk.SetFadeDistance( MEDBAY_EYE_TRIGGER_RADIUS )
 		target.Destroy()
 	}
@@ -957,7 +951,7 @@ void function MedBay_RUIThink_Thread( entity player )
 
 		topos.append( topo )
 
-		var rui = RuiCreate( RUI_MEDBAY_INDICATOR_RING, topo, RUI_DRAW_WORLD, 1 )
+		var rui = RuiCreate( GetAssetFromString( RUI_MEDBAY_INDICATOR_RING ), topo, RUI_DRAW_WORLD, 1 )
 		ruis.append( rui )
 
 		if ( IsValid( file.waypointTracker ) )
@@ -1251,7 +1245,7 @@ void function ServerToClient_MedBayHealVisualsEnabled( entity player )
 
 	Assert( !EffectDoesExist( file.healFxHandle ), "tried to start a second screen fx" )
 
-	int fxID = GetParticleSystemIndex( VFX_MEDBAY_HEAL_COCKPIT_1P )
+	int fxID = GetParticleSystemIndex( GetAssetFromString( VFX_MEDBAY_HEAL_COCKPIT_1P ) )
 	file.healFxHandle = StartParticleEffectOnEntity( cockpit, fxID, FX_PATTACH_ABSORIGIN_FOLLOW, ATTACHMENTID_INVALID )
 	EffectSetIsWithCockpit( file.healFxHandle, true )
 
@@ -1678,6 +1672,8 @@ void function ServerToClient_MedBayHealVisualsDisabled( entity player )
 
 
 
+
+
 bool function MedBay_IsOnCooldown()
 {
 	if ( !IsValid( file.waypointTracker ) )
@@ -1692,5 +1688,21 @@ bool function MedBay_IsDisabled()
 	return file.waypointTracker.GetWaypointInt( 2 ) == eMedBayState.OFF
 }
 
+
+bool function IsMedBayEnabled()
+{
+	if ( GetCurrentPlaylistVarBool( MEDBAY_PLAYLIST_ENABLED, true ) )
+	{
+
+
+
+
+
+			return HasEntWithScriptName( MEDBAY_EYE_STALK_SCRIPT_NAME )
+
+	}
+
+	return false
+}
 
                         

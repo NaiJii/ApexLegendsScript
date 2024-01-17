@@ -18,21 +18,14 @@ global function GeneratePlayersInViewInfo
 
 
 
+global const string HEARTBEAT_SENSOR_WEAPON_NAME = "mp_ability_heartbeat_sensor"
+
 global const float HEARTBEAT_SENSOR_NATURAL_RANGE = 50 / INCHES_TO_METERS 
-
-
-
 global const float HEARTBEAT_SENSOR_INITIAL_ACTIVATION_DELAY_DEFAULT = 0.4
 global const float HEARTBEAT_SENSOR_PING_INTERVAL_MIN = 0.4
 global const float HEARTBEAT_SENSOR_PING_INTERVAL_MAX = 1.65 
-
 const float HEARTBEAT_SENSOR_STARTUP_TARGET_DELAY_MIN = HEARTBEAT_SENSOR_PING_INTERVAL_MIN * 0.25 
 const float HEARTBEAT_SENSOR_STARTUP_TARGET_DELAY_MAX = HEARTBEAT_SENSOR_PING_INTERVAL_MAX * 0.25 
-
-
-
-
-
 
 const bool HEARTBEAT_SENSOR_UNARMED_ONLY = false
 const bool HEARTBEAT_SENSOR_WEAPONS_ONLY = false
@@ -45,7 +38,6 @@ const float HEARTBEAT_SENSOR_MIN_WATCH_RANGE = 5500
 const float HEARTBEAT_SENSOR_MAX_WATCH_RANGE = 20000
 const float HEARTBEAT_SENSOR_RANGE_VISUAL_COMBAT_THRESHOLD = 2.0
 const float HEARTBEAT_SENSOR_RANGE_VISUAL_DEBOUNCE_THRESHOLD = 3.5
-
 const float HEARTBEAT_SENSOR_TEAMMATES_COMMS_DISPLAYTIME = 6.0
 const float HEARTBEAT_SENSOR_REPORT_DELAY = HEARTBEAT_SENSOR_PING_INTERVAL_MAX
 const float HEARTBEAT_SENSOR_COMMS_COOLDOWN_CLEAR_AFTER_ENEMIES = 15.0
@@ -53,7 +45,6 @@ const float HEARTBEAT_SENSOR_COMMS_COOLDOWN = 35.0
 const float HEARTBEAT_SENSOR_STATE_COOLDOWN = HEARTBEAT_SENSOR_PING_INTERVAL_MAX
 const float HEARTBEAT_SENSOR_GLOBAL_COOLDOWN = 3.5
 const float HEARTBEAT_SENSOR_REPORT_LISTEN_DELAY = 2.0
-
 const int HEARTBEAT_SENSOR_OFFHAND_INDEX = OFFHAND_EQUIPMENT
 const int MAX_HEARTBEAT_SENSOR_TARGETS = 10 
 
@@ -75,9 +66,7 @@ const bool HEARTBEAT_SENSOR_WEAPON_MODS_DEBUG = false
 const bool HEARTBEAT_SENSOR_STAT_TRACKING_DEBUG = false
 const bool DEBUG_HEARTBEAT_SENSOR_DELAY = false
 
-
 const bool HEARTBEAT_SENSOR_COMMS_DEBUG = false
-
 #endif
 
 struct BarData
@@ -99,7 +88,6 @@ struct
 		bool hasTargetLocked
 		int heartbeatsHeardWhileActive
 		float lastHeartbeatSensorActivationTime
-
 		float         lastCommsTimeEnemies
 		float         lastCommsTimeClear
 		float         lastCommsTimeClearInCombat
@@ -109,7 +97,6 @@ struct
 		float	      commsEnemyRemovalRange
 		array<entity> lastHeardEnemies
 		float		  lastHeardHeartbeatTime
-
 
 
 
@@ -138,15 +125,12 @@ void function PassiveHeartbeatSensor_Init()
 
 
 
-
-
 	RegisterSignal( "EndHeartbeatSensorVictimManager" ) 
 
 	RegisterSignal( "StopWatchingHeartbeatSensorVictim" ) 
 	AddCallback_ClientOnPlayerConnectionStateChanged( OnClientConnectionChanged )
 	AddCallback_OnViewPlayerChanged( HeartbeatSensor_OnLocalViewPlayerChanged )
 	RegisterConCommandTriggeredCallback( "+scriptCommand5", HeartbeatSensorTogglePressed )
-
 
 	file.lastCommsTimeEnemies = -100.0
 	file.lastCommsTimeClear = -100.0
@@ -156,7 +140,6 @@ void function PassiveHeartbeatSensor_Init()
 	file.lastCommsLocation = ZERO_VECTOR
 	file.commsResetRange = file.sonicBlastRange * 0.75 
 	file.commsEnemyRemovalRange = file.sonicBlastRange * 1.35 
-
 
 
 	PrecacheParticleSystem( FX_HEARTBEAT_SENSOR_EYEGLOW_FRIEND )
@@ -235,7 +218,6 @@ void function HeartbeatSensor_OnPassiveChanged( entity player, int passive, bool
 
 	}
 }
-
 
 
 
@@ -378,11 +360,7 @@ void function OnWeaponActivate_ability_heartbeat_sensor( entity weapon )
 	if( !isUnarmed && GetCurrentPlaylistVarBool( "seer_heartbeat_sensor_unarmed_only", HEARTBEAT_SENSOR_UNARMED_ONLY ) )
 		return
 
-
-
 	thread DelayedActivateHeartbeatSensor_Thread( player, false )
-
-
 
 }
 
@@ -665,9 +643,7 @@ void function InitializeHeartbeatSensorUI( entity player )
 	{
 		file.heartbeatSensorRui = CreateCockpitRui( $"ui/heartbeat_sensor_waveform_radial.rpak" )
 		RuiSetGameTime( file.heartbeatSensorRui, "startTime", Time() )
-
 		RuiSetBool( file.heartbeatSensorRui, "alternateMode", true )
-
 		entity activeWeapon = player.GetActiveWeapon( eActiveInventorySlot.mainHand )
 		thread CL_HeartSeekerRUIThread( player, activeWeapon )
 	}
@@ -709,7 +685,6 @@ void function ActivateHeartbeatSensor( entity player, bool fromTac )
 			thread ShowHeartbeatSensorRange_Thread( player )
 
 			thread ManageVictims_Thread( player )
-
 			thread ManageHeartbeatSensorComms_Thread( player )
 
 			file.heartbeatsHeardWhileActive = 0
@@ -743,7 +718,6 @@ void function ActivateHeartbeatSensor( entity player, bool fromTac )
 		}
 
 }
-
 
 
 void function ManageHeartbeatSensorComms_Thread( entity player )
@@ -958,7 +932,6 @@ void function TryHeartbeatSensorEnemiesClearCommsTeammates( entity player )
 	file.lastCommsTimeEnemies = 0.0
 }
 
-
 void function ShowHeartbeatSensorRange_Thread( entity player )
 {
 	Assert( IsNewThread(), "Must be threaded off." )
@@ -1150,10 +1123,8 @@ void function ManageVictims_Thread( entity player )
 
 
 
-
-				if ( IsValid( victimInfo.player ) && FerroWall_BlockScan( player.EyePosition(), victimInfo.player.GetWorldSpaceCenter() ) )
-					continue
-
+			if ( IsValid( victimInfo.player ) && FerroWall_BlockScan( player.EyePosition(), victimInfo.player.GetWorldSpaceCenter() ) )
+				continue
 
 			victimsReturned.append( victimInfo.player )
 
@@ -1315,9 +1286,7 @@ void function DoVictimHeartbeat_Thread( entity player, entity victim, float watc
 					if ( GetConVarBool( "player_setting_enable_heartbeat_sounds" ) )
 					{
 						EmitSoundOnEntity( victim, HEARTBEAT_SENSOR_HEARTBEAT_SOUND_3P )
-
 						file.lastHeardHeartbeatTime = Time()
-
 					}
 				}
 

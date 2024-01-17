@@ -209,6 +209,8 @@ void function OpenDialog( DialogData dialogData )
 		if ( dialogData.buttonData.len() > 0 )
 		{
 			confirmDialogData.yesText = [dialogData.buttonData[0].label, dialogData.buttonData[0].label]
+			if ( dialogData.buttonData.len() > 1 )
+				confirmDialogData.noText = [dialogData.buttonData[1].label, dialogData.buttonData[1].label]
 
 			confirmDialogData.resultCallback = void function ( int result ) : ( dialogData )
 			{

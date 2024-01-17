@@ -60,14 +60,24 @@ global struct StoreInspectOfferData
 
 	array<GRXScriptOffer> currentOffers
 	array<ItemFlavor> itemFlavors
+	array<GRXStoreOfferItem> displayItems
 	array<string> exclusiveItems
 }
+
+const array< int > EQUIP_EXCLUDED_ITEM_TYPES = [ eItemType.weapon_charm, eItemType.account_pack, eItemType.emote_icon, eItemType.skydive_emote, eItemType.sticker, eItemType.voucher, eItemType.gladiator_card_badge ]
+
+
+
+
+
+
 
 StoreInspectOfferData s_inspectOffers
 StoreInspectUIData s_inspectUIData
 
 const int ITEM_GRID_ROWS = 4
 const int ITEM_GRID_COLUMNS = 6
+const float EQUIPPED_TIME_OUT = 0.5
 
 void function InitStoreInspectMenu( var newMenuArg )
 {
@@ -131,7 +141,6 @@ void function StoreInspectMenu_OnOpen()
 	AddCallback_OnGRXInventoryStateChanged( LockGiftButtonsWhenInventoryIsNotReady )
 	AddCallbackAndCallNow_OnGRXInventoryStateChanged( StoreInspectMenu_OnGRXUpdated )
 	AddCallback_OnGRXOffersRefreshed( StoreInspectMenu_OnGRXUpdated )
-	AddCallback_OnGRXBundlesRefreshed( StoreInspectMenu_OnGRXBundlesUpdated )
 }
 
 void function StoreInspectMenu_OnTopLevel()
@@ -139,7 +148,7 @@ void function StoreInspectMenu_OnTopLevel()
 	if ( !GRX_IsInventoryReady() )
 		return
 
-	StoreInspectMenu_UpdatePrices( s_inspectOffers, s_inspectOffers.currentOffers[0], false, s_inspectUIData )
+	StoreInspectMenu_UpdatePrices( s_inspectOffers.currentOffers[0], s_inspectOffers, s_inspectUIData )
 	StoreInspectMenu_UpdatePurchaseButton( s_inspectOffers.currentOffers[0], s_inspectOffers, s_inspectUIData )
 }
 
@@ -149,7 +158,7 @@ void function StoreInspectMenu_OnShow()
 
 	StoreInspectMenu_OnUpdate()
 	StoreInspectMenu_OnGRXUpdated()
-	StoreInspectMenu_OnGRXBundlesUpdated()
+
 	RegisterButtonPressedCallback( KEY_TAB, ToggleVCPopUp )
 	RegisterButtonPressedCallback( BUTTON_BACK, ToggleVCPopUp )
 	Lobby_AdjustScreenFrameToMaxSize( Hud_GetChild( file.menu, "ScreenFrame" ), true )
@@ -161,7 +170,6 @@ void function StoreInspectMenu_OnClose()
 	RemoveCallback_OnGRXInventoryStateChanged( LockPurchaseButtonWhenInventoryIsNotReady )
 	RemoveCallback_OnGRXInventoryStateChanged( LockGiftButtonsWhenInventoryIsNotReady )
 	RemoveCallback_OnGRXOffersRefreshed( StoreInspectMenu_OnGRXUpdated )
-	RemoveCallback_OnGRXBundlesRefreshed( StoreInspectMenu_OnGRXBundlesUpdated )
 
 	RunClientScript( "UIToClient_UnloadItemInspectPakFile" )
 }
@@ -181,11 +189,8 @@ void function StoreInspectMenu_OnUpdate()
 	RefreshTwoFactorAuthenticationStatus()
 }
 
-void function StoreInspectMenu_UpdatePrices( StoreInspectOfferData offerData ,GRXScriptOffer storeOffer, bool isBundlesRefresh, StoreInspectUIData uiData )
+void function StoreInspectMenu_UpdatePrices( GRXScriptOffer storeOffer, StoreInspectOfferData offerData, StoreInspectUIData uiData )
 {
-	if ( isBundlesRefresh && storeOffer.offerType != GRX_OFFERTYPE_BUNDLE )
-		return
-
 	bool isMarketplaceBundle = storeOffer.offerType == GRX_OFFERTYPE_BUNDLE
 	bool hasMultipleItems = storeOffer.output.flavors.len() > 1
 	bool isHeirloomPack = GRXOffer_IsHeirloomPack( storeOffer )
@@ -193,24 +198,10 @@ void function StoreInspectMenu_UpdatePrices( StoreInspectOfferData offerData ,GR
 
 	bool isBundlePriceMissing = false
 	string ineligibleReason = ""
-	int purchaseCount = 0
 
-	if ( isMarketplaceBundle )
-	{
-		if ( !isBundlesRefresh && !GRX_HasUpToDateBundleOffers() )
-		{
-			printt( "StoreInspectMenu: Client never received bundle offers but we're trying to display a bundle." )
-			isBundlePriceMissing = true
-		}
-		else
-		{
-			
-			GRX_CheckBundleAndUpdateOfferPrices( storeOffer )
-
-			GRXBundleOffer bundle = GRX_GetUserBundleOffer( storeOffer.offerAlias )
-			purchaseCount = bundle.purchaseCount
-		}
-	}
+	Assert( storeOffer.purchaseCount >= 0, "Store offer " + storeOffer.offerAlias +
+	" is missing a purchase count." )
+	int purchaseCount = storeOffer.purchaseCount
 
 	offerData.displayedPrice = storeOffer.prices[0].quantities[0]
 
@@ -266,24 +257,41 @@ void function StoreInspectMenu_UpdatePrices( StoreInspectOfferData offerData ,GR
 	int numOfferItemsOwned = GRXOffer_GetOwnedItemsCount( storeOffer )
 	HudElem_SetRuiArg( uiData.discountInfo, "ownedItemsDesc", numOfferItemsOwned > 0 && !isOfferFullyClaimed ? Localize( "#BUNDLE_OWNED_ITEMS_DESC", numOfferItemsOwned ) : "" )
 
-	offerData.isPurchasable = !isOfferFullyClaimed && !hasBundleRestrictions && !isPurchaseLimitReached && storeOffer.isAvailable && !isOverActiveBPLevelLimit
+	bool isWithinThematicPackLimit = GRXOffer_IsPurchaseWithinThematicPackLimit( storeOffer )
 
+	offerData.isPurchasable = storeOffer.isAvailable
+		                      && !isBundlePriceMissing
+	                          && !hasBundleRestrictions
+	                          && !isOfferFullyClaimed
+	                          && !isPurchaseLimitReached
+	                          && !isOverActiveBPLevelLimit
+	                          && isWithinThematicPackLimit
+							  && GRXOffer_IsEligibleForPurchase( storeOffer )
 
-		if ( IsOfferPartOfEventShop( storeOffer ) )
-			offerData.purchaseText = isBundle ? Localize( "#REDEEM_BUNDLE" ) : Localize( "#REDEEM" )
-		else
-			offerData.purchaseText = isBundle ? Localize( "#PURCHASE_BUNDLE" ) : Localize( "#PURCHASE" )
+	bool displayAsBundle = isBundle && !GRXOffer_ContainsPresaleBattlePass( storeOffer )
+	bool isEventShopOffer = IsOfferPartOfEventShop( storeOffer )
 
-
+	if ( isEventShopOffer )
+		offerData.purchaseText = displayAsBundle ? Localize( "#REDEEM_BUNDLE" ) : Localize( "#REDEEM" )
+	else
+		offerData.purchaseText = displayAsBundle ? Localize( "#PURCHASE_BUNDLE" ) : Localize( "#PURCHASE" )
 
 
 	offerData.purchaseDescText = Localize( offerData.displayedPriceStr )
 
 	if ( storeOffer.prices.len() == 1 )
+	{
 		offerData.canAfford = GRX_CanAfford( storeOffer.prices[0], 1 )
+	}
 	else if ( storeOffer.prices.len() == 2 )
+	{
 		offerData.canAfford = GRX_CanAfford( storeOffer.prices[0], 1 ) || GRX_CanAfford( storeOffer.prices[1], 1 )
-	bool isGiftable = storeOffer.isAvailable && storeOffer.isGiftable && IsPlayerLeveledForGifting() && IsGiftingEnabled()
+	}
+	else
+	{
+		Warning( "Offer %s has %d prices, cannot compute affordability", storeOffer.offerAlias, storeOffer.prices.len() )
+		offerData.canAfford = false
+	}
 
 	if ( !storeOffer.isAvailable )
 	{
@@ -301,85 +309,138 @@ void function StoreInspectMenu_UpdatePrices( StoreInspectOfferData offerData ,GR
 		offerData.purchaseText = Localize( "#LOCKED" )
 		offerData.purchaseDescText = Localize( bundleRestrictionsStr )
 	}
-	else if ( isBundle && isOfferFullyClaimed )
-	{
-		offerData.purchaseText = Localize( "#OWNED" )
-		offerData.purchaseDescText = Localize( "#BUNDLE_OWNED_DESC" )
-	}
-	else if ( isPurchaseLimitReached )
-	{
-		offerData.purchaseText = Localize( "#UNAVAILABLE" )
-		offerData.purchaseDescText = Localize( "#PURCHASE_LIMIT_REACHED" )
-	}
 	else if ( isOfferFullyClaimed )
 	{
 		offerData.purchaseText = Localize( "#OWNED" )
-		offerData.purchaseDescText = hasBundleRestrictions ? bundleRestrictionsStr : ""
+		offerData.purchaseDescText = Localize( isBundle ? "#BUNDLE_OWNED_DESC" : "" )
+	}
+	else if ( isPurchaseLimitReached )
+	{
+		offerData.purchaseText = Localize( "#PURCHASE_LIMIT_REACHED" )
+		offerData.purchaseDescText = Localize( "#STORE_AVAILABLE_N_N", offerData.purchaseLimit - storeOffer.purchaseCount, offerData.purchaseLimit )
 	}
 	else if ( isOverActiveBPLevelLimit )
 	{
 		offerData.purchaseText = Localize( "#LOCKED" )
 		offerData.purchaseDescText = Localize( "#BUNDLE_OVER_ACTIVE_BP_LEVEL_LIMIT" )
 	}
-	else if ( isGiftable )
+	else if ( !isWithinThematicPackLimit )
 	{
-		offerData.purchaseText = offerData.canAfford ? offerData.purchaseText : Localize( "#CONFIRM_GET_PREMIUM" )
+		offerData.purchaseText = Localize( "#LOCKED" )
 		offerData.purchaseDescText = ""
 	}
+	else if ( !GRXOffer_IsEligibleForPurchase( storeOffer ) )
+	{
+		
+		bool ineligibilityHandled = true
+
+		Assert( storeOffer.ineligibilityCode != eIneligibilityCode.ELIGIBLE )
+		switch ( storeOffer.ineligibilityCode )
+		{
+			case eIneligibilityCode.PURCHASE_LIMIT:
+			{
+				offerData.purchaseText = Localize( "#PURCHASE_LIMIT_REACHED" )
+				offerData.purchaseDescText = Localize( "#STORE_AVAILABLE_N_N", offerData.purchaseLimit - storeOffer.purchaseCount, offerData.purchaseLimit )
+				break
+			}
+
+			case eIneligibilityCode.CONTENTS_NOT_GRANTABLE:
+			{
+				offerData.purchaseText = Localize( "#LOCKED" )
+				offerData.purchaseDescText = ""
+				break
+			}
+
+			case eIneligibilityCode.BUNDLE_ITEMS_OWNED:
+			{
+				offerData.purchaseText = Localize( "#OWNED" )
+				offerData.purchaseDescText = Localize( "#BUNDLE_OWNED_DESC" )
+				break
+			}
+
+			case eIneligibilityCode.PURCHASE_CONDITIONS:
+			case eIneligibilityCode.UNKNOWN:
+			{
+				
+				ineligibilityHandled = false
+				break
+			}
+
+			default:
+			{
+				Assert( false, "Unhandled ineligibility code: " + storeOffer.ineligibilityCode )
+				ineligibilityHandled = false
+				break
+			}
+		}
+
+		if ( !ineligibilityHandled )
+		{
+			offerData.purchaseText = Localize( "#UNAVAILABLE" )
+			offerData.purchaseDescText = ""
+		}
+	}
+
+	bool isGiftable = storeOffer.isAvailable && storeOffer.isGiftable && IsGiftingEnabled()
+	bool isMythic = OfferContainsMythic( storeOffer )
+	if ( offerData.isPurchasable && !isMythic && !isEventShopOffer )
+	{
+		offerData.purchaseText = offerData.canAfford ? offerData.purchaseText : Localize( "#CONFIRM_GET_PREMIUM" )
+
+		if ( ( offerData.discountPct == 0 && isGiftable ) || !offerData.canAfford )
+			offerData.purchaseDescText = ""
+	}
+
 	if ( isGiftable )
 	{
-		bool isTwoFactorEnabled = IsTwoFactorAuthenticationEnabled()
 		int giftsLeft = Gifting_GetRemainingDailyGifts()
-
-		string giftMainText = Localize( offerData.canAfford && isTwoFactorEnabled ? "#BUY_GIFT_STAR" : "#BUY_GIFT" )
+		string giftMainText = Localize( offerData.isDualCurrency ? "#BUY_GIFT_STAR" : "#BUY_GIFT" )
 		string giftDescText = Localize( "#GIFTS_LEFT_FRACTION", giftsLeft )
 
 		bool canAffordWithAC = CanPlayerAffordWithPremiumCurrency( storeOffer )
+		if ( !canAffordWithAC )
+			giftDescText = Localize( "#CONFIRM_GET_PREMIUM" )
+
 		offerData.isOwnedItemEquippable = IsOwnedItemOfferEquippable( storeOffer )
-		if ( offerData.isDualCurrency || offerData.isOwnedItemEquippable )
-		{
-			if ( !canAffordWithAC )
-			{
-				giftMainText = Localize( "#BUY_GIFT_STAR" )
-				giftDescText = Localize( "#CONFIRM_GET_PREMIUM" ) + " >>"
-				Hud_SetVisible( uiData.purchaseButton, false )
-			}
-		}
 		offerData.giftText = giftMainText
 		offerData.giftDescText = giftDescText
 		offerData.giftTooltipTitleText =  Localize( "#GIFTS_LEFT", giftsLeft )
 
-		DisplayTime dt = SecondsToDHMS( GRX_GetGiftingLimitResetDate() - GetUnixTimestamp() )
-		if ( dt.hours > 0 )
-			offerData.giftTooltipDescText =  Localize( "#GIFTS_MAXED_OUT_REASON_HOURS", string( GetGiftingMaxLimitPerResetPeriod() ), dt.hours )
-		else if ( dt.minutes > 0 )
-			offerData.giftTooltipDescText =  Localize( "#GIFTS_MAXED_OUT_REASON_MINUTES", string( GetGiftingMaxLimitPerResetPeriod() ), dt.minutes )
-		else
-			offerData.giftTooltipDescText =  Localize( "#GIFTS_MAXED_OUT_REASON_MINUTES", string( GetGiftingMaxLimitPerResetPeriod() ), "<1" )
-
-
-		if ( !IsPlayerWithinGiftingLimit() )
-			offerData.giftText = Localize( "#LOCKED_GIFT" )
-
-		if ( !isTwoFactorEnabled )
+		if ( !CanLocalPlayerGift() )
 		{
 			offerData.giftText = Localize( "#LOCKED_GIFT" )
-			offerData.giftDescText = Localize( "#TWO_FACTOR_NEEDED" )
-			offerData.giftTooltipTitleText = Localize( "#ENABLE_TWO_FACTOR" )
-			offerData.giftTooltipDescText = Localize( "#TWO_FACTOR_NEEDED_DETAILS" )
+			if ( !IsPlayerLeveledForGifting() )
+			{
+				offerData.giftDescText = Localize( "#LEVEL_REQUIRED", GetConVarInt( "mtx_giftingMinAccountLevel" ) )
+			}
+			else if ( !IsPlayerWithinGiftingLimit() )
+			{
+				DisplayTime dt = SecondsToDHMS( GRX_GetGiftingLimitResetDate() - GetUnixTimestamp() )
+				if ( dt.hours > 0 )
+					offerData.giftTooltipDescText =  Localize( "#GIFTS_MAXED_OUT_REASON_HOURS", string( GetGiftingMaxLimitPerResetPeriod() ), dt.hours )
+				else if ( dt.minutes > 0 )
+					offerData.giftTooltipDescText =  Localize( "#GIFTS_MAXED_OUT_REASON_MINUTES", string( GetGiftingMaxLimitPerResetPeriod() ), dt.minutes )
+				else
+					offerData.giftTooltipDescText =  Localize( "#GIFTS_MAXED_OUT_REASON_MINUTES", string( GetGiftingMaxLimitPerResetPeriod() ), "<1" )
+			}
+			else if ( !IsTwoFactorAuthenticationEnabled() )
+			{
+				offerData.giftDescText = Localize( "#TWO_FACTOR_NEEDED" )
+				offerData.giftTooltipTitleText = Localize( "#ENABLE_TWO_FACTOR" )
+				offerData.giftTooltipDescText = Localize( "#TWO_FACTOR_NEEDED_DETAILS" )
+			}
 		}
-		HudElem_SetRuiArg( uiData.discountInfo, "isBundle", isBundle )
-		HudElem_SetRuiArg( uiData.discountInfo, "canAfford", offerData.canAfford )
 	}
-	
-	
+	HudElem_SetRuiArg( uiData.discountInfo, "canAfford", offerData.canAfford )
 }
 
 void function StoreInspectMenu_UpdatePurchaseButton( GRXScriptOffer storeOffer, StoreInspectOfferData offerData, StoreInspectUIData uiData )
 {
 	bool isExtraInfoVisible = false
 	bool isOfferFullyClaimed = GRXOffer_IsFullyClaimed( storeOffer )
-	bool isGiftable = storeOffer.isGiftable && IsPlayerLeveledForGifting() && storeOffer.isAvailable && IsGiftingEnabled()
+	bool isGiftable = storeOffer.isGiftable && storeOffer.isAvailable && IsGiftingEnabled()
+	bool isEventShopOffer = IsOfferPartOfEventShop( storeOffer )
+
 	if ( storeOffer.prereq != null )
 	{
 		ItemFlavor prereqFlav = expect ItemFlavor( storeOffer.prereq )
@@ -421,7 +482,8 @@ void function StoreInspectMenu_UpdatePurchaseButton( GRXScriptOffer storeOffer, 
 			
 			if ( !GRX_IsOfferRestricted( GetLocalClientPlayer()  ) )
 			{
-				offerData.isPurchasable = currentMaxEventPackPurchaseCount > 0 && !isOfferFullyClaimed
+				offerData.isPurchasable =	currentMaxEventPackPurchaseCount > 0 && !isOfferFullyClaimed
+											&& GRXOffer_IsEligibleForPurchase( storeOffer )
 			}
 			else
 			{
@@ -438,8 +500,9 @@ void function StoreInspectMenu_UpdatePurchaseButton( GRXScriptOffer storeOffer, 
 											&& !GRX_IsOfferRestrictedByOfferAttributes( storeOffer )
 											&& ( HeirloomEvent_GetCurrentRemainingItemCount( activeCollectionEvent, GetLocalClientPlayer() ) - ownedPackCount ) >= 1
 											&& storeOffer.isAvailable
+											&& GRXOffer_IsEligibleForPurchase( storeOffer )
 			}
-			if ( !offerData.isPurchasable )
+			if ( !offerData.isPurchasable && !offerData.isOwnedItemEquippable )
 			{
 				ToolTipData toolTipData
 				toolTipData.titleText = Localize( "#CANNOT_PURCHASE" ).toupper()
@@ -450,36 +513,31 @@ void function StoreInspectMenu_UpdatePurchaseButton( GRXScriptOffer storeOffer, 
 			}
 		}
 	}
-	HudElem_SetRuiArg( uiData.discountInfo, "discountedPrice", isGiftable ? Localize( offerData.displayedPriceStr ) : "" )
+
+	HudElem_SetRuiArg( uiData.discountInfo, "discountedPrice", Localize( offerData.displayedPriceStr ) )
 	HudElem_SetRuiArg( uiData.discountInfo, "isGiftable", isGiftable )
-	isExtraInfoVisible = ( offerData.isPurchasable && offerData.discountPct > 0.0 ) || isGiftable
+
+	bool isMythic = OfferContainsMythic( storeOffer )
+	isExtraInfoVisible = !isMythic && !isEventShopOffer && ( ( offerData.isPurchasable && offerData.discountPct > 0.0 ) || isGiftable || !offerData.canAfford )
+
+	bool hasPurchaseLimit = offerData.purchaseLimit > 0
+	HudElem_SetRuiArg( uiData.discountInfo, "hasPurchaseLimit", hasPurchaseLimit )
+
+	if ( !isExtraInfoVisible && !isEventShopOffer )
+	{
+		isExtraInfoVisible = hasPurchaseLimit
+	}
 
 	Hud_SetVisible( uiData.discountInfo, isExtraInfoVisible )
 	HudElem_SetRuiArg( uiData.purchaseButton, "buttonText", offerData.purchaseText )
 	HudElem_SetRuiArg( uiData.purchaseButton, "buttonDescText", offerData.purchaseDescText )
 
-	HudElem_SetRuiArg( uiData.purchaseButton, "buttonText", offerData.purchaseText )
-	bool showPurchaseButton
-	bool showDisclaimers = true
-	if ( !offerData.canAfford )
-	{
-		if ( offerData.isDualCurrency )
-		{
-			showPurchaseButton = false
-		}
-		else
-		{
-			showPurchaseButton = true
-			showDisclaimers = false
-		}
-	}
-
-	if ( !isGiftable )
-		showPurchaseButton = true
-	Hud_SetVisible( uiData.purchaseButton, showPurchaseButton )
-
+	bool showPurchaseButton = true
+	bool showDisclaimers = false
 	if ( isGiftable )
 	{
+		showDisclaimers = offerData.isDualCurrency
+		showPurchaseButton = false
 		HudElem_SetRuiArg( uiData.giftablePurchaseButton, "buttonText", offerData.purchaseText )
 		HudElem_SetRuiArg( uiData.giftablePurchaseButton, "buttonDescText", offerData.purchaseDescText )
 		HudElem_SetRuiArg( uiData.giftButton, "buttonText", offerData.giftText )
@@ -488,20 +546,33 @@ void function StoreInspectMenu_UpdatePurchaseButton( GRXScriptOffer storeOffer, 
 		Hud_SetVisible( uiData.giftablePurchaseButton, true )
 		bool TwoFactorEnabled = IsTwoFactorAuthenticationEnabled()
 		bool PlayerHasGiftsLeft = IsPlayerWithinGiftingLimit()
+		bool PlayerHasLevelForGifting = IsPlayerLeveledForGifting()
 		Hud_ClearToolTipData( uiData.giftButton )
 
-		if ( !TwoFactorEnabled || !PlayerHasGiftsLeft )
+		if ( !CanLocalPlayerGift() )
 		{
 			showDisclaimers = false
-			ToolTipData giftTooltipData
-			giftTooltipData.titleText = offerData.giftTooltipTitleText
-			giftTooltipData.descText = offerData.giftTooltipDescText
-			giftTooltipData.tooltipFlags = giftTooltipData.tooltipFlags | eToolTipFlag.SOLID
-			giftTooltipData.tooltipStyle = eTooltipStyle.DEFAULT
-			Hud_SetToolTipData( uiData.giftButton, giftTooltipData )
+			if ( !TwoFactorEnabled || !PlayerHasGiftsLeft )
+			{
+				ToolTipData giftTooltipData
+				giftTooltipData.titleText    = offerData.giftTooltipTitleText
+				giftTooltipData.descText     = offerData.giftTooltipDescText
+				giftTooltipData.tooltipFlags = giftTooltipData.tooltipFlags | eToolTipFlag.SOLID
+				giftTooltipData.tooltipStyle = eTooltipStyle.DEFAULT
+				Hud_SetToolTipData( uiData.giftButton, giftTooltipData )
+			}
 		}
-		HudElem_SetRuiArg( uiData.discountInfo, "hideDisclaimers", !showDisclaimers )
-		Hud_SetLocked( uiData.giftButton, !PlayerHasGiftsLeft )
+
+		Hud_SetLocked( uiData.giftButton, !PlayerHasLevelForGifting || !PlayerHasGiftsLeft )
+	}
+
+	HudElem_SetRuiArg( uiData.discountInfo, "hideDisclaimers", !showDisclaimers )
+	Hud_SetVisible( uiData.purchaseButton, showPurchaseButton )
+
+	if ( isGiftable )
+	{
+		Hud_SetVisible( uiData.giftButton, !showPurchaseButton )
+		Hud_SetVisible( uiData.giftablePurchaseButton, !showPurchaseButton )
 	}
 
 	if ( offerData.itemCount == 1 && isOfferFullyClaimed )
@@ -514,6 +585,8 @@ void function StoreInspectMenu_UpdatePurchaseButton( GRXScriptOffer storeOffer, 
 			Hud_SetLocked( uiData.giftablePurchaseButton, !offerData.isOwnedItemEquippable )
 			HudElem_SetRuiArg( uiData.giftablePurchaseButton, "isDisabled", !offerData.isOwnedItemEquippable )
 			Hud_SetVisible( uiData.purchaseButton, false )
+			Hud_SetVisible( uiData.giftButton, true )
+			Hud_SetVisible( uiData.giftablePurchaseButton, true )
 		}
 	}
 	else
@@ -524,7 +597,6 @@ void function StoreInspectMenu_UpdatePurchaseButton( GRXScriptOffer storeOffer, 
 		if ( isGiftable )
 		{
 			Hud_SetLocked( uiData.giftablePurchaseButton, !offerData.isPurchasable )
-			Hud_SetLocked( uiData.purchaseButton, !offerData.isPurchasable )
 			HudElem_SetRuiArg( uiData.giftablePurchaseButton, "isDisabled", !offerData.isPurchasable )
 		}
 	}
@@ -554,12 +626,8 @@ void function StoreInspectMenu_UpdateButtonForEquips( StoreInspectOfferData offe
 	if ( !isMythic )
 		smallRui = Hud_GetRui( uiData.giftablePurchaseButton )
 
-	if ( itemType == eItemType.weapon_charm || itemType == eItemType.account_pack || itemType == eItemType.emote_icon || itemType == eItemType.skydive_emote || itemType == eItemType.sticker )
+	if ( StoreInspectMenu_IsItemTypeEquippable( itemType ) )
 	{
-		
-		
-		
-		
 		offerData.isOwnedItemEquippable = false
 	}
 	else if ( IsItemEquipped( itemFlav ) )
@@ -593,18 +661,6 @@ void function StoreInspectMenu_UpdateButtonForEquips( StoreInspectOfferData offe
 	}
 }
 
-void function StoreInspectMenu_OnGRXBundlesUpdated()
-{
-	if ( s_inspectOffers.currentOffers.len() == 0 )
-		return
-
-	if( !GRX_IsInventoryReady() )
-		return
-
-	StoreInspectMenu_UpdatePrices( s_inspectOffers, s_inspectOffers.currentOffers[0], true, s_inspectUIData )
-	StoreInspectMenu_UpdatePurchaseButton( s_inspectOffers.currentOffers[0], s_inspectOffers, s_inspectUIData )
-}
-
 void function StoreInspectMenu_OnGRXUpdated()
 {
 	if( !GRX_IsInventoryReady() || !GRX_AreOffersReady() )
@@ -612,24 +668,33 @@ void function StoreInspectMenu_OnGRXUpdated()
 
 	GRXScriptOffer storeOffer = s_inspectOffers.currentOffers[0]
 	s_inspectOffers.itemFlavors.clear()
+	s_inspectOffers.displayItems.clear()
+	s_inspectOffers.itemCount = 0
 
 	
 	var currMenu = GetActiveMenu()
 	uiGlobal.menuData[ currMenu ].pin_metaData[ "tab_name" ] <- Hud_GetHudName( file.inspectPanel )
 
-	printt( "StoreInspectMenu_OnGRXUpdated offer is from store:", storeOffer.offerAlias )
 	uiGlobal.menuData[ currMenu ].pin_metaData[ "item_name" ] <- storeOffer.offerAlias
 
-	foreach ( ItemFlavor flav in storeOffer.output.flavors )
-		s_inspectOffers.itemFlavors.append( flav )
+	foreach ( GRXStoreOfferItem item in storeOffer.items )
+	{
+		ItemFlavor itemFlav = GetItemFlavorByGRXIndex( item.itemIdx )
+		if ( StoreInspectMenu_IsItemPresentationSupported( itemFlav ) )
+		{
+			s_inspectOffers.itemFlavors.append( itemFlav )
+			s_inspectOffers.displayItems.append( item )
+			s_inspectOffers.itemCount++
+		}
+	}
 
-	s_inspectOffers.purchaseLimit = ( "purchaselimit" in storeOffer.attributes ? storeOffer.attributes["purchaselimit"].tointeger() : -1 )
+	s_inspectOffers.purchaseLimit = ( "purchaselimit" in storeOffer.attributes && GRXOffer_ContainsStackablesOnly( storeOffer ) ) ? storeOffer.attributes["purchaselimit"].tointeger() : -1
 
 	s_inspectOffers.exclusiveItems.clear()
 	string exclusiveItemsAttr = ( "offerexclusives" in storeOffer.attributes ? storeOffer.attributes["offerexclusives"] : "" )
 	s_inspectOffers.exclusiveItems = split( exclusiveItemsAttr, "," )
 
-	StoreInspectMenu_UpdatePrices( s_inspectOffers, storeOffer, false, s_inspectUIData )
+	StoreInspectMenu_UpdatePrices( storeOffer, s_inspectOffers, s_inspectUIData )
 	StoreInspectMenu_UpdatePurchaseButton( storeOffer, s_inspectOffers, s_inspectUIData )
 
 	HudElem_SetRuiArg( file.pageHeader, "offerName", storeOffer.titleText )
@@ -659,23 +724,36 @@ void function StoreInspectMenu_OnGRXUpdated()
 			break
 		}
 
+		
+		
+		foreach( ItemFlavor item in s_inspectOffers.itemFlavors )
+		{
+			if ( ItemFlavor_GetType( item ) == eItemType.battlepass_presale_voucher )
+			{
+				offerDesc = GetBPPresaleOfferDescString()
+				break
+			}
+
+		}
+
 		HudElem_SetRuiArg( file.pageHeader, "offerDesc", offerDesc )
 	}
 
 	
+	
+	int itemGridOffset = int((0.17 + ((s_inspectOffers.itemCount / ITEM_GRID_COLUMNS) * 0.1)) * GetScreenSize().height)
+	Hud_SetY(file.itemGrid, itemGridOffset)
+
+	
 	OnStoreGridItemHover( null, null, 0 )
 	GridPanel_Refresh( file.itemGrid )
-	bool hasPurchaseLimit = s_inspectOffers.purchaseLimit > 0 && !storeOffer.isGiftable
 
-	HudElem_SetRuiArg( file.purchaseLimit, "limitText", Localize( "#STORE_LIMIT_N", s_inspectOffers.purchaseLimit ) )
-	Hud_SetVisible( file.purchaseLimit, hasPurchaseLimit )
 	UpdateFooterOptions()
 }
 
 GRXStoreOfferItem function GetItemFromGridIndex( int index )
 {
-	GRXScriptOffer storeOffer = s_inspectOffers.currentOffers[0]
-	return storeOffer.items[index]
+	return s_inspectOffers.displayItems[index]
 }
 
 void function OnBindItemGridButton( var panel, var button, int index )
@@ -725,8 +803,7 @@ void function OnStoreGridItemClicked( var panel, var button, int index )
 
 void function OnStoreGridItemHover( var panel, var button, int index )
 {
-	GRXStoreOfferItem item = GetItemFromGridIndex( index )
-	ItemFlavor itemFlav = GetItemFlavorByGRXIndex( item.itemIdx )
+	ItemFlavor itemFlav = s_inspectOffers.itemFlavors[index]
 
 #if DEV
 	if ( ItemFlavor_GetType( itemFlav ) == eItemType.melee_skin )
@@ -776,25 +853,25 @@ void function PurchaseOfferButton_OnClick( var button )
 	}
 
 	GRXScriptOffer offer = s_inspectOffers.currentOffers[0]
-	if ( offer.isGiftable && IsPlayerLeveledForGifting() )
+	bool isMythic = OfferContainsMythic(offer)
+	if (!isMythic)
 	{
-
 		bool canAfford
 		if ( offer.prices.len() == 1 )
 			canAfford = GRX_CanAfford( offer.prices[0], 1 )
 		else if ( offer.prices.len() > 1 )
 			canAfford = GRX_CanAfford( offer.prices[0], 1 ) || GRX_CanAfford( offer.prices[1], 1 )
 
-		if ( !canAfford && !s_inspectOffers.isOwnedItemEquippable )
+		if ( !canAfford && !s_inspectOffers.isOwnedItemEquippable && !IsOfferPartOfEventShop( offer ) )
 		{
 			OpenVCPopUp( null )
 			return
 		}
 	}
 
-	if ( s_inspectOffers.isOwnedItemEquippable && offer.output.flavors.len() == 1 )
+	if ( s_inspectOffers.isOwnedItemEquippable && s_inspectOffers.itemFlavors.len() == 1 )
 	{
-		StoreInspectMenu_EquipOwnedItem( offer.output.flavors[0], s_inspectUIData )
+		StoreInspectMenu_EquipOwnedItem( s_inspectOffers.itemFlavors[0], s_inspectUIData )
 		return
 	}
 
@@ -837,6 +914,17 @@ void function PurchaseOfferButton_OnClick( var button )
 	}
 
 	PurchaseDialog( pdc )
+}
+
+bool function OfferContainsMythic( GRXScriptOffer offer )
+{
+	foreach ( GRXStoreOfferItem item in offer.items )
+	{
+		ItemFlavor itemFlav = GetItemFlavorByGRXIndex( item.itemIdx )
+		if ( Mythics_IsItemFlavorMythic( itemFlav ) )
+			return true
+	}
+	return false
 }
 
 void function OnBattlePassStorePurchaseResults( bool wasSuccessful )
@@ -885,8 +973,7 @@ void function GiftButton_OnClick( var button )
 
 	if ( !CanPlayerAffordWithPremiumCurrency( offer ) )
 	{
-		if ( isDualPriceOffer || isEquipable )
-			OpenVCPopUp( null )
+		OpenVCPopUp( null )
 		return
 	}
 
@@ -908,11 +995,11 @@ bool function CanPlayerAffordWithPremiumCurrency( GRXScriptOffer offer )
 
 bool function IsOwnedItemOfferEquippable( GRXScriptOffer offer )
 {
-	if ( offer.output.flavors.len() == 1 && GRXOffer_IsFullyClaimed( offer ) )
+	if ( s_inspectOffers.itemFlavors.len() == 1 && GRXOffer_IsFullyClaimed( offer ) )
 	{
-		ItemFlavor itemFlav = offer.output.flavors[0]
+		ItemFlavor itemFlav = s_inspectOffers.itemFlavors[0]
 		int itemType = ItemFlavor_GetType( itemFlav )
-		if ( itemType == eItemType.weapon_charm || itemType == eItemType.account_pack || itemType == eItemType.emote_icon || itemType == eItemType.skydive_emote || itemType == eItemType.sticker )
+		if ( StoreInspectMenu_IsItemTypeEquippable( itemType ) )
 			return false
 		else
 			return true
@@ -922,14 +1009,13 @@ bool function IsOwnedItemOfferEquippable( GRXScriptOffer offer )
 
 void function StoreInspectMenu_EquipOwnedItem( ItemFlavor itemFlavToEquip, StoreInspectUIData uiData )
 {
-	int itemType = ItemFlavor_GetType( itemFlavToEquip )
-	array<LoadoutEntry> entries = EquipButton_GetItemLoadoutEntries( itemFlavToEquip, false )
-
 	EmitUISound( "UI_Menu_Equip_Generic" )
+	array<LoadoutEntry> entries = EquipButton_GetItemLoadoutEntries( itemFlavToEquip, false )
 
 	if ( entries.len() != 1 )
 	{
-		OpenSelectSlotDialog( entries, itemFlavToEquip, GetItemFlavorAssociatedCharacterOrWeapon( itemFlavToEquip ), void function( int slotIndex ) : ( entries, itemFlavToEquip ) {
+		OpenSelectSlotDialog( entries, itemFlavToEquip, GetItemFlavorAssociatedCharacterOrWeapon( itemFlavToEquip ), void function( int slotIndex ) : ( entries, itemFlavToEquip, uiData ) {
+			thread ThreadSetEquippedButtonStatus( itemFlavToEquip, uiData, entries, slotIndex )
 			RequestSetItemFlavorLoadoutSlot_WithDuplicatePrevention( LocalClientEHI(), entries, itemFlavToEquip, slotIndex )
 			PIN_Customization( null, itemFlavToEquip, "equip", slotIndex )
 		} )
@@ -938,26 +1024,43 @@ void function StoreInspectMenu_EquipOwnedItem( ItemFlavor itemFlavToEquip, Store
 	{
 		RequestSetItemFlavorLoadoutSlot_WithDuplicatePrevention( LocalClientEHI(), entries, itemFlavToEquip, 0 )
 		PIN_Customization( null, itemFlavToEquip, "equip", 0 )
+		SetEquippedButtonStatus( itemFlavToEquip, uiData, entries )
 	}
 
 	Newness_IfNecessaryMarkItemFlavorAsNoLongerNewAndInformServer( itemFlavToEquip )
+}
 
+void function ThreadSetEquippedButtonStatus( ItemFlavor itemFlavToEquip, StoreInspectUIData uiData, array<LoadoutEntry> entries, int slotIndex )
+{
+	WaitSignalTimeout( WaitForEHISignalDummy( LocalClientEHI() ), EQUIPPED_TIME_OUT, format( LOADOUT_ID_READY, entries[slotIndex].id ) )
+	SetEquippedButtonStatus( itemFlavToEquip, uiData, entries )
+}
+
+void function SetEquippedButtonStatus( ItemFlavor itemFlavToEquip, StoreInspectUIData uiData, array<LoadoutEntry> entries )
+{
+	int itemRarity = ItemFlavor_HasQuality( itemFlavToEquip ) ? ItemFlavor_GetQuality( itemFlavToEquip ) : 0
 	var rui = Hud_GetRui( uiData.purchaseButton )
 	RuiSetString( rui, "buttonText", "#EQUIPPED_LOOT_REWARD" )
 	RuiSetString( rui, "buttonDescText", Localize( "#CURRENTLY_EQUIPPED_ITEM", Localize( ItemFlavor_GetLongName( itemFlavToEquip ) ) ) )
+	RuiSetInt( rui, "buttonDescRarity", itemRarity )
 	Hud_SetLocked( uiData.purchaseButton, true )
+
 	bool isMythic = ItemFlavor_GetQuality( itemFlavToEquip ) == eRarityTier.MYTHIC
 	if ( isMythic )
 		return
+
 	var ruiSmall = Hud_GetRui( uiData.giftablePurchaseButton )
 	RuiSetString( ruiSmall, "buttonText", "#EQUIPPED_LOOT_REWARD" )
 	RuiSetString( ruiSmall, "buttonDescText", Localize( "#CURRENTLY_EQUIPPED_ITEM", Localize( ItemFlavor_GetLongName( itemFlavToEquip ) ) ) )
+	RuiSetInt( ruiSmall, "buttonDescRarity", itemRarity )
 	Hud_SetLocked( uiData.giftablePurchaseButton, true )
 }
+
 
 void function StoreInspectMenu_SetStoreOfferData( array<GRXScriptOffer> storeOffers, bool isEventShopDialog = false )
 {
 	s_inspectOffers.currentOffers.clear()
+	s_inspectOffers.itemCount = 0
 	foreach ( GRXScriptOffer offer in storeOffers )
 		s_inspectOffers.currentOffers.append( offer )
 
@@ -965,7 +1068,13 @@ void function StoreInspectMenu_SetStoreOfferData( array<GRXScriptOffer> storeOff
 
 	Assert( storeOffer.output.flavors.len() == storeOffer.output.quantities.len() )
 
-	s_inspectOffers.itemCount = storeOffer.output.flavors.len()
+	foreach ( ItemFlavor flav in storeOffer.output.flavors )
+	{
+		if ( StoreInspectMenu_IsItemPresentationSupported( flav ) )
+		{
+			s_inspectOffers.itemCount++
+		}
+	}
 
 	Assert( s_inspectOffers.itemCount > 0 )
 
@@ -1014,19 +1123,38 @@ bool function StoreInspectMenu_IsItemPresentationSupported( ItemFlavor itemFlav 
 	return false
 }
 
+
+bool function StoreInspectMenu_IsSupportedInvisibleItem( ItemFlavor itemFlav )
+{
+	switch ( ItemFlavor_GetType( itemFlav ) )
+	{
+		case eItemType.reward_set_tracker:
+			return true
+	}
+	printf( "Offer has item '%s', which is an invisible item with unexpected eItemType %d.",
+		string( ItemFlavor_GetAsset( itemFlav ) ), ItemFlavor_GetType( itemFlav ) )
+	return false
+}
+
 void function StoreInspectMenu_AttemptOpenWithOffer( GRXScriptOffer offer, bool isEventShopDialog = false )
 {
-	bool canAllItemsBePresented = true
-	foreach( ItemFlavor flav in offer.output.flavors )
+	bool canOfferBePresented = true
+	if ( offer.output.flavors.len() == 0 )
 	{
-		if( !StoreInspectMenu_IsItemPresentationSupported( flav ) )
+		canOfferBePresented = false
+	}
+	else
+	{
+		foreach ( ItemFlavor flav in offer.output.flavors )
 		{
-			canAllItemsBePresented = false
-			break
+			if ( !StoreInspectMenu_IsItemPresentationSupported( flav ) && !StoreInspectMenu_IsSupportedInvisibleItem( flav ) )
+			{
+				canOfferBePresented = false
+				break
+			}
 		}
 	}
-
-	if ( canAllItemsBePresented )
+	if ( canOfferBePresented )
 	{
 		StoreInspectMenu_SetStoreOfferData( [offer], isEventShopDialog )
 		AdvanceMenu( GetMenu( "StoreInspectMenu" ) )
@@ -1039,7 +1167,6 @@ void function StoreInspectMenu_AttemptOpenWithOffer( GRXScriptOffer offer, bool 
 		pdc.quantity = 1
 		PurchaseDialog( pdc )
 	}
-
 }
 
 void function AddItemToFakeOffer( GRXScriptOffer offer, ItemFlavor itemFlav )
@@ -1067,6 +1194,11 @@ bool function CheckIsGiftable()
 		return s_inspectOffers.currentOffers[0].isGiftable
 
 	return false
+}
+
+bool function StoreInspectMenu_IsItemTypeEquippable( int itemType )
+{
+	return EQUIP_EXCLUDED_ITEM_TYPES.contains( itemType )
 }
 
 #if DEV

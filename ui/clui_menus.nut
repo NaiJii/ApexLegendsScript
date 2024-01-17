@@ -13,6 +13,10 @@ global function LocalizeAndShortenNumber_Float
 
 global function IsTenThousandOrMore
 
+#if DEV
+global function DEV_UnitTestShortenNumber
+#endif
+
 const bool SHORTEN_NUMBER_DBG = false
 
 struct RowData
@@ -362,8 +366,14 @@ string function LocalizeAndShortenNumber_Int( int number, int maxDisplayIntegral
 
 
 
+
 string function LocalizeAndShortenNumber_Float( float number, int maxDisplayIntegral = 3, int maxDisplayDecimal = 0 )
 {
+	
+
+
+
+
 #if SHORTEN_NUMBER_DBG
 		printf( "ShortenNumberDebug: Shortening %f with max Integrals of %i and max decimals of %i\n", number, maxDisplayIntegral, maxDisplayDecimal )
 #endif
@@ -371,173 +381,142 @@ string function LocalizeAndShortenNumber_Float( float number, int maxDisplayInte
 	if ( number == 0.0 )
 		return "0"
 
-	bool hideTrailingZeros		= true 
-	string thousandsSeparator   = Localize( "#THOUSANDS_SEPARATOR" )
 	string decimalSeparator     = Localize( "#DECIMAL_SEPARATOR" )
-	string integralString       = ""
-	string integralSuffixLocKey = ""
 
 	float integral = floor( number )
 	int digits = int( integral ) > 0 ? int( floor( log10( integral ) + 1 ) ) : 0
 
+	
+
+
+
+
+
+
 	if ( digits > maxDisplayIntegral )
 	{
-#if SHORTEN_NUMBER_DBG
-			printf( "ShortenNumberDebug: Number too large for display (%i digits). Shortening to 3 digits\n", digits )
-#endif
-		float displayIntegral = integral / pow( 10, (digits - 3) )
-		displayIntegral = floor( displayIntegral )
-		integralString = format( "%0.0f", displayIntegral )
+		Assert( maxDisplayIntegral >= 3, "LocalizeAndShortenNumber does not work with extremely small number limits where large numbers are possible" )
 
 #if SHORTEN_NUMBER_DBG
-			printf( "ShortenNumberDebug: Number shortened to %s", integralString )
+			printf( "ShortenNumberDebug: Number too large for display - %i digits. Shortening to 3 digits\n", digits )
 #endif
 
-		if ( digits/16 >= 1 )
-			integralSuffixLocKey = "#STATS_VALUE_QUADRILLIONS"
-		else if ( digits/13 >= 1 )
-			integralSuffixLocKey = "#STATS_VALUE_TRILLIONS"
-		else if ( digits/10 >= 1 )
+		int powToRaiseTo      = int( floor( ( digits - 1 ) / 3 ) * 3 ) 
+		float truncNumber     = integral / pow( 10, powToRaiseTo )
+		maxDisplayDecimal     = 3 - string( int( truncNumber ) ).len()
+		string formatString   = "%0." + string( maxDisplayDecimal ) + "f" 
+		string truncNumString = format( formatString, truncNumber ) 
+
+		Assert( int( truncNumber ) >= 1 ) 
+
+#if SHORTEN_NUMBER_DBG
+			printf( "ShortenNumberDebug: Number shortened to %0.3f and then formatted using format string of '%s' to %s", truncNumber, formatString, truncNumString )
+#endif
+
+		string finalDisplayNumber = truncNumString
+
+		
+		int dotLocation = truncNumString.find( "." )
+		if ( int( truncNumString ) == 1000 ) 
+		{
+			finalDisplayNumber = format( "1%s00", decimalSeparator )
+			digits++ 
+		}
+		else if ( dotLocation != -1 )
+		{
+			Assert( dotLocation != truncNumString.len() - 1 )
+			string intPart = truncNumString.slice( 0, dotLocation )
+			string decPart = truncNumString.slice( dotLocation + 1 )
+			if ( intPart.len() == 3 ) 
+			{
+				finalDisplayNumber = intPart
+			}
+			else
+			{
+				if ( intPart.len() == 2 && decPart.len() == 2 ) 
+					decPart = decPart.slice( 0, 1 ) 
+
+				finalDisplayNumber = intPart + decimalSeparator + decPart
+			}
+		}
+
+		string integralSuffixLocKey = ""
+		if ( digits >= 10 ) 
 			integralSuffixLocKey = "#STATS_VALUE_BILLIONS"
-		else if ( digits/7 >= 1 )
+		else if ( digits >= 7 )
 			integralSuffixLocKey = "#STATS_VALUE_MILLIONS"
-		else if ( digits/4 >= 1 )
+		else if ( digits >= 4 )
 			integralSuffixLocKey = "#STATS_VALUE_THOUSANDS"
-	}
-	else
-	{
-		integralString = format( "%0.0f", integral )
-	}
-
-	if ( integralString.len() > 3 )
-	{
-		string separatedIntegralString = ""
-		int integralsAdded = 0
-
-#if SHORTEN_NUMBER_DBG
-			printf( "ShortenNumberDebug: Adding integral separators to %s\n", integralString )
-#endif
-
-		for ( int i = integralString.len(); i > 0; i-- )
-		{
-			string num = integralString.slice( i-1, i )
-			if ( (separatedIntegralString.len() - integralsAdded) % 3 == 0 && separatedIntegralString.len() > 0 )
-			{
-				integralsAdded++
-				separatedIntegralString = num + thousandsSeparator + separatedIntegralString
-			}
-			else
-			{
-				separatedIntegralString = num + separatedIntegralString
-			}
-
-#if SHORTEN_NUMBER_DBG
-				printf( "ShortenNumberDebug: Separated Integral Progress: %s\n", separatedIntegralString )
-#endif
-		}
-
-#if SHORTEN_NUMBER_DBG
-			printf( "ShortenNumberDebug: Separated Integral String Complete: %s\n", separatedIntegralString )
-#endif
-		integralString = separatedIntegralString
-	}
-
-	string decimalString = ""
-	if ( integralString.len() <= 3 && integralString != "0" && digits > 3 )
-	{
-#if SHORTEN_NUMBER_DBG
-			printf( "ShortenNumberDebug: Four or larger digit number shrunk to 3 or fewer digits! Making the number a decimal and adding a suffix (value = %s, digits = %i, maxDisplayIntegral = %i)\n", integralString, digits, maxDisplayIntegral )
-#endif
-
-		int separatorPos
-		if ( maxDisplayIntegral == 3 )
-			separatorPos = (digits - maxDisplayIntegral) % 3
 		else
-			separatorPos = ((digits - maxDisplayIntegral) % 3) + 1
+			Assert( false, "unhandled metric suffix value" )
 
-		if( separatorPos != 0 && separatorPos != 3 )
-		{
-			decimalString = integralString.slice( separatorPos, integralString.len() )
-			integralString = integralString.slice( 0, separatorPos )
-
-			maxDisplayDecimal = 3 - integralString.len()
-		}
+		return Localize( integralSuffixLocKey, finalDisplayNumber )
 	}
 
-	bool roundUp = false
-	if( decimalString == "" )
+	
+	bool hideTrailingZeros = true 
+	string formatString    = "%0." + string( maxDisplayDecimal ) + "f" 
+	string fullNumString   = format( formatString, number ) 
+	string integralString  = format( "%0.0f", integral )
+	int dotLocation        = fullNumString.find( "." )
+	string decimalString   = ""
+
+	if ( dotLocation != -1 && hideTrailingZeros )
 	{
-		float decimal = number % 1 
-		decimalString = string( decimal )
+		Assert( dotLocation != fullNumString.len() - 1 )
+		decimalString = fullNumString.slice( dotLocation + 1 )
+
 #if SHORTEN_NUMBER_DBG
-			printf( "ShortenNumberDebug: decimalString = %s\n", decimalString )
+			printf( "ShortenNumberDebug: decimal string is %s\n", decimalString )
 #endif
-		if ( decimalString.find( "0." ) != -1 )
-			decimalString = decimalString.slice( 2 )
-	}
 
-	if ( decimalString.len() > maxDisplayDecimal )
-	{
-		int lastDigit = int( decimalString.slice( maxDisplayDecimal, maxDisplayDecimal + 1 ) )
-		decimalString = decimalString.slice( 0, maxDisplayDecimal )
-		if ( lastDigit >= 5 )
-			roundUp = true
-	}
-
-	if( hideTrailingZeros )
-	{
-		int leadingZeros = decimalString.len() - string( int( decimalString ) ).len()
-		int decimalNumber = int(decimalString)
-
-		if ( roundUp )
-		{
-			if ( decimalString.len() == 0 )
-			{
-				integralString = string( int( integralString ) + 1 ) 
-			}
-			else
-			{
-				decimalNumber = decimalNumber + 1
-				if ( decimalNumber % int( pow( 10, maxDisplayDecimal ) ) == 0 )
-				{
-					integralString = string( int( integralString ) + 1 ) 
-					decimalNumber  = 0
-				}
-			}
-		}
-
-		while( decimalNumber % 10 == 0 && decimalNumber > 0 )
-		{
-			decimalNumber = decimalNumber / 10
-		}
-
-		if( decimalNumber > 0 )
-		{
-			decimalString = string( decimalNumber )
-			while ( leadingZeros != 0 && decimalString.len() <= maxDisplayDecimal )
-			{
-				decimalString = "0" + decimalString
-				leadingZeros--
-			}
-		}
-		else
+		if ( int( decimalString ) == 0 )
 		{
 			decimalString = ""
 		}
+		else
+		{
+			float deciVal = float( decimalString )
+			while ( deciVal % 10 == 0 ) 
+				deciVal = deciVal / 10
+
+			decimalString = string( deciVal )
+		}
 	}
 
-	string finalDisplayNumber = integralString
-
-	if ( maxDisplayDecimal > 0 && decimalString != "" )
-	{
 #if SHORTEN_NUMBER_DBG
-			printf( "ShortenNumberDebug: Attaching decimal value %s to final display %s (original number = %f)\n", decimalString, finalDisplayNumber, number )
+		printf( "ShortenNumberDebug: Adding integral separators to %s\n", integralString )
 #endif
-		finalDisplayNumber += decimalSeparator + decimalString
+
+	
+	string thousandsSeparator      = Localize( "#THOUSANDS_SEPARATOR" )
+	string separatedIntegralString = ""
+	int integralsAdded             = 0
+	for ( int i = integralString.len(); i > 0; i-- )
+	{
+		string num = integralString.slice( i - 1, i )
+		if ( ( separatedIntegralString.len() - integralsAdded ) % 3 == 0 && separatedIntegralString.len() > 0 )
+		{
+			integralsAdded++
+			separatedIntegralString = num + thousandsSeparator + separatedIntegralString
+		}
+		else
+		{
+			separatedIntegralString = num + separatedIntegralString
+		}
+
+#if SHORTEN_NUMBER_DBG
+			printf( "ShortenNumberDebug: Separated Integral Progress: %s\n", separatedIntegralString )
+#endif
 	}
 
-	if ( integralSuffixLocKey != "" )
-		finalDisplayNumber = Localize( integralSuffixLocKey, finalDisplayNumber )
+#if SHORTEN_NUMBER_DBG
+		printf( "ShortenNumberDebug: Separated Integral String Complete: %s\n", separatedIntegralString )
+#endif
+
+	string finalDisplayNumber = separatedIntegralString
+	if ( decimalString != "" )
+		finalDisplayNumber = separatedIntegralString + decimalSeparator + decimalString
 
 	return finalDisplayNumber
 }
@@ -547,3 +526,78 @@ bool function IsTenThousandOrMore( var value )
 {
 	return value >= 10000
 }
+
+#if DEV
+void function DEV_UnitTestShortenNumber()
+{
+	table< array< int >, string > intTestCases = {
+		[[ 1000, 3, 3 ]] = "1.00k",
+		[[ 1009, 3, 3 ]] = "1.01k",
+		[[ 1999, 3, 3 ]] = "2.00k",
+		[[ 9900, 3, 3 ]] = "9.90k",
+		[[ 9990, 3, 3 ]] = "9.99k",
+		[[ 9999, 3, 3 ]] = "10.0k",
+
+		[[ 10000, 4, 2 ]] = "10.0k",
+		[[ 10099, 4, 2 ]] = "10.1k",
+		[[ 19999, 4, 2 ]] = "20.0k",
+		[[ 99900, 4, 2 ]] = "99.9k",
+		[[ 99990, 4, 2 ]] = "100k",
+		[[ 99999, 4, 2 ]] = "100k",
+
+		[[ 100000, 5, 1 ]] = "100k",
+		[[ 100999, 5, 1 ]] = "101k",
+		[[ 199999, 5, 1 ]] = "200k",
+		[[ 999900, 5, 1 ]] = "1.00M",
+		[[ 999990, 5, 1 ]] = "1.00M",
+		[[ 999999, 5, 1 ]] = "1.00M",
+
+		[[ 10000, 3, 3 ]] = "10.0k",
+		[[ 10099, 3, 3 ]] = "10.1k",
+		[[ 19999, 3, 3 ]] = "20.0k",
+		[[ 99900, 3, 3 ]] = "99.9k",
+		[[ 99990, 3, 3 ]] = "100k",
+		[[ 99999, 3, 3 ]] = "100k",
+
+		[[ 100000, 4, 2 ]] = "100k",
+		[[ 100999, 4, 2 ]] = "101k",
+		[[ 199999, 4, 2 ]] = "200k",
+		[[ 999900, 4, 2 ]] = "1.00M",
+		[[ 999990, 4, 2 ]] = "1.00M",
+		[[ 999999, 4, 2 ]] = "1.00M",
+	}
+
+	table< array< float >, string > floatTestCases = {
+		[[ 1000.5999, 5, 3 ]]       = "1,000.6",
+		[[ 1000.5999, 5, 2 ]]       = "1,000.6",
+		[[ 1000.999, 5, 3 ]]        = "1,000.999",
+		[[ 1000000.999, 7, 2 ]]     = "1,000,001",
+	}
+
+	int num
+	int maxInt
+	int maxDec
+	string outString
+	foreach ( array< int > test, string expected in intTestCases )
+	{
+		num    = test[0]
+		maxInt = test[1]
+		maxDec = test[2]
+		outString = LocalizeAndShortenNumber_Int( num, maxInt, maxDec )
+		printt( format( "LocalizeAndShortenNumberDbg: number: %d | maxIntegral: %d | maxDecimal: %d --> %s", num, maxInt, maxDec, outString ) )
+		Assert( expected == outString )
+	}
+
+	float flt
+	foreach ( array< float > test, string expected in floatTestCases )
+	{
+		flt    = test[0]
+		maxInt = int(floor(test[1]))
+		maxDec = int(floor(test[2]))
+		outString = LocalizeAndShortenNumber_Float( flt, maxInt, maxDec )
+		printt( format( "LocalizeAndShortenNumberDbg: number: %0.3f | maxIntegral: %d | maxDecimal: %d --> %s", flt, maxInt, maxDec, outString ) )
+		Assert( expected == outString )
+	}
+}
+#endif
+

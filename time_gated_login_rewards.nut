@@ -15,13 +15,13 @@ struct FileStruct_LifetimeLevel
 
 
 
+FileStruct_LifetimeLevel fileLevel 
 
 
-FileStruct_LifetimeLevel& fileLevel 
 
-struct {
-	
-} fileVM 
+
+
+
 
 
 
@@ -29,8 +29,8 @@ struct {
 void function TimeGatedLoginRewards_Init()
 {
 
-		FileStruct_LifetimeLevel newFileLevel
-		fileLevel = newFileLevel
+
+
 
 
 

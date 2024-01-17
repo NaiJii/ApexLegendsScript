@@ -7,6 +7,12 @@
 global function MeleeShared_Init
 
 global function Loadout_MeleeSkin
+
+global function Loadout_Deathbox
+global function Deathbox_GetDefaultItemFlavor
+global function Deathbox_GetGoldenHorseDeathbox
+
+
 global function MeleeWeapon_GetMainWeaponClassname
 global function MeleeWeapon_GetOffhandWeaponClassname
 global function MeleeSkin_GetMenuModel
@@ -20,6 +26,18 @@ global function MeleeSkin_GetStoreImage
 global function MeleeSkin_GetEquipImage
 global function MeleeSkin_GetItemInspectScale
 global function MeleeSkin_GetItemInspectOffset
+global function MeleeSkin_ShouldHideIfLocked
+global function MeleeCustomization_ShouldHideIfLocked
+
+
+
+
+global function Deathbox_GetVideo
+global function RequestToggleGoldenHorseDeathboxEquipForMeleeSkin
+global function Deathbox_GetEquipped
+
+
+global function ServerCallback_Loadouts_GoldenHorseDeathboxEquipForMeleeSkinToggled
 
 
 
@@ -28,6 +46,28 @@ global function MeleeSkin_GetItemInspectOffset
 
 
 
+global function DoesWeaponTriggerMeleeAttack
+global function DoesWeaponClassTriggerMeleeAttack
+global function IsWeaponClassMelee
+global function GetPlayerMeleeOffhandWeapon
+global function AttackerCanStartMelee
+global function IsValidMeleeAttackTarget
+global function MeleeWeaponCosmetics_Apply
+global function MeleeWeaponCosmetics_ApplyForWeapon
+global function MeleeSkin_GetSkinName
+global function MeleeSkin_GetCamoIndex
+global function MeleeSkin_GetSkinNameFromPlayer
+global function MeleeSkin_GetMeleeSkinFromPlayer
+
+
+
+global function CodeCallback_OnMeleePressed
+global function CodeCallback_OnMeleeStartActivity
+global function CodeCallback_OnMeleeHeld
+global function CodeCallback_OnMeleeReleased
+global function CodeCallback_IsValidMeleeAttackTarget
+global function CodeCallback_OnMeleeAttackAnimEvent
+global function Melee_Attack
 
 
 
@@ -35,30 +75,13 @@ global function MeleeSkin_GetItemInspectOffset
 
 
 
+global function ClientCodeCallback_ShowMeleePrompt
 
 
 
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#if DEV
-global function SetDevMenu_OverrideMenuHeirloomModels
-global function SetupChangeOverrideMenuHeirloomModels
-#endif
 
 #if DEV
 global function DEV_SetMenuHeirloomOverrideGUID
@@ -66,19 +89,26 @@ global function DEV_GetMenuHeirloomOverrideGUID
 #endif
 
 
+global enum eMeleeWeaponType {
+	HEIRLOOM
+	ARTIFACT
 
+	COUNT
+}
 
+global const string LOADOUT_CLIENT_CALLBACK_TOGGLE_GOLDEN_HORSE_DEATHBOX = "ClientCallback_Loadouts_ToggleGoldenHorseDeathboxEquipForMeleeSkin"
+global const string LOADOUT_SERVER_CALLBACK_GOLDEN_HORSE_DEATHBOX_TOGGLED = "ServerCallback_Loadouts_GoldenHorseDeathboxEquipForMeleeSkinToggled"
+global const string ARTIFACT_EQUIPPED_MOD = "artifact_equipped" 
 
+const int DEFAULT_MELEE_WEAPON_GUID = 1222621873
+const int GOLDEN_HORSE_DEATHBOX_GUID = 705533011
+const int DEFAULT_DEATHBOX_GUID = 989815244
 
+const asset DEFAULT_DEATHBOX = $"settings/itemflav/artifact_components/deathbox_default.rpak"
+const asset GOLDEN_HORSE_DEATHBOX = $"settings/itemflav/artifact_components/deathbox_ragold.rpak"
 
-
-
-
-
-
-
-
-
+const int NUM_LOADOUT_BACKUPS = 3 
+const string WEAPON_TYPE_SETTINGS_BLOCK_KEY = "meleeWeaponType"
 
 
 const asset DEFAULT_MELEE_SKIN = $"settings/itemflav/melee_skin/default.rpak"
@@ -95,13 +125,6 @@ const float MELEE_KNOCKBACK_DURATION = 0.25
 
 
 
-
-
-
-
-
-
-
 struct CharacterAndMeleeWeapons
 {
 	ItemFlavor& character
@@ -112,6 +135,11 @@ struct FileStruct_LifetimeLevel
 {
 	table<ItemFlavor, LoadoutEntry> characterMeleeSkinLoadoutEntryMap
 
+
+	table<ItemFlavor, LoadoutEntry> characterDeathboxLoadoutEntryMap
+	array<ItemFlavor> fullDeathboxList
+
+
 	table<ItemFlavor, int> cosmeticFlavorSortOrdinalMap
 
 	table<ItemFlavor, CharacterAndMeleeWeapons > charactersMeleeWeaponsMap 
@@ -121,11 +149,6 @@ struct FileStruct_LifetimeLevel
 #endif
 }
 FileStruct_LifetimeLevel& fileLevel
-
-
-
-
-
 
 
 void function MeleeShared_Init()
@@ -156,8 +179,8 @@ void function OnItemFlavorRegistered_Character( ItemFlavor character )
 void function OnItemFlavorRegistered_Melee_Weapon( ItemFlavor meleeWeapon )
 {
 
-
-
+		PrecacheWeapon( MeleeWeapon_GetMainWeaponClassname( meleeWeapon ) )
+		PrecacheWeapon( MeleeWeapon_GetOffhandWeaponClassname( meleeWeapon ) )
 
 
 	array<ItemFlavor> legendsList = RegisterReferencedItemFlavorsFromArray( meleeWeapon, "legends", "flavor" )
@@ -166,7 +189,7 @@ void function OnItemFlavorRegistered_Melee_Weapon( ItemFlavor meleeWeapon )
 	if ( legendsList.len() == 0 )
 	{
 
-
+			Assert( ItemFlavor_GetGUID( meleeWeapon ) == DEFAULT_MELEE_WEAPON_GUID || MeleeWeapon_GetWeaponType( meleeWeapon ) == eMeleeWeaponType.ARTIFACT )
 
 
 		foreach ( obj in fileLevel.charactersMeleeWeaponsMap )
@@ -188,8 +211,25 @@ void function OnItemFlavorRegistered_Melee_Weapon( ItemFlavor meleeWeapon )
 
 }
 
+
+void function OnAllItemFlavorsRegistered_Deathboxes()
+{
+	ItemFlavor ornull defaultBox = RegisterItemFlavorFromSettingsAsset( DEFAULT_DEATHBOX )
+	Assert( defaultBox != null, "Failed to register default Deathbox from asset " + DEFAULT_DEATHBOX ) 
+	fileLevel.fullDeathboxList.append( expect ItemFlavor( defaultBox ) )
+
+	ItemFlavor ornull goldenHorseBox = RegisterItemFlavorFromSettingsAsset( GOLDEN_HORSE_DEATHBOX )
+	if ( goldenHorseBox != null ) 
+		fileLevel.fullDeathboxList.append( expect ItemFlavor( goldenHorseBox ) )
+}
+
+
 void function OnAllItemFlavorsRegistered_Melee_Weapon()
 {
+
+	OnAllItemFlavorsRegistered_Deathboxes()
+
+
 	
 	foreach ( obj in fileLevel.charactersMeleeWeaponsMap )
 	{
@@ -206,29 +246,47 @@ void function OnAllItemFlavorsRegistered_Melee_Weapon()
 			}
 		}
 
-		MakeItemFlavorSet( fullMeleeSkinList, fileLevel.cosmeticFlavorSortOrdinalMap )
+		MakeItemFlavorSet( fullMeleeSkinList, fileLevel.cosmeticFlavorSortOrdinalMap, true )
 
-		LoadoutEntry entry = RegisterLoadoutSlot( eLoadoutEntryType.ITEM_FLAVOR, "character_meleeskin_for_" + ItemFlavor_GetGUIDString( character ), eLoadoutEntryClass.CHARACTER )
-		entry.category     = eLoadoutCategory.CHARACTER_MELEESKINS
+		LoadoutEntry skinEntry = RegisterLoadoutSlot( eLoadoutEntryType.ITEM_FLAVOR, "character_meleeskin_for_" + ItemFlavor_GetGUIDString( character ), eLoadoutEntryClass.CHARACTER )
+		skinEntry.category     = eLoadoutCategory.CHARACTER_MELEESKINS
 #if DEV
-			entry.pdefSectionKey = "character " + ItemFlavor_GetGUIDString( character )
-			entry.DEV_name       = ItemFlavor_GetCharacterRef( character ) + " Melee Skin"
+			skinEntry.pdefSectionKey = "character " + ItemFlavor_GetGUIDString( character )
+			skinEntry.DEV_name       = ItemFlavor_GetCharacterRef( character ) + " Melee Skin"
 #endif
-		entry.defaultItemFlavor         = fullMeleeSkinList[0]
-		entry.validItemFlavorList       = fullMeleeSkinList
-		entry.isSlotLocked              = bool function( EHI playerEHI ) {
-			return !IsLobby()
-		}
-		entry.associatedCharacterOrNull = character
-		entry.networkTo                 = eLoadoutNetworking.PLAYER_GLOBAL
-		entry.networkVarName			= "MeleeSkin"
-		entry.stryderCharDataArrayIndex = ePlayerStryderCharDataArraySlots.MELEE_SKIN
-		fileLevel.characterMeleeSkinLoadoutEntryMap[character] <- entry
+		skinEntry.defaultItemFlavor         = GetItemFlavorByAsset( DEFAULT_MELEE_SKIN )
+		skinEntry.validItemFlavorList       = fullMeleeSkinList
+
+		skinEntry.backupCount 			    = NUM_LOADOUT_BACKUPS
+
+		skinEntry.isSlotLocked              = bool function( EHI playerEHI ) { return !IsLobby() }
+		skinEntry.associatedCharacterOrNull = character
+		skinEntry.networkTo                 = eLoadoutNetworking.PLAYER_GLOBAL
+		skinEntry.networkVarName			= "MeleeSkin"
+		skinEntry.stryderCharDataArrayIndex = ePlayerStryderCharDataArraySlots.MELEE_SKIN
+		fileLevel.characterMeleeSkinLoadoutEntryMap[character] <- skinEntry
 
 
 
 
 
+
+
+
+			LoadoutEntry boxEntry = RegisterLoadoutSlot( eLoadoutEntryType.ITEM_FLAVOR, "character_deathbox_for_" + ItemFlavor_GetGUIDString( character ), eLoadoutEntryClass.CHARACTER )
+			boxEntry.category     = eLoadoutCategory.DEATHBOX
+#if DEV
+				boxEntry.pdefSectionKey = "character " + ItemFlavor_GetGUIDString( character )
+				boxEntry.DEV_name       = ItemFlavor_GetCharacterRef( character ) + " Death Box"
+#endif
+			boxEntry.defaultItemFlavor         = fileLevel.fullDeathboxList[0]
+			boxEntry.validItemFlavorList       = fileLevel.fullDeathboxList
+			boxEntry.backupCount 			   = NUM_LOADOUT_BACKUPS
+			boxEntry.isSlotLocked              = bool function( EHI playerEHI ) { return !IsLobby() }
+			boxEntry.associatedCharacterOrNull = character
+			boxEntry.networkTo                 = eLoadoutNetworking.PLAYER_EXCLUSIVE
+			boxEntry.stryderCharDataArrayIndex = ePlayerStryderCharDataArraySlots.INVALID
+			fileLevel.characterDeathboxLoadoutEntryMap[character] <- boxEntry
 
 	}
 }
@@ -241,84 +299,100 @@ int function MeleeSkin_GetSortOrdinal( ItemFlavor flavor )
 }
 
 
+int function MeleeWeapon_GetWeaponType( ItemFlavor flavor )
+{
+	var flavorBlock = ItemFlavor_GetSettingsBlock( flavor )
+	string typeName = GetSettingsBlockString( flavorBlock, WEAPON_TYPE_SETTINGS_BLOCK_KEY )
 
+	Assert ( typeName in eMeleeWeaponType )
+	return eMeleeWeaponType[ typeName ]
+}
 
 
 
 
+void function MeleeWeaponCosmetics_Apply( entity player )
+{
+	entity primaryWeapon = player.GetNormalWeapon( MELEE_VIEWHANDS_SLOT )
+	entity offhandWeapon = player.GetOffhandWeapon( MELEE_OFFHAND_SLOT )
 
+	MeleeWeaponCosmetics_ApplyForWeapon( player, primaryWeapon )
+	MeleeWeaponCosmetics_ApplyForWeapon( player, offhandWeapon )
+}
 
+void function MeleeWeaponCosmetics_ApplyForWeapon( entity player, entity weapon )
+{
+	if ( !IsValid( weapon ) || !IsValid( player ) )
+		return
 
+	ItemFlavor character = LoadoutSlot_GetItemFlavor( ToEHI( player ), Loadout_Character() )
+	ItemFlavor meleeSkin = LoadoutSlot_GetItemFlavor( ToEHI( player ), Loadout_MeleeSkin( character ) )
 
+	MeleeWeaponCosmetics_Apply_Internal( weapon, meleeSkin )
+}
 
+void function MeleeWeaponCosmetics_Apply_Internal( entity weapon, ItemFlavor meleeSkin )
+{
+	weapon.SetSkin( 0 ) 
 
+	int skinIndex = weapon.GetSkinIndexByName( MeleeSkin_GetSkinName( meleeSkin ) )
+	int camoIndex = MeleeSkin_GetCamoIndex( meleeSkin )
 
+	
+	if ( skinIndex == -1 )
+	{
+		skinIndex = 0
+		camoIndex = 0
+	}
 
+	Assert( skinIndex >= 0 )
+	Assert( camoIndex >= 0 )
 
+	weapon.SetSkin( skinIndex )
+	weapon.SetCamo( camoIndex )
 
 
 
 
+}
 
+string function MeleeSkin_GetSkinName( ItemFlavor meleeSkin )
+{
 
 
 
 
 
+	return GetGlobalSettingsString( ItemFlavor_GetAsset( meleeSkin ), "skinName" )
+}
 
+int function MeleeSkin_GetCamoIndex( ItemFlavor meleeSkin )
+{
 
 
 
 
 
+	Assert( ItemFlavor_GetType( meleeSkin ) == eItemType.melee_skin )
 
+	return GetGlobalSettingsInt( ItemFlavor_GetAsset( meleeSkin ), "camoIndex" )
+}
 
+string function MeleeSkin_GetSkinNameFromPlayer( entity player )
+{
+	ItemFlavor character = LoadoutSlot_GetItemFlavor( ToEHI( player ), Loadout_Character() )
+	ItemFlavor meleeSkin = LoadoutSlot_GetItemFlavor( ToEHI( player ), Loadout_MeleeSkin( character ) )
 
+	return MeleeSkin_GetSkinName( meleeSkin )
+}
 
+ItemFlavor function MeleeSkin_GetMeleeSkinFromPlayer( entity player )
+{
+	ItemFlavor character = LoadoutSlot_GetItemFlavor( ToEHI( player ), Loadout_Character() )
+	ItemFlavor meleeSkin = LoadoutSlot_GetItemFlavor( ToEHI( player ), Loadout_MeleeSkin( character ) )
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+	return meleeSkin
+}
 
 
 
@@ -361,9 +435,23 @@ vector function MeleeSkin_GetItemInspectOffset( ItemFlavor flavor )
 
 
 
+bool function MeleeSkin_ShouldHideIfLocked( ItemFlavor meleeSkin )
+{
+	if ( ItemFlavor_GetType( meleeSkin ) != eItemType.melee_skin )
+		return false
+
+	return GetGlobalSettingsBool( ItemFlavor_GetAsset( meleeSkin ), "shouldHideIfLocked" )
+}
 
 
 
+bool function MeleeCustomization_ShouldHideIfLocked( ItemFlavor component )
+{
+	if ( ItemFlavor_GetType( component ) <= eItemType.artifact_component_START || ItemFlavor_GetType( component ) >= eItemType.artifact_component_END )
+		return false
+
+	return GetSettingsBlockBool( ItemFlavor_GetSettingsBlock( component ), "shouldHideIfLocked" )
+}
 
 
 
@@ -373,6 +461,260 @@ LoadoutEntry function Loadout_MeleeSkin( ItemFlavor character )
 
 	return fileLevel.characterMeleeSkinLoadoutEntryMap[character]
 }
+
+
+
+
+LoadoutEntry function Loadout_Deathbox( ItemFlavor character )
+{
+	Assert( ItemFlavor_GetType( character ) == eItemType.character )
+
+	return fileLevel.characterDeathboxLoadoutEntryMap[character]
+}
+
+
+
+asset function Deathbox_GetVideo( ItemFlavor deathbox )
+{
+	Assert( ItemFlavor_GetType( deathbox ) == eItemType.artifact_component_deathbox )
+
+	return GetGlobalSettingsStringAsAsset( ItemFlavor_GetAsset( deathbox ), "video" )
+}
+
+
+
+ItemFlavor function Deathbox_GetDefaultItemFlavor()
+{
+	Assert( IsValidItemFlavorGUID( DEFAULT_DEATHBOX_GUID ) )
+	return GetItemFlavorByGUID( DEFAULT_DEATHBOX_GUID  )
+}
+
+ItemFlavor ornull function Deathbox_GetGoldenHorseDeathbox()
+{
+	if ( IsValidItemFlavorGUID( GOLDEN_HORSE_DEATHBOX_GUID ) )
+		return GetItemFlavorByGUID( GOLDEN_HORSE_DEATHBOX_GUID  )
+
+	return null
+}
+
+
+
+void function RequestToggleGoldenHorseDeathboxEquipForMeleeSkin( EHI playerEHI, LoadoutEntry entry, ItemFlavor meleeSkin )
+{
+	Assert( playerEHI == LocalClientEHI(), "Tried to use RequestToggleGoldenHorseDeathboxEquipForMeleeSkin on a different player" )
+	int slotContentsIndex = ConvertItemFlavorToLoadoutSlotContentsIndex( entry, meleeSkin )
+
+	ItemFlavor ornull character = entry.associatedCharacterOrNull
+	Assert( character != null )
+	expect ItemFlavor( character )
+	Remote_ServerCallFunction( LOADOUT_CLIENT_CALLBACK_TOGGLE_GOLDEN_HORSE_DEATHBOX, ItemFlavor_GetGUID( character ), slotContentsIndex )
+}
+
+
+
+ItemFlavor function Deathbox_GetEquipped( ItemFlavor character, ItemFlavor meleeSkin )
+{
+	EHI playerEHI = LocalClientEHI()
+	LoadoutEntry skinSlot = Loadout_MeleeSkin( character )
+	LoadoutEntry boxSlot  = Loadout_Deathbox( character )
+	array<ItemFlavor> skinBackups = LoadoutSlot_GetBackups( playerEHI, skinSlot )
+	array<ItemFlavor> boxBackups  = LoadoutSlot_GetBackups( playerEHI, boxSlot )
+
+	ItemFlavor ornull ghDeathbox = Deathbox_GetGoldenHorseDeathbox()
+	bool hasGHBox = false
+	for ( int i = 0; i < skinBackups.len() && i < boxBackups.len(); i++ )
+	{
+		if ( skinBackups[i] == meleeSkin )
+		{
+			hasGHBox = ( boxBackups[i] == ghDeathbox )
+			break
+		}
+	}
+
+	if ( hasGHBox && ghDeathbox != null )
+		return expect ItemFlavor( ghDeathbox )
+
+	return GetDefaultItemFlavorForLoadoutSlot( playerEHI, boxSlot )
+}
+
+
+
+void function ServerCallback_Loadouts_GoldenHorseDeathboxEquipForMeleeSkinToggled( int characterGUID, int skinGUID )
+{
+	if ( !IsValidItemFlavorGUID( characterGUID ) || !IsValidItemFlavorGUID( skinGUID ) )
+		return
+
+	ItemFlavor character = GetItemFlavorByGUID( characterGUID )
+	ItemFlavor meleeSkin = GetItemFlavorByGUID( skinGUID )
+	Assert( ItemFlavor_GetType( GetItemFlavorByGUID( characterGUID ) ) == eItemType.character && ItemFlavor_GetType( GetItemFlavorByGUID( skinGUID ) ) == eItemType.melee_skin )
+
+	
+	RunUIScript( "MeleeSkinButton_ClientToUI_UpdateDeathboxEquipState", characterGUID, skinGUID )
+	RunUIScript( "MeleeCustomizationScreen_ClientToUI_UpdateDeathboxEquipState", characterGUID, skinGUID )
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -515,41 +857,95 @@ ItemFlavor function MeleeSkin_GetCharacterFlavor( ItemFlavor meleeSkin )
 
 
 
+bool function DoesWeaponTriggerMeleeAttack( entity weapon )
+{
+	return (weapon.IsWeaponOffhandMelee() || weapon.GetWeaponSettingBool( eWeaponVar.attack_button_presses_melee ))
+}
 
 
 
 
+bool function DoesWeaponClassTriggerMeleeAttack( string weaponName )
+{
+	return (IsWeaponClassMelee( weaponName ) || GetWeaponInfoFileKeyField_GlobalBool( weaponName, "attack_button_presses_melee" ))
+}
 
 
 
 
+bool function IsWeaponClassMelee( string weaponName )
+{
+	
+	int fireMode = expect int(GetWeaponInfoFileKeyField_Global( weaponName, "fire_mode" ))
+	return (fireMode == eWeaponFireMode.offhandMelee || fireMode == eWeaponFireMode.offhandMeleeHybrid)
+}
 
 
 
 
+entity function GetPlayerMeleeOffhandWeapon( entity player )
+{
+	entity meleeAttackWeapon = player.GetActiveWeapon( eActiveInventorySlot.mainHand ) 
 
+	bool isValid = IsValid( meleeAttackWeapon )
 
+	if ( !isValid || !meleeAttackWeapon.IsWeaponOffhandMelee() )
+	{
+		meleeAttackWeapon = player.GetOffhandWeapon( OFFHAND_MELEE ) 
 
+		if ( !IsValid( meleeAttackWeapon ) )
+			return null
+	}
 
+	Assert( meleeAttackWeapon.IsWeaponOffhandMelee() )
 
+	return meleeAttackWeapon
+}
 
 
 
 
+bool function IsValidMeleeAttackTarget( entity attacker, entity inputWeaponOrNull, entity attackWeapon, entity target )
+{
+	if ( attacker == target )
+		return false
 
+	if ( !IsValid( target ) )
+		return false
 
+	if ( target.IsBreakableGlass() )
+		return true 
 
+	if ( !target.CanBeMeleed() )
+		return false
 
+	entity targetOwner = target.GetOwner()
+	if( IsValid( targetOwner ) && attacker == targetOwner && !target.CanBeMeleedByOwner() )
+		return false
 
 
 
 
 
 
+	if ( !attacker.DoesShareRealms( target ) )
+		return false
 
+	if ( IsValid( attackWeapon ) && !attackWeapon.GetMeleeCanHitHumanSized() && IsHumanSized( target ) )
+		return false
 
+	if ( target.IsPhaseShifted() )
+		return false
 
+	if ( target.IsPlayer() || target.IsNPC() )
+	{
+		
+		if ( target.ContextAction_IsMeleeExecutionTarget() )
+			return false
+	}
 
+	return true
+}
 
 
 
@@ -560,84 +956,230 @@ ItemFlavor function MeleeSkin_GetCharacterFlavor( ItemFlavor meleeSkin )
 
 
 
+entity function GetMeleeAttackLungeTarget( entity attacker, entity meleeAttackWeapon )
+{
+	return PlayerMelee_LungeConeTrace( attacker, meleeAttackWeapon, SHARED_CB_IS_VALID_MELEE_ATTACK_TARGET )
+}
 
 
 
 
+bool function AttackerCanStartMelee( entity attacker, entity inputWeaponOrNull )
+{
+	Assert( attacker.IsPlayer() )
 
+	if ( !IsAlive( attacker ) )
+		return false
 
+	if ( attacker.PlayerMelee_GetState() != PLAYER_MELEE_STATE_NONE )
+		return false
 
+	if ( attacker.IsWeaponSlotDisabled( eActiveInventorySlot.mainHand ) ) 
+		return false
 
+	
+	
 
+	if ( attacker.IsPhaseShifted() )
+		return false
 
+	if ( attacker.Lunge_IsActive() )
+		return false
 
+	if ( IsValid( inputWeaponOrNull ) && !GetCurrentPlaylistVarBool( "quick_melee_enabled", true )
+	&& inputWeaponOrNull == attacker.GetOffhandWeapon( OFFHAND_MELEE ) )
+		return false
 
+	return true
+}
 
 
 
 
+bool function CodeCallback_IsValidMeleeAttackTarget( entity attacker, entity target )
+{
+	entity meleeInputWeapon  = null 
+	entity meleeAttackWeapon = GetPlayerMeleeOffhandWeapon( attacker )
 
+	if ( !IsValidMeleeAttackTarget( attacker, meleeInputWeapon, meleeAttackWeapon, target ) )
+		return false
 
+	return true
+}
 
 
 
 
+void function CodeCallback_OnMeleePressed( entity attacker, entity meleeInputWeapon )
+{
+	entity meleeAttackWeapon = GetPlayerMeleeOffhandWeapon( attacker )
 
+	if ( !AttackerCanStartMelee( attacker, meleeInputWeapon ) )
+		return
 
+	entity currentWeapon              = attacker.GetActiveWeapon( eActiveInventorySlot.mainHand )
+	bool restoreMainOffhandAfterMelee = (IsValid( currentWeapon ) && currentWeapon.IsWeaponOffhand() && currentWeapon.GetWeaponSettingBool( eWeaponVar.offhand_restore_after_melee ))
+	entity offhandToRestore           = restoreMainOffhandAfterMelee ? currentWeapon : null
 
+	attacker.ClearOffhand( eActiveInventorySlot.mainHand )
+	attacker.PlayerMelee_StartAttack( PLAYER_MELEE_STATE_KICK_ATTACK, offhandToRestore )
 
+	TryDoorLunge( attacker, meleeAttackWeapon )
 
 
 
 
 
+	attacker.SetSelectedOffhand( eActiveInventorySlot.mainHand, meleeAttackWeapon )
+}
 
 
 
+void function TryDoorLunge( entity attacker, entity lungeWeapon )
+{
+	
+	
+	{
+		bool isShadowSquad = false
 
+			isShadowSquad = IsPlayerShadowZombie( attacker )
 
 
+		bool doorLungeEnabled = !isShadowSquad && GetCurrentPlaylistVarBool( "blockable_door_can_be_hurt_by_special_kick", true )
+		entity lungeTarget    = GetMeleeAttackLungeTarget( attacker, lungeWeapon )
 
+		vector eyeTraceHitPos
+		if ( doorLungeEnabled && !IsValid( lungeTarget ) )
+		{
+			TraceResults eyeTrace = TraceLine(
+				attacker.EyePosition(), attacker.EyePosition() + 150.0 * attacker.GetViewVector(),
+				[ attacker ], TRACE_MASK_NPCWORLDSTATIC, TRACE_COLLISION_GROUP_NONE, attacker
+			)
+			lungeTarget = eyeTrace.hitEnt
+			eyeTraceHitPos = eyeTrace.endPos
 
+			TraceResults rebuiltDoorTrace = TraceLine(
+				attacker.EyePosition(), attacker.EyePosition() + 150.0 * attacker.GetViewVector(),
+				[ attacker ], TRACE_MASK_SHOT, TRACE_COLLISION_GROUP_NONE
+			)
 
+			if( rebuiltDoorTrace.fraction <= eyeTrace.fraction && IsValid( rebuiltDoorTrace.hitEnt ) && IsRebuiltDoor( rebuiltDoorTrace.hitEnt ) )
+			{
+				lungeTarget = rebuiltDoorTrace.hitEnt
+				eyeTraceHitPos = rebuiltDoorTrace.endPos
+			}
+		}
 
+		if ( doorLungeEnabled && IsValid( lungeTarget ) && ( IsDoor( lungeTarget ) || IsRebuiltDoor( lungeTarget ) ) )
+		{
 
+			if ( lungeWeapon.HasMod( "sword_rt01" ) )
+				lungeWeapon.RemoveMod( "sword_rt01" )
 
+			lungeWeapon.AddMod( "proto_door_kick" )
 
+			attacker.Lunge_SetTargetPosition( <eyeTraceHitPos.x, eyeTraceHitPos.y, lungeTarget.GetWorldSpaceCenter().z - 52 > ) 
+			attacker.Lunge_SetSmoothTime( 0.7 )
+			attacker.Lunge_EnableFlying()
+		}
+		else if ( lungeWeapon.HasMod( "proto_door_kick" ) )
+		{
+			lungeWeapon.RemoveMod( "proto_door_kick" )
+		}
+	}
+}
 
 
 
+void function CodeCallback_OnMeleeStartActivity( entity attacker, entity meleeAttackWeapon )
+{
+	if ( GetBugReproNum() == 53982 )
+		Assert( attacker.PlayerMelee_IsAttackActive() )
+	else if ( !attacker.PlayerMelee_IsAttackActive() )
+		return 
 
+	const float STUN_EFFECT_CUTOFF = 0.05
+	float movestunEffect = StatusEffect_GetSeverity( attacker, eStatusEffect.move_slow )
+	bool movestunBlocked = (movestunEffect > STUN_EFFECT_CUTOFF)
+	if ( !movestunBlocked )
+	{
+		entity lungeTarget = GetMeleeAttackLungeTarget( attacker, meleeAttackWeapon )
 
+		if ( IsValid( lungeTarget ) )
+		{
+			bool lungeStartWasSuccessful = attacker.Lunge_SetTargetEntity( lungeTarget )
 
+			if ( lungeStartWasSuccessful && attacker.IsOnGround() )
+				attacker.Lunge_LockPitch( true )
+		}
+	}
 
+	
 
 
 
 
 
+}
 
 
 
 
+void function CodeCallback_OnMeleeHeld( entity player, entity weapon )
+{
+	
+}
 
 
 
 
+void function CodeCallback_OnMeleeReleased( entity player, entity weapon )
+{
+	
+}
 
 
 
+void function CodeCallback_OnMeleeAttackAnimEvent( entity attacker, entity meleeAttackWeapon, int impactTableOverride )
+{
+	Assert( IsValid( attacker ) )
 
+	if ( !attacker.PlayerMelee_IsAttackActive() )
+		return 
 
+	Assert( attacker.PlayerMelee_GetState() != PLAYER_MELEE_STATE_NONE )
+	Assert( !attacker.PlayerMelee_GetAttackHitEntity() )
 
 
 
 
 
+		if ( TitanSword_TryMultiAttack( attacker, meleeAttackWeapon, impactTableOverride ) )
+			return
 
+	float attackRange = meleeAttackWeapon.GetMeleeAttackRange()
 
+	
+	table legacyTraceResults = PlayerMelee_AttackTrace( attacker, attackRange, (bool function( entity attacker, entity target ) : (meleeAttackWeapon) {
+		return IsValidMeleeAttackTarget( attacker, null, meleeAttackWeapon, target )
+	}) )
 
+	Melee_Attack( attacker, meleeAttackWeapon, impactTableOverride, legacyTraceResults )
+}
 
+void function Melee_Attack( entity attacker, entity meleeAttackWeapon, int impactTableOverride, table legacyTraceResults )
+{
+	entity target                         = expect entity(legacyTraceResults.ent)
+	vector endPosition                    = expect vector(legacyTraceResults.position)
+	int surfaceProp                       = expect int(legacyTraceResults.surfaceProp)
+	int staticPropID                      = expect int(legacyTraceResults.staticPropID)
+	int impactEffectFlags                 = expect int(legacyTraceResults.impactEffectFlags)
+	int codeDamageType                    = expect int(legacyTraceResults.damageType)
+	vector startPosition                  = expect vector(legacyTraceResults.startPosition)
+	bool shouldHitForward                 = expect bool(legacyTraceResults.hitWithFlatTrace)
+	float attackRange                     = meleeAttackWeapon.GetMeleeAttackRange()
+	vector hitNormal                      = Normalize( startPosition - endPosition )
+	int meleeAttackWeaponImpactTableIndex = impactTableOverride >= 0 ? impactTableOverride : meleeAttackWeapon.GetImpactTableIndex()
 
 
 
@@ -645,13 +1187,35 @@ ItemFlavor function MeleeSkin_GetCharacterFlavor( ItemFlavor meleeSkin )
 
 
 
+	if ( IsValid( target ) )
+	{
+		
+		
 
+		
+		if ( !attacker.PlayerMelee_IsAttackActive() )
+			return
 
+		
+		attacker.PlayerMelee_SetAttackHitEntity( target )
+		if ( !target.IsWorld() )
+			attacker.PlayerMelee_SetAttackRecoveryShouldBeQuick( true )
 
+		
+		if ( target.IsBreakableGlass() )
+		{
 
 
 
+		}
+		else
+		{
+			
+			bool targetIsEnemy  = IsEnemyTeam( attacker.GetTeam(), target.GetTeam() )
+			float severityScale = (targetIsEnemy ? MELEE_CONFIRMATION_SEVERITY_SCALE_WHEN_ENEMY : MELEE_CONFIRMATION_SEVERITY_SCALE_WHEN_NOT_ENEMY)
+			meleeAttackWeapon.DoMeleeHitConfirmation( severityScale )
 
+			
 
 
 
@@ -683,14 +1247,46 @@ ItemFlavor function MeleeSkin_GetCharacterFlavor( ItemFlavor meleeSkin )
 
 
 
+		}
+	}
+	else
+	{
+		
+		
+		
+		
 
+		vector impactEffectTraceBegin        = meleeAttackWeapon.GetAttackPosition()
+		vector impactEffectTraceEnd          = impactEffectTraceBegin + (attackRange * meleeAttackWeapon.GetAttackDirection())
+		TraceResults impactEffectTraceResult = TraceLineHighDetail( impactEffectTraceBegin, impactEffectTraceEnd, attacker, TRACE_MASK_SHOT, TRACE_COLLISION_GROUP_NONE, attacker )
+		if ( impactEffectTraceResult.hitEnt )
+		{
+			target = impactEffectTraceResult.hitEnt
 
+			
+			if ( target.IsPlayer() && IsEnemyTeam( attacker.GetTeam(), target.GetTeam() ) )
+				return
 
+			startPosition = impactEffectTraceBegin
+			endPosition = impactEffectTraceResult.endPos
+			hitNormal = impactEffectTraceResult.surfaceNormal
+			surfaceProp = impactEffectTraceResult.surfaceProp
+			staticPropID = impactEffectTraceResult.staticPropID
 
 
 
+		}
+	}
 
+	
+	
+	
+	
 
+	if ( IsValid( target ) )
+	{
+		attacker.DispatchImpactEffects( target, startPosition, endPosition, hitNormal, surfaceProp, staticPropID, codeDamageType, meleeAttackWeaponImpactTableIndex, attacker, impactEffectFlags )
+	}
 
 
 
@@ -706,10 +1302,40 @@ ItemFlavor function MeleeSkin_GetCharacterFlavor( ItemFlavor meleeSkin )
 
 
 
+	
+	if ( IsValid( target ) )
+	{
 
+		float  knockbackMagnitude	= meleeAttackWeapon.GetWeaponSettingFloat( eWeaponVar.melee_knockback_velocity_magnitude )
+		vector lookDirection		= attacker.GetViewForward()
+		if ( shouldHitForward )
+		{
+			lookDirection.z = 0
+			lookDirection   = Normalize( lookDirection )
+		}
+		vector pushBackVelocity		= knockbackMagnitude * lookDirection
 
+		if ( target.CanBeMeleed() )
+		{
+			if ( target.IsPlayer() || target.IsNPC() || target.IsPlayerDecoy() )
+			{
+				vector targetDirection = target.GetWorldSpaceCenter() - attacker.GetWorldSpaceCenter()
+				if ( DotProduct( lookDirection, targetDirection ) < 0 )
+				{
+					pushBackVelocity = -pushBackVelocity
+				}
 
+				
+				if ( !TitanSword_VictimHitOverride( meleeAttackWeapon, attacker, target, pushBackVelocity ) )
+				{
 
+				if ( target.IsPlayer() )
+				{
+					if ( LengthSqr( pushBackVelocity ) > 0.0 )
+					{
+						target.KnockBack( pushBackVelocity, MELEE_KNOCKBACK_DURATION )
+					}
+				}
 
 
 
@@ -718,429 +1344,166 @@ ItemFlavor function MeleeSkin_GetCharacterFlavor( ItemFlavor meleeSkin )
 
 
 
+				}
 
+			}
+		}
 
+		
+		attacker.Lunge_ClearTarget()
 
+		vector attackerKnockBackVelocity = -pushBackVelocity
+		const float GroundOffset = 10
+		bool isAttackingGround           = (endPosition.z - GroundOffset) <= attacker.GetOrigin().z
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+		attackerKnockBackVelocity.z = 0.0
+		attackerKnockBackVelocity *= 0.5
+		float currentVelDotInKnockbackDir = -1.0
+		if ( LengthSqr( attackerKnockBackVelocity ) > 0.0 && !isAttackingGround )
+		{
+			vector currentVel = attacker.GetVelocity()
+			currentVelDotInKnockbackDir = DotProduct(Normalize(attackerKnockBackVelocity), Normalize(currentVel))
+			if( currentVelDotInKnockbackDir <= 0.0  ) 
+			{
+				attacker.KnockBack( attackerKnockBackVelocity, 0.25 )
+			}
+		}
 
 
 #if DEV
-void function SetDevMenu_OverrideMenuHeirloomModels( var _ )
-{
-	thread ChangeToThisMenu( SetupChangeOverrideMenuHeirloomModels )
-}
+			const bool DEBUG_MELEE_KNOCKBACK = false
+			if ( DEBUG_MELEE_KNOCKBACK )
+			{
+				DebugDrawSphere( <endPosition.x, endPosition.y, endPosition.z - GroundOffset>, 2, <0, 100, 255>, false, 5.0 )
+				DebugDrawSphere( endPosition, 3, COLOR_RED, false, 5.0 )
+				DebugDrawSphere( attacker.GetOrigin(), 4, COLOR_GREEN, false, 5.0 )
+				DebugDrawArrow( attacker.GetOrigin(), endPosition, 3, <100, 255, 0>, false, 5.0 )
 
+				if( currentVelDotInKnockbackDir <= 0.0 )
+				{
+					printt("Melee knockback YES")
+				}
+				else
+				{
+					printt("Melee knockback NO - would have sped us up")
+				}
 
-void function SetupChangeOverrideMenuHeirloomModels()
-{
-	SetupDevCommand( "Disable Override", "script_ui DEV_SetMenuHeirloomOverrideGUID( -1 ); script_client DEV_SetMenuHeirloomOverrideGUID( -1 )" )
-
-	array<ItemFlavor> meleeSkins = clone GetAllItemFlavorsOfType( eItemType.melee_skin )
-	meleeSkins.removebyvalue( GetItemFlavorByAsset( DEFAULT_MELEE_SKIN ) )
-
-	table<ItemFlavor, string> meleeSkinNames
-
-	foreach ( meleeSkin in meleeSkins )
-	{
-		string characterName
-		asset parentAsset = GetGlobalSettingsAsset( ItemFlavor_GetAsset( meleeSkin ), "parentItemFlavor" )
-		bool lacksParentCharacter = ( parentAsset == "" || !IsValidItemFlavorSettingsAsset( parentAsset ) || ItemFlavor_GetType( GetItemFlavorByAsset( parentAsset ) ) != eItemType.character )
-		if ( lacksParentCharacter )
-			characterName = "<UNDEFINED>"
-		else
-			characterName = Localize( ItemFlavor_GetLongName( MeleeSkin_GetCharacterFlavor( meleeSkin ) ) )
-
-		string meleeSkinName = Localize( ItemFlavor_GetLongName( meleeSkin ) )
-		if ( meleeSkinName == "" )
-			meleeSkinName = "<UNNAMED>"
-
-		meleeSkinNames[meleeSkin] <- characterName + " - " + meleeSkinName
-	}
-
-	meleeSkins.sort( int function( ItemFlavor a, ItemFlavor b ) : ( meleeSkinNames ) {
-		if ( meleeSkinNames[a] < meleeSkinNames[b] )
-			return -1
-
-		if ( meleeSkinNames[a] > meleeSkinNames[b] )
-			return 1
-
-		return 0
-	} )
-
-	foreach ( ItemFlavor meleeSkin in meleeSkins )
-	{
-		SetupDevFunc( meleeSkinNames[meleeSkin], void function( var unused ) : ( meleeSkin ) {
-			fileLevel.menuHeirloomOverrideGUID = ItemFlavor_GetGUID( meleeSkin )
-			if ( CanRunClientScript() )
-				RunClientScript( "DEV_SetMenuHeirloomOverrideGUID", fileLevel.menuHeirloomOverrideGUID )
-
-			int ownedPacks = GRX_IsInventoryReady() ? GRX_GetTotalPackCount() : 0
-			if ( ownedPacks < 1 )
-				DEV_GRX_TestPurchase( "pack_cosmetic_rare", [100, 0, 0, 0, 0], 50 )
-		} )
-	}
-}
+				printt( "Melee knockback isAttackingGround: " + isAttackingGround + " endPosition.z: " + endPosition.z + " attackerOrigin.z: " + attacker.GetOrigin().z )
+			}
 #endif
+
+		attacker.GrappleDetach()
+	}
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+bool function ClientCodeCallback_ShowMeleePrompt( entity player )
+{
+	return false
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 #if DEV

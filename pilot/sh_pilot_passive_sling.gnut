@@ -6,6 +6,7 @@ global function CanPlayerEquipWeaponRefToSling
 global function IsPlayerWeaponSlingEmpty
 global function IsPlayerHoldingSlingWeapon
 global function IsPlayerSwitchingToSlingWeapon
+global function ModeUsesLoadoutWeapons
 
 
 
@@ -101,11 +102,16 @@ bool function CanPlayerEquipWeaponRefToSling( entity player, string ref, bool do
 	if( data.tier >= 4 )
 		return false
 
-	if( data.tier > 1 && !IsUsingLoadoutSelectionSystem() )
+	if( data.tier > 1 && !ModeUsesLoadoutWeapons() )
 		return false
 
-	if( data.lootTags.contains( WEAPON_LOCKEDSET_MOD_WHITESET ) )
-		return false
+
+
+
+
+		if( data.lootTags.contains( WEAPON_LOCKEDSET_MOD_WHITESET ) && !ModeUsesLoadoutWeapons() )
+			return false
+
 
 	return true
 }
@@ -116,6 +122,24 @@ bool function IsPlayerWeaponSlingEmpty( entity player )
 		return false
 
 	return true
+}
+
+bool function ModeUsesLoadoutWeapons()
+{
+	if( IsUsingLoadoutSelectionSystem() )
+		return true
+
+
+
+
+
+
+
+	if ( IsShadowArmyGamemode() )
+		return true
+
+
+	return false
 }
 
 bool function IsPlayerHoldingSlingWeapon( entity player )
@@ -152,6 +176,103 @@ void function PassiveSling_OnPassiveChanged( entity player, int passive, bool di
 
 	}
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -487,9 +608,7 @@ void function UpdateSlingPassiveRui( entity player )
 
 		RuiSetString(  file.slingPassiveRui, "weaponName", weaponName )
 
-
-			WeaponRuiUpdateMastery( file.slingPassiveRui, slingWeapon, "hudIconMastered", "isMastered", "moreSparksMastered")
-
+		WeaponRuiUpdateMastery( file.slingPassiveRui, slingWeapon, "hudIconMastered", "isMastered", "moreSparksMastered")
 	}
 	else
 	{
@@ -503,9 +622,7 @@ void function UpdateSlingPassiveRui( entity player )
 		RuiSetFloat( file.slingPassiveRui, "maxMagAmmo", 0.0 )
 		RuiSetFloat( file.slingPassiveRui, "maxAmmo", 0.0 )
 		RuiSetBool( file.slingPassiveRui, "slingEmptyAimingAtWeapon", false )
-
-			RuiSetBool( file.slingPassiveRui, "isMastered", false )
-
+		RuiSetBool( file.slingPassiveRui, "isMastered", false )
 	}
 
 	if( SURVIVAL_GetPrimaryWeapons( player ).len() <= 0 )

@@ -31,10 +31,14 @@ global const float DOT_85DEGREE =	0.0871557427477
 
 global const string WHITESPACE_CHARACTERS = "\r\n\t " 
 
+#if DEV
+global const bool DEV_FORCE_LOAD_ALL_ENTITIES = true
+#endif
 
 
 
 
+global typedef FXHandle int
 
 
 #if DEV
@@ -172,6 +176,13 @@ global struct WaitQuotaItem
 	int _budget
 }
 
+global struct WallToTopResults
+{
+	bool found
+	vector pos
+	vector normal
+}
+
 struct
 {
 	int  lastHostThreadMode
@@ -180,6 +191,8 @@ struct
 	bool devUnlockedSPMissions
 
 	int hud_setting_accessibleChatCache
+
+	float skyZPos = MAX_WORLD_COORD_BUFFER
 } file
 
 void function ShUtilityAll_Init()
@@ -194,18 +207,18 @@ void function ShUtilityAll_Init()
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
+		
+		PrecacheParticleSystem( $"P_wpn_ghurka_swipe_FP" )
+		PrecacheParticleSystem( $"P_wpn_ghurka_swipe_3P" )
+		PrecacheParticleSystem( $"P_ghurka_amb_plasma_FP" )
+		PrecacheParticleSystem( $"P_ghurka_amb_plasma_3P" )
+		PrecacheParticleSystem( $"P_ghurka_plasma_mdl" )
+		PrecacheParticleSystem( $"P_ghurka_plasma_mdl_3P" )
+		
+		PrecacheParticleSystem( $"P_ash_HL_NC_Impact" )
+		
+		
+		
 
 
 }
@@ -215,9 +228,9 @@ Timeout function BeginTimeout( float duration )
 {
 	Timeout to
 
-	to.startTime = UITime()
 
 
+	to.startTime = Time()
 
 	to.duration = duration
 	thread __RunTimeoutInternal( to )
@@ -548,13 +561,13 @@ array<vector> function GetCircleToCircleIntersectionPoints( vector org1, float r
 	if ( debugDraw )
 	{
 
+		
+		DebugDrawLine( org1, org1 + < 0, 0, 32 >, COLOR_RED, true, 1.0 )
+		DebugDrawLine( org2, org2 + < 0, 0, 32 >, COLOR_GREEN, true, 1.0 )
 
-
-
-
-
-
-
+		
+		DebugDrawLine( org2, intersectionPoints[ 0 ] + org1, COLOR_WHITE, true, 1.0 )
+		DebugDrawLine( org2, intersectionPoints[ 1 ] + org1, COLOR_BLACK, true, 1.0 )
 
 	}
 
@@ -573,9 +586,9 @@ bool function IsStormPoint()
 {
 	string mapName
 
-		mapName = GetActiveLevel()
 
 
+		mapName = GetMapName()
 
 	return mapName == "mp_rr_tropic_island"
 }
@@ -584,9 +597,9 @@ bool function Freelance_IsHubLevel()
 {
 #if 0
 
-		string mapName = GetActiveLevel()
 
 
+		string mapName = GetMapName()
 
 
 	switch( mapName )
@@ -700,22 +713,58 @@ bool function IsShadowRoyaleMode()
 	return GetCurrentPlaylistVarBool( "shadow_royale_mode", false )
 }
 
+
+bool function UseNightAnnouncer()
+{
+	return GetCurrentPlaylistVarBool( "UseNocAnnouncerAtNight", false )
+}
+
+bool function UseNightRingAnnouncer()
+{
+	return GetCurrentPlaylistVarBool( "UseNocRingAnnouncerAtNight", false )
+}
+
+bool function IsNightMap()
+{
+	string mapName
+
+
+
+		mapName = GetMapName()
+
+
+	switch ( mapName )
+	{
+		case "mp_rr_olympus_mu1_night":
+		case "mp_rr_canyonlands_mu1_night":
+		case "mp_rr_desertlands_night":
+			return true
+			break
+		default:
+			break
+	}
+
+	return false
+}
+
+
+
 bool function IsPVEMode()
 {
 
-		{
-			string playlistName = GetCurrentPlaylistName()
-			if ( playlistName.find( "freelance" ) == 0 )
-				return true
 
+
+
+
+
+
+
+
+#if MP_PVEMODE
+			return true
+#else
 			return false
-		}
-
-
-
-
-
-
+#endif
 
 }
 
@@ -777,6 +826,13 @@ bool function Control_IsModeEnabled()
 bool function TDM_IsModeEnabled()
 {
 	return GetCurrentPlaylistVarBool( "freedm_tdm_active", false)
+}
+
+
+
+bool function Halloween18_IsModeEnabled()
+{
+	return GetCurrentPlaylistVarBool( "halloween_18_active", false)
 }
 
 
@@ -992,7 +1048,6 @@ int function LOWORD( int value )
 	return value
 }
 
-
 bool function IsWeaponKeyFieldDefined( string ref, string variable )
 {
 	var val = GetWeaponInfoFileKeyField_Global( ref, variable )
@@ -1003,6 +1058,13 @@ bool function IsWeaponKeyFieldDefined( string ref, string variable )
 	return false
 }
 
+bool function IsWithinRadius( vector testLoc, vector center, float radius )
+{
+	float radiusToTestSqr = pow( radius, 2 )
+	float positionDistSqr = Distance2DSqr( testLoc, center )
+
+	return( positionDistSqr <= radiusToTestSqr )
+}
 
 string function GetWeaponInfoFileKeyField_GlobalString( string ref, string variable )
 {
@@ -1030,6 +1092,13 @@ int function GetWeaponInfoFileKeyField_WithMods_GlobalInt( string ref, array<str
 	var val = GetWeaponInfoFileKeyField_WithMods_Global( ref, mods, variable )
 	Assert( val != null, "Weapon key \"" + variable + "\" does not exist in weapon \"" + ref + "\" !" )
 	return expect int( val )
+}
+
+float function GetWeaponInfoFileKeyField_WithMods_GlobalFloat( string ref, array<string> mods, string variable )
+{
+	var val = GetWeaponInfoFileKeyField_WithMods_Global( ref, mods, variable )
+	Assert( val != null, "Weapon key \"" + variable + "\" does not exist in weapon \"" + ref + "\" !" )
+	return expect float( val )
 }
 
 int function GetWeaponInfoFileKeyField_GlobalInt_WithDefault( string ref, string variable, int defaultVal )
@@ -1460,32 +1529,32 @@ void function DisablePrecacheErrors()
 	file.lastReportFatal = GetConVarInt( "fs_report_sync_opens_fatal" )
 
 
+		entity player = GetLocalClientPlayer()
+		player.ClientCommand( "host_thread_mode 0" )
+		player.ClientCommand( "script_precache_errors 0" )
+		player.ClientCommand( "fs_report_sync_opens_fatal 0" )
 
 
 
 
 
 
-
-		ClientCommand( "host_thread_mode 0" )
-		ClientCommand( "script_precache_errors 0" )
-		ClientCommand( "fs_report_sync_opens_fatal 0" )
 
 }
 
 void function RestorePrecacheErrors()
 {
 
+		entity player = GetLocalClientPlayer()
+		player.ClientCommand( "host_thread_mode " + file.lastHostThreadMode )
+		player.ClientCommand( "script_precache_errors " + file.lastScriptPrecacheErrors )
+		player.ClientCommand( "fs_report_sync_opens_fatal " + file.lastReportFatal )
 
 
 
 
 
 
-
-		ClientCommand( "host_thread_mode " + file.lastHostThreadMode )
-		ClientCommand( "script_precache_errors " + file.lastScriptPrecacheErrors )
-		ClientCommand( "fs_report_sync_opens_fatal " + file.lastReportFatal )
 
 }
 
@@ -1615,15 +1684,15 @@ UIPos function REPLACEHud_GetParentRelativePos( var panel )
 UISize function GetScreenSize()
 {
 
-		return REPLACEHud_GetSize( GetMenu( "MainMenu" ) )
 
 
+		array screenSize = expect array( Hud.GetScreenSize() )
 
+		UISize size
+		size.width = expect int( screenSize[0] )
+		size.height = expect int( screenSize[1] )
 
-
-
-
-
+		return size
 
 }
 
@@ -1633,11 +1702,11 @@ UIScaleFactor function GetContentScaleFactor( var panel )
 	float heightBasis = 1080.0
 
 
-		size = REPLACEHud_GetSize( panel )
 
 
-
-
+		array screenSize = expect array( panel.GetScreenSize() )
+		size.width = expect int( screenSize[0] )
+		size.height = expect int( screenSize[1] )
 
 
 	float aspectRatio = size.width / float( size.height )
@@ -1656,11 +1725,11 @@ UIScaleFactor function GetContentFixedScaleFactor( var panel )
 	float vheight = 1080
 
 
-		size = REPLACEHud_GetSize( panel )
 
 
-
-
+		array screenSize = expect array( panel.GetScreenSize() )
+		size.width = expect int( screenSize[0] )
+		size.height = expect int ( screenSize[1] )
 
 
 	float rx = size.width / vwidth
@@ -1786,18 +1855,18 @@ int function SortByTeamMemberIndex( entity a, entity b )
 
 
 
+bool function AllegianceCheck( int req, entity entA, entity entB )
+{
+	if ( req == eAllegiance.IRRELEVANT )
+		return true
+	if ( req == eAllegiance.FRIENDLY_ONLY )
+		return IsFriendlyTeam( entA.GetTeam(), entB.GetTeam() )
+	if ( req == eAllegiance.ENEMY_ONLY )
+		return IsEnemyTeam( entA.GetTeam(), entB.GetTeam() )
 
-
-
-
-
-
-
-
-
-
-
-
+	Assert( false, ("Unhandled allegience req #:" + req) )
+	return false
+}
 
 
 vector function GetRandomCenterBiasedToEdge( vector center, float minDeviation, float maxDeviation, float minAngle = 0, float maxAngle = 360 )
@@ -1960,17 +2029,147 @@ int function real_int_modulo( int x, int n )
 }
 
 
+vector function OriginToGround( vector origin, int traceMask = TRACE_MASK_NPCWORLDSTATIC, entity tracingEnt = null )
+{
+	vector endOrigin         = <origin.x, origin.y, -MAX_WORLD_COORD_BUFFER >
+	array <entity> ignoreArray = []
+	if ( IsValid( tracingEnt ) )
+		ignoreArray.append( tracingEnt )
 
+	TraceResults traceResult = TraceLine( origin, endOrigin, ignoreArray, traceMask, TRACE_COLLISION_GROUP_NONE, tracingEnt )
 
+	return traceResult.endPos
+}
 
+vector function GetGroundPositionOpenToSky( vector origin, bool excludePlayers = true )
+{
+	vector newOrigin = < origin.x, origin.y, file.skyZPos >
 
+	vector endOrigin = < origin.x, origin.y, -MAX_WORLD_COORD_BUFFER >
 
+	array< entity > excludeEnts
+	if ( excludePlayers )
+	{
+		excludeEnts.extend( GetPlayerArray_Alive() )
+	}
 
+	
+	TraceResults traceResult = TraceLine( newOrigin, endOrigin, excludeEnts, TRACE_MASK_SHOT, TRACE_COLLISION_GROUP_NONE )
 
+	newOrigin = traceResult.endPos
 
+	int maxTries = 4
+	int tries = 0
 
+	for ( tries = 0; tries < maxTries; tries++ ) 
+	{
+		if( traceResult.hitSky )
+		{
+			if( traceResult.endPos.z < 0 ) 
+			{
+				
+				newOrigin = < origin.x, origin.y, origin.z >
+				break
+			}
+			else
+			{
+				
+				file.skyZPos = traceResult.endPos.z - 1000
 
+				vector startPos = < origin.x, origin.y, file.skyZPos >
 
+				traceResult = TraceLine( startPos, endOrigin, excludeEnts, TRACE_MASK_SHOT, TRACE_COLLISION_GROUP_NONE )
+
+				newOrigin = traceResult.endPos
+			}
+		}
+		else
+		{
+			break
+		}
+	}
+
+	
+	Assert( tries < maxTries, "Traces for Pings from map are hitting the skybox too many times, the skybox may be too large or misconfigured." )
+
+	return newOrigin
+}
+
+WallToTopResults function TraceFromWallToTop(vector wallPos, vector wallNormal, array<entity> ignoreEnts, float checkBackDistance, float checkUpDistance, int traceMask, int collisionGroup, float DEBUG_DRAW_TIME = 0.0, bool doHullTrace = false, vector hullBoundsMin = ZERO_VECTOR, vector hullBoundsMax = ZERO_VECTOR )
+{
+	WallToTopResults results
+	results.found = false
+
+	vector flattenedNormal = FlattenNormalizeVec( wallNormal )
+	
+	
+	vector traceUpStart = wallPos + (wallNormal * checkBackDistance / 2.0)
+	vector traceUpEnd = traceUpStart + (UP_VECTOR * checkUpDistance )
+	TraceResults trUp = TraceLine( traceUpStart, traceUpEnd, ignoreEnts, traceMask , collisionGroup )
+
+#if DEV
+		if ( DEBUG_DRAW_TIME > 0.0 )
+		{
+			DebugDrawArrow( traceUpStart, trUp.endPos, 10, COLOR_ORANGE, false, DEBUG_DRAW_TIME )
+		}
+#endif
+
+	if ( trUp.fraction > 0.99 )
+	{
+
+		
+		
+		vector traceBackStart = trUp.endPos
+		vector traceBackEnd = traceBackStart - (flattenedNormal * checkBackDistance * 1.5 )
+		TraceResults trBack = TraceLine( traceBackStart, traceBackEnd, ignoreEnts, traceMask , collisionGroup )
+
+#if DEV
+
+			if ( DEBUG_DRAW_TIME > 0.0 )
+			{
+				DebugDrawArrow( traceBackStart, trBack.endPos, 10, COLOR_YELLOW, false, DEBUG_DRAW_TIME )
+			}
+#endif
+
+		if ( trBack.fraction > 0.99 )
+		{
+			vector ledgeStartTrace = trBack.endPos 
+			vector ledgeEndTrace = ledgeStartTrace - (UP_VECTOR * checkUpDistance * 2)
+
+			TraceResults trLedge
+			if ( doHullTrace )
+				trLedge = TraceHull( ledgeStartTrace, ledgeEndTrace, hullBoundsMin, hullBoundsMax, ignoreEnts, traceMask, collisionGroup)
+			else
+				trLedge = TraceLine( ledgeStartTrace, ledgeEndTrace, ignoreEnts, traceMask , collisionGroup )
+
+#if DEV
+
+				if ( DEBUG_DRAW_TIME > 0.0 )
+				{
+					DebugDrawArrow( ledgeStartTrace, trLedge.endPos, 10, COLOR_LIGHT_GREEN, false, DEBUG_DRAW_TIME )
+				}
+#endif
+
+			if ( !trLedge.startSolid && trLedge.fraction < 0.99 )
+			{
+				
+#if DEV
+					if ( DEBUG_DRAW_TIME > 0.0 )
+					{
+						DebugDrawText( trLedge.endPos,"CornerPos", false, DEBUG_DRAW_TIME )
+						
+					}
+#endif
+
+				results.found = true
+				results.pos = trLedge.endPos
+				results.normal = trLedge.surfaceNormal
+			}
+		}
+	}
+
+	return results
+}
 
 
 
@@ -2020,54 +2219,54 @@ int function Shuffle_GetCount( ShuffleData sd )
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+vector function LocalPosToWorldPos( vector pos, entity ent )
+{
+	return ent.GetOrigin() + RotateVector( pos, ent.GetAngles() )
+}
+vector function LocalPosToWorldPos_NoEnt( vector pos, vector parentPos, vector parentAng )
+{
+	return parentPos + RotateVector( pos, parentAng )
+}
+vector function WorldPosToLocalPos( vector pos, entity ent )
+{
+	return RotateVector( pos - ent.GetOrigin(), AnglesInverse( ent.GetAngles() ) )
+}
+vector function WorldPosToLocalPos_NoEnt( vector pos, vector parentPos, vector parentAng )
+{
+	return RotateVector( pos - parentPos, AnglesInverse( parentAng ) )
+}
+vector function LocalDirToWorldDir( vector dir, entity ent )
+{
+	return RotateVector( dir, ent.GetAngles() )
+}
+vector function LocalDirToWorldDir_NoEnt( vector dir, vector parentAng )
+{
+	return RotateVector( dir, parentAng )
+}
+vector function WorldDirToLocalDir( vector dir, entity ent )
+{
+	return RotateVector( dir, AnglesInverse( ent.GetAngles() ) )
+}
+vector function WorldDirToLocalDir_NoEnt( vector dir, vector parentAng )
+{
+	return RotateVector( dir, AnglesInverse( parentAng ) )
+}
+vector function LocalAngToWorldAng( vector ang, entity ent )
+{
+	return AnglesCompose( ent.GetAngles(), ang )
+}
+vector function LocalAngToWorldAng_NoEnt( vector ang, vector parentAng )
+{
+	return AnglesCompose( parentAng, ang )
+}
+vector function WorldAngToLocalAng( vector ang, entity ent )
+{
+	return AnglesCompose( AnglesInverse( ent.GetAngles() ), ang )
+}
+vector function WorldAngToLocalAng_NoEnt( vector ang, vector parentAng )
+{
+	return AnglesCompose( AnglesInverse( parentAng ), ang )
+}
 
 
 void function WaitForever()
@@ -2076,18 +2275,67 @@ void function WaitForever()
 
 
 
+		clGlobal.levelEnt.WaitSignal( "forever" )
 
 
-		WaitSignal( uiGlobal.signalDummy, "forever" )
 
 }
 
-bool function IsDeathDynastyEventActive()
+bool function IsLobbyEvent1Active()
 {
-	if ( CalEvent_IsActive( GetItemFlavorByAsset( $"settings/itemflav/calevent/s18ce01/collection.rpak" ), GetUnixTimestamp() ) )
+#if DEV
+		int devLobby = GetCurrentPlaylistVarInt( "dev_force_lobby", -1 )
+		if ( devLobby != -1 )
+		{
+			if ( devLobby == 1 )
+				return true
+			else
+				return false
+		}
+#endif
+
+
+	if ( GoldenHorse_IsGoldenHorseEventActive() )
 		return true
 
+
 	return false
+}
+
+bool function IsLobbyEvent2Active()
+{
+
+#if DEV
+		int devLobby = GetCurrentPlaylistVarInt( "dev_force_lobby", -1 )
+		if ( devLobby != -1 )
+		{
+			if ( devLobby == 2 )
+				return true
+			else
+				return false
+		}
+#endif
+
+	return false
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+bool function IsVDUDialogueEnabled()
+{
+	return GetCurrentPlaylistVarBool( "enable_vdu_dialogue", false )
 }
 
 bool function IsSurvivalTraining()
@@ -2142,7 +2390,7 @@ bool function FreelanceSystemsAreEnabled()
 
 bool function SpectreShacksAreEnabled()
 {
-	return GetCurrentPlaylistVarBool( "spectre_shacks_enabled", true )
+	return GetCurrentPlaylistVarBool( "spectre_shacks_enabled", false ) 
 }
 
 
@@ -2157,6 +2405,18 @@ float function LerpFloat( float startValue, float endValue, float time )
 {
 	return ((1 - time) * startValue + time * endValue)
 }
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 string function RandomHex( int length = 16 )
@@ -2207,20 +2467,20 @@ bool function IsNormalized( vector vec )
 
 
 
-
-
-
-
+void function UpdateAccessibilityChatHintEnabledCache()
+{
+	file.hud_setting_accessibleChatCache = GetConVarInt( "hud_setting_accessibleChat" )
+}
 
 
 
 bool function IsAccessibilityChatHintEnabled()
 {
 
+		return file.hud_setting_accessibleChatCache == 1 || file.hud_setting_accessibleChatCache == 3
 
 
 
-		return GetConVarInt( "hud_setting_accessibleChat" ) == 1 || GetConVarInt( "hud_setting_accessibleChat" ) == 3
 
 }
 
@@ -2240,8 +2500,8 @@ bool function IsAccessibilityChatToSpeech()
 bool function IsAccessibilityAvailable()
 {
 
-		if ( GetLanguage() != "english" )
-			return false
+
+
 
 
 	return true
@@ -2304,13 +2564,13 @@ vector function GetKeyColor( int colorID, int optionalParam = 0 )
 
 
 
-bool function IsAccessibilityNarrationEnabled()
-{
-	if ( !IsAccessibilityAvailable() )
-		return false
 
-	return GetConVarInt( "hud_setting_accessibleChat" ) == 2 || GetConVarInt( "hud_setting_accessibleChat" ) == 3
-}
+
+
+
+
+
+
 
 
 
@@ -2335,11 +2595,11 @@ void function __DebounceInternalThread( DebounceData data, float interval )
 	data.isQueued = true
 
 
-	wait max( 0.01, interval - (UITime() - data.lastRunTime) )
-	data.lastRunTime = UITime()
 
 
 
+	wait max( 0.01, interval - (Time() - data.lastRunTime) )
+	data.lastRunTime = Time()
 
 	data.latestFunc()
 }
@@ -2358,11 +2618,11 @@ ThrottleData function InitThrottle( float interval = THROTTLE_DEFAULT_INTERVAL, 
 bool function Throttle( ThrottleData data )
 {
 
-	float timeSinceLastAction = UITime() - data.lastProcessTime
-	data.lastProcessTime = UITime()
 
 
 
+	float timeSinceLastAction = Time() - data.lastProcessTime
+	data.lastProcessTime = Time()
 
 
 	data.decayingActionCount = max( 0.0, data.decayingActionCount - timeSinceLastAction / (data.interval / data.maxPerInterval) )
@@ -2807,22 +3067,34 @@ var function GetRandomWeighted( ... )
 
 
 
+FXHandle function StartWorldFXWithHandle( asset fxAsset, vector pos, vector ang )
+{
+	int fxAssetId = GetParticleSystemIndex( fxAsset )
 
 
 
+		return StartParticleEffectInWorldWithHandle( fxAssetId, pos, ang )
 
+}
 
 
 
 
+FXHandle function StartEntityFXWithHandle( entity ent, asset fxAsset, int attachType, int attachData )
+{
+	int fxAssetId = GetParticleSystemIndex( fxAsset )
 
 
 
+		return StartParticleEffectOnEntity( ent, fxAssetId, attachType, attachData )
 
+}
 
 
 
 
+FXHandle function CleanupFXHandle( FXHandle fxHandle, bool doRemoveAllParticlesNow = true, bool doPlayEndCap = false )
+{
 
 
 
@@ -2843,13 +3115,31 @@ var function GetRandomWeighted( ... )
 
 
 
+		if ( EffectDoesExist( fxHandle ) )
+			EffectStop( fxHandle, doRemoveAllParticlesNow, doPlayEndCap )
 
+		return -1
 
+}
 
 
 
 
+void function CleanupFXArray( array<FXHandle> fxHandleArray, bool doRemoveAllParticlesNow, bool doPlayEndCap )
+{
+	string stopType
+	if ( doRemoveAllParticlesNow )
+	{
+		Assert( !doPlayEndCap )
+		stopType = "destroyImmediately"
+	}
+	else if ( doPlayEndCap )
+		stopType = "playEndcap"
+	else
+		stopType = "normal"
 
+	foreach ( FXHandle fxHandle in fxHandleArray )
+	{
 
 
 
@@ -2858,62 +3148,32 @@ var function GetRandomWeighted( ... )
 
 
 
+			if ( EffectDoesExist( fxHandle ) )
+				EffectStop( fxHandle, doRemoveAllParticlesNow, doPlayEndCap )
 
+	}
+	fxHandleArray.clear()
+}
 
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+array<entity> function GetEntArrayByScriptNameSequence( string fmtStr, int firstIdx = 0 )
+{
+	array<entity> out = []
+	int idx           = firstIdx
+	while ( true )
+	{
+		array<entity> ents = GetEntArrayByScriptName( format( fmtStr, idx ) )
+		if ( ents.len() == 0 )
+			break
+		else if ( ents.len() == 1 )
+			out.append( ents[0] )
+		else
+			Warning( "GetEntArrayByScriptNameSequence found more than one ent with script name \"%s\".", format( fmtStr, idx ) )
+	}
+	return out
+}
 
 
 
@@ -2946,98 +3206,103 @@ void function __WaitEndSignalInternal( var obj, string signal )
 
 
 
+int function GetSkinIndexByName_Safe( entity ent, string skinName )
+{
+	if ( ent.GetSkinCount() == 0 )
+	{
+		
+		Warning( "GetSkinIndexByName_Safe called on ent with bad model. Callstack:\n%s", GetStack() )
+		return -1
+	}
+	return ent.GetSkinIndexByName( skinName )
+}
 
 
 
 
+void function SetSkinByName_Safe( entity ent, string skinName )
+{
+	if ( ent.GetSkinCount() == 0 )
+	{
+		
+		Warning( "SetSkinByName_Safe called on ent with bad model. Callstack:\n%s", GetStack() )
+		return
+	}
+	int skinIdx = ent.GetSkinIndexByName( skinName )
+	if ( skinIdx == -1 )
+	{
+		Warning( "SetSkinByName_Safe called with bad skin name (\"%s\"). Callstack:\n%s", skinName, GetStack() )
+		return
+	}
+	ent.SetSkin( skinIdx )
+}
 
 
 
 
+bool function CanScriptPlaceableBePlacedOn( entity hitEnt )
+{
+	
 
+	if ( hitEnt.IsWorld() )
+		return true
 
+	var hitEntClassname = hitEnt.GetNetworkedClassName()
 
+	if ( hitEntClassname == "func_brush" || hitEntClassname == "script_mover" )
+		return true
 
+	return false
+}
 
 
 
 
+bool function ShouldScriptedPlaceableParentTo( entity hitEnt )
+{
+	var hitEntClassname = hitEnt.GetNetworkedClassName()
 
+	if ( hitEntClassname == "func_brush" || hitEntClassname == "script_mover" )
+		return true
 
+	return false
+}
 
 
 
 
+vector function RoundVectorInLocalSpace( vector vec, float interval, vector parentPos, vector parentAng )
+{
+	vec = WorldPosToLocalPos_NoEnt( vec, parentPos, parentAng )
+	vec = RotateVector( vec, AnglesInverse( parentAng ) )
+	vec = <floor( vec.x / interval ) * interval, floor( vec.y / interval ) * interval, floor( vec.z / interval ) * interval >
+	vec = RotateVector( vec, parentAng )
+	vec = LocalPosToWorldPos_NoEnt( vec, parentPos, parentAng )
+	return vec
+}
 
+bool function VectorInWorldBounds( vector vec )
+{
+	return fabs( vec.x ) <= MAX_WORLD_COORD_BUFFER && fabs( vec.y ) <= MAX_WORLD_COORD_BUFFER && fabs( vec.z ) <= MAX_WORLD_COORD_BUFFER
+}
 
 
+#if DEV
+void function DEV_LifetimeDebugTool( entity thing )
+{
+	while ( true )
+	{
+		bool isValid          = IsValid( thing )
+		bool isValidThisFrame = IsValid_ThisFrame( thing )
+		printf( "[DEV_LifetimeDebugTool] %s, IsValid() = %s, IsValid_ThisFrame() = %s", string( thing ), string(isValid), string(isValidThisFrame) )
 
+		if ( !isValid && !isValidThisFrame )
+			break
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+		wait 1.0
+	}
+}
+#endif
 
 
 
@@ -3152,20 +3417,27 @@ string loopSound = "survival_titan_linking_loop", string successSound = "ui_menu
 
 	MenuExtendedUse_callback = callback
 
-		bool isForClientVM = false
-		thread _MenuExtendedUse_InternalThread( focusElem, holdToUseElem, duration, loopSound, successSound, isForClientVM, requireControllerFocus, isAltAction )
 
 
+
+		RunUIScript( "_ClientToUI_MenuExtendedUseBegin", focusElem, holdToUseElem, duration, loopSound, successSound, requireControllerFocus, isAltAction )
 
 }
 
 
 
 
-void function _ClientToUI_MenuExtendedUseBegin( var focusElem, var holdToUseElem, float duration, string loopSound, string successSound, bool requireControllerFocus, bool isAltAction )
+
+
+
+
+
+
+void function _UIToClient_MenuExtendedUseEnded( bool success )
 {
-	bool isForClientVM = true
-	thread _MenuExtendedUse_InternalThread( focusElem, holdToUseElem, duration, loopSound, successSound, isForClientVM, requireControllerFocus, isAltAction )
+	Assert( MenuExtendedUse_callback != null )
+	MenuExtendedUse_callback( success )
+	MenuExtendedUse_callback = null
 }
 
 
@@ -3178,91 +3450,84 @@ void function _ClientToUI_MenuExtendedUseBegin( var focusElem, var holdToUseElem
 
 
 
-bool _MenuExtendedUse_InternalThread_isActive = false
-void function _MenuExtendedUse_InternalThread( var focusElem, var holdToUseElem, float duration, string loopSound, string successSound, bool isForClientVM, bool requireControllerFocus, bool isAltAction )
-{
-	
-	if ( _MenuExtendedUse_InternalThread_isActive )
-		return
-	_MenuExtendedUse_InternalThread_isActive = true
 
-	Hud_Show( holdToUseElem )
-	HideGameCursor()
 
-	var rui = Hud_GetRui( holdToUseElem )
-	RuiSetBool( rui, "isVisible", true )
-	RuiSetGameTime( rui, "startTime", ClientTime() )
-	RuiSetFloat( rui, "duration", duration )
-	RuiSetString( rui, "holdButtonHint", isAltAction ? "%[X_BUTTON|MOUSE2]%" : "%[A_BUTTON|MOUSE1]%" )
 
-	float uiEndTime = ClientTime() + duration
 
-	if ( loopSound != "" )
-		EmitUISound( loopSound )
 
-	bool[1] success = [false]
 
-	OnThreadEnd( void function() : ( loopSound, rui, holdToUseElem, isForClientVM, success ) {
-		ShowGameCursor()
-		Hud_Hide( holdToUseElem )
-		RuiSetBool( rui, "isVisible", false )
-		if ( loopSound != "" )
-			StopUISound( loopSound )
 
-		if ( isForClientVM && CanRunClientScript() )
-		{
-			RunClientScript( "_UIToClient_MenuExtendedUseEnded", success[0] )
-		}
-		else
-		{
-			Assert( MenuExtendedUse_callback != null )
-			MenuExtendedUse_callback( success[0] )
-			MenuExtendedUse_callback = null
-		}
 
-		_MenuExtendedUse_InternalThread_isActive = false
-	} )
 
-	while ( true )
-	{
-		bool isButtonHeld = false
-		if ( InputIsButtonDown( MOUSE_LEFT ) || InputIsButtonDown( BUTTON_A ) )
-			isButtonHeld = true
 
-		bool allowRightClick = true
-		if ( allowRightClick && (InputIsButtonDown( MOUSE_RIGHT ) || InputIsButtonDown( BUTTON_X )) )
-			isButtonHeld = true
 
-		if ( !isButtonHeld )
-			break
 
-		if ( ClientTime() >= uiEndTime )
-			break
 
-		if ( GetMouseFocus() != focusElem && !GetDpadNavigationActive() )
-		{
-			if ( IsControllerModeActive() && requireControllerFocus )
-				break
-			else if ( !IsControllerModeActive() )
-				break
-			
-		}
 
-		vector screenPos = ConvertCursorToScreenPos()
-		Hud_SetPos( holdToUseElem, screenPos.x - Hud_GetWidth( holdToUseElem ) * 0.5, screenPos.y - Hud_GetHeight( holdToUseElem ) * 0.5 )
-		WaitFrame()
-	}
 
-	if ( ClientTime() < uiEndTime )
-		return
 
-	if ( IsLobby() )
-		return
 
-	if ( successSound != "" )
-		EmitUISound( successSound )
-	success[0] = true
-}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -3279,12 +3544,12 @@ bool function IsInfiniteAmmoEnabled()
 
 
 
-
-
-
-
-
-
+void function DestroyEntities( array<entity> ents )
+{
+	foreach ( entity ent in ents )
+		if ( IsValid( ent ) )
+			ent.Destroy()
+}
 
 
 void function SetConVarFloatFromPlaylist( string varName, float floatVal )
@@ -3293,22 +3558,60 @@ void function SetConVarFloatFromPlaylist( string varName, float floatVal )
 }
 
 
+string function GetMergedPlatformIdForPlayer( entity player )
+{
+
+	Assert( player == GetLocalClientPlayer() )
+
+
+	string platformId = ""
+
+	platformId = HARDWARE_TO_MERGED_PLATFORM[GetHardwareFromName( player.GetHardwareName() )]
+
+
+
+	Assert( platformId != "" )
+	return platformId
+}
+
+
 
 bool function IsUserOnSamePlatform( string hardware )
 {
 
-		return hardware == GetUnspoofedPlayerHardware()
 
 
 
-
+		entity player = GetLocalClientPlayer()
+		return IsValid( player ) ? hardware == player.GetUnspoofedHardware() : false
 
 }
 
 bool function IsUserOnSamePlatformID( int hardwareID )
 {
 
-		int localPlayerHardwareID = GetHardwareFromName( GetUnspoofedPlayerHardware() )
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+		entity player = GetLocalClientPlayer()
+		if( !IsValid( player ) )
+		{
+			return false
+		}
+		int localPlayerHardwareID = GetHardwareFromName( player.GetUnspoofedHardware() )
 		if( ( hardwareID == HARDWARE_PS4 || hardwareID == HARDWARE_PS5 ) && (localPlayerHardwareID == HARDWARE_PS4 || localPlayerHardwareID == HARDWARE_PS5) )
 		{
 			return true
@@ -3319,30 +3622,9 @@ bool function IsUserOnSamePlatformID( int hardwareID )
 		}
 		else
 		{
-			return hardwareID == GetHardwareFromName( GetUnspoofedPlayerHardware() )
+			return IsValid( player ) ? hardwareID == GetHardwareFromName( player.GetUnspoofedHardware() ) : false
 		}
 		return false
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 }
 
@@ -3427,374 +3709,374 @@ bool function AreClubInvitesEnabled()
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+const float ROG_MIN_VERT_DISTRIB 		= 1024.0 * 4.0 
+const float ROG_MAX_VERT_DISTRIB 		= 1024.0 * 6.0
+const float ROG_MIN_HORIZ_DISTRIBUTION			= 1024 * 12.0
+const float ROG_DEFAULT_GRID_HALF_SIZE			= 64000.0
+const int ROG_MAX_SPAWN_POOL_BEFORE_REDUCTION	= 100
+const float ROG_MAX_SPAWN_TO_POOL_SATURATION	= 0.5
+
+
+
+
+array<entity> function RandomOrientedGridDistribution(
+			array<entity> possibleLocationEnts,						
+			int numDesiredSpawns,									
+			float defaultGridHalfSize = ROG_DEFAULT_GRID_HALF_SIZE,		
+			float minDesiredVertSpacingParam = ROG_MIN_VERT_DISTRIB,					
+			float maxDesiredVertSpacingParam = ROG_MAX_VERT_DISTRIB,					
+			float minDesiredHorizSpacing = ROG_MIN_HORIZ_DISTRIBUTION,					
+			int maxNumSpawnsBeforeReduction = ROG_MAX_SPAWN_POOL_BEFORE_REDUCTION,		
+			float maxSpawnSaturationBeforeRandomPick = ROG_MAX_SPAWN_TO_POOL_SATURATION 	
+		)
+{
+	
+	int numSpawnPoints       	= possibleLocationEnts.len()
+	int numSpawnsToReturn = numDesiredSpawns
+
+	if ( (numSpawnPoints == 0) || (numSpawnsToReturn == 0) )
+	{
+		array<entity> empty
+		return empty
+	}
+
+	float desiredToLocationRatio = float( numSpawnsToReturn / numSpawnPoints )
+	if ( desiredToLocationRatio > maxSpawnSaturationBeforeRandomPick )
+	{
+		if ( numSpawnsToReturn > numSpawnPoints )
+			numSpawnsToReturn = numSpawnPoints
+
+		printt( "!!! WARNING !!! Ratio of desired tick spawns to available locations too high to be worth it! Randomizing and returning results!", desiredToLocationRatio )
+		possibleLocationEnts.randomize()
+		return possibleLocationEnts.slice( 0, numSpawnsToReturn )
+	}
+
+	vector verticalAxis   = Normalize( < RandomFloatRange( -1, 1 ), RandomFloatRange( -1, 1 ), 0 > )
+	vector horizAxis      = CrossProduct( verticalAxis, < 0, 0, 1 > )
+	vector vertAxisOrigin = verticalAxis * -defaultGridHalfSize
+
+	bool verbosePrint = GetCurrentPlaylistVarInt( "debug_loot_ticks", 0 ) == 1
+
+	
+	
+	
+	
+	array<table> selectedSpawnPositions
+	float closestSpawnOriginToVertAxisOrigin  = defaultGridHalfSize
+	float furthestSpawnOriginToVertAxisOrigin = 0
+	float minWidth                            = defaultGridHalfSize
+	float maxWidth                            = -defaultGridHalfSize
+	bool shouldDiscardSomeCandidates          = numSpawnPoints > maxNumSpawnsBeforeReduction 
+	int numSelectedSpawnEnts
+	foreach( spawnEnt in possibleLocationEnts )
+	{
+		if ( !IsValid( spawnEnt ) )
+			continue
+
+		
+		if ( shouldDiscardSomeCandidates && CoinFlip() )
+			continue
+
+		numSelectedSpawnEnts++
+
+		vector vertAxisOriginToEnt      = spawnEnt.GetOrigin() - vertAxisOrigin
+		float distToVertAxisOrigin      = DotProduct2D( vertAxisOriginToEnt, verticalAxis )
+		float horizDistToVertAxisOrigin = DotProduct2D( vertAxisOriginToEnt, horizAxis )
+		selectedSpawnPositions.append( { ent = spawnEnt, vertDist = distToVertAxisOrigin, horizDist = horizDistToVertAxisOrigin } )
+
+		
+		if ( distToVertAxisOrigin > furthestSpawnOriginToVertAxisOrigin )
+			furthestSpawnOriginToVertAxisOrigin = distToVertAxisOrigin
+		else if ( distToVertAxisOrigin < closestSpawnOriginToVertAxisOrigin )
+			closestSpawnOriginToVertAxisOrigin = distToVertAxisOrigin
+
+		
+		if ( horizDistToVertAxisOrigin > maxWidth )
+			maxWidth = horizDistToVertAxisOrigin
+		else if( horizDistToVertAxisOrigin < minWidth )
+			minWidth = horizDistToVertAxisOrigin
+	}
+
+	selectedSpawnPositions.sort( SortSpawnPositionsByVertDist )
+
+	if ( numSelectedSpawnEnts < numSpawnsToReturn )
+		numSpawnsToReturn = numSelectedSpawnEnts
+
+	
+	
+	
+	
+	
+	
+	
+	
+	Assert( maxDesiredVertSpacingParam > minDesiredVertSpacingParam, "Max loottick distribution distance is smaller than min distribution! Fix it!" )
+
+	float vertAxisSpawnRange     = furthestSpawnOriginToVertAxisOrigin - closestSpawnOriginToVertAxisOrigin
+	float maxDesiredSpawnSpacing = ( vertAxisSpawnRange * 0.9 ) / numSpawnsToReturn		
+	float minDesiredSpawnSpacing = minDesiredVertSpacingParam
+	if ( maxDesiredSpawnSpacing > maxDesiredVertSpacingParam )
+		maxDesiredSpawnSpacing = maxDesiredVertSpacingParam
+
+	if ( maxDesiredSpawnSpacing < minDesiredVertSpacingParam )
+		minDesiredSpawnSpacing = maxDesiredSpawnSpacing - 1
+
+	float verticalDistanceTraveled = closestSpawnOriginToVertAxisOrigin			
+	int numVertSplits              = 0
+	int lastSafetyCheckedSpawnEnt  = 0
+	array<float> generatedVertSplits	
+	while( true )
+	{
+		float newVerticalDistanceTraveled = RandomFloatRange( minDesiredSpawnSpacing, maxDesiredSpawnSpacing )
+		verticalDistanceTraveled += newVerticalDistanceTraveled
+
+		if ( verticalDistanceTraveled > furthestSpawnOriginToVertAxisOrigin )
+			break
+
+		
+		int numSpawnEntsBetweenLastAndCurrentSelection
+		for( int i = lastSafetyCheckedSpawnEnt; i < numSelectedSpawnEnts; i++ )
+		{
+			float curVertDist = expect float( selectedSpawnPositions[ i ].vertDist )
+			if ( curVertDist > verticalDistanceTraveled )
+				break
+
+			numSpawnEntsBetweenLastAndCurrentSelection = i - lastSafetyCheckedSpawnEnt
+		}
+
+		
+		if ( numSpawnEntsBetweenLastAndCurrentSelection == 0 )
+		{
+			float vertDistMidpointToNext = FLT_MAX
+			float nextSpawnEntVertDist   = expect float( selectedSpawnPositions[ lastSafetyCheckedSpawnEnt + 1 ].vertDist ) 
+			if ( ( lastSafetyCheckedSpawnEnt + 2 ) < numSelectedSpawnEnts )
+			{
+				float spawnEntAfterNext_vertDist = expect float( selectedSpawnPositions[ lastSafetyCheckedSpawnEnt + 2 ].vertDist )
+				vertDistMidpointToNext = ( spawnEntAfterNext_vertDist - nextSpawnEntVertDist ) * 0.5
+			}
+
+			float safetyBuffer 			= min( 128, vertDistMidpointToNext )
+			lastSafetyCheckedSpawnEnt 	+= 1
+			verticalDistanceTraveled 	= nextSpawnEntVertDist + safetyBuffer
+		}
+		else
+			lastSafetyCheckedSpawnEnt += numSpawnEntsBetweenLastAndCurrentSelection
+
+		numVertSplits++
+		generatedVertSplits.append( verticalDistanceTraveled )
+	}
+
+	if ( verbosePrint )
+		printt( "Num generated vert splits:", generatedVertSplits.len(), "num div selections:", numSpawnsToReturn )
+
+	
+	
+	int numVertSplitsToUse = minint( numSpawnsToReturn, numVertSplits )
+	generatedVertSplits.randomize()
+	
+	array<float> vertSplitsToUse = generatedVertSplits.slice( 0, numVertSplitsToUse )
+	vertSplitsToUse.sort( SortLowestFloat )
+
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	array<entity> spawnSelections
+	int idx_vertSplit
+	float horizTarget = RandomFloatRange( minWidth, maxWidth )
+	int curAxisBestSpawnEntChoice
+	float curBestChoiceDistSQ = defaultGridHalfSize * defaultGridHalfSize
+
+	for( int i = 0; i < numSelectedSpawnEnts; i++ )
+	{
+		entity spawnEnt        = expect entity( selectedSpawnPositions[ i ].ent )
+		float spawnEntVertDist = expect float( selectedSpawnPositions[ i ].vertDist )
+		float curVerticalSplit = vertSplitsToUse[ idx_vertSplit ]
+
+		if ( ( spawnEntVertDist < curVerticalSplit ) && ( spawnEntVertDist - curVerticalSplit ) < minDesiredSpawnSpacing )
+		{
+			float spawnEntHorizDist = expect float( selectedSpawnPositions[ i ].horizDist )
+			float vertDistDiff      = curVerticalSplit - spawnEntVertDist
+			float horizDistDiff     = fabs( horizTarget - spawnEntHorizDist )
+			float distSQ            = ( vertDistDiff * vertDistDiff ) + ( horizDistDiff * horizDistDiff )
+			if ( distSQ < curBestChoiceDistSQ )
+			{
+				
+				bool curBestChoiceIsLastAxisSelection = ( idx_vertSplit > 0 ) && ( spawnEnt == spawnSelections.top() )
+				if ( ( idx_vertSplit == 0 ) || !curBestChoiceIsLastAxisSelection )
+				{
+					curBestChoiceDistSQ       = distSQ
+					curAxisBestSpawnEntChoice = i
+				}
+			}
+
+			int nextSpawnEntIdx      = i + 1
+			bool moreSpawnEntsRemain = nextSpawnEntIdx < numSelectedSpawnEnts
+			entity selectedEnt = expect entity( selectedSpawnPositions[ curAxisBestSpawnEntChoice ].ent )
+
+			if ( moreSpawnEntsRemain )
+			{
+				float nextVertDist                = expect float( selectedSpawnPositions[ nextSpawnEntIdx ].vertDist )
+				bool moreSpawnEntsInVerticalSplit = nextVertDist <= curVerticalSplit
+				if ( !moreSpawnEntsInVerticalSplit )
+				{
+					if ( !spawnSelections.contains( selectedEnt ) )
+					{
+						spawnSelections.append( selectedEnt )
+						idx_vertSplit++
+					}
+
+					
+					bool shouldChooseNewHorizTarget = idx_vertSplit < numVertSplitsToUse
+					if ( shouldChooseNewHorizTarget )
+					{
+						curBestChoiceDistSQ = defaultGridHalfSize * defaultGridHalfSize
+
+						array<float> newHorizTargetChoices
+						float selectedSpawnHorizPosition = expect float( selectedSpawnPositions[ curAxisBestSpawnEntChoice ].horizDist )
+						float horizTargetLowEndStart     = selectedSpawnHorizPosition - minDesiredHorizSpacing
+
+						if ( horizTargetLowEndStart > minWidth )
+							newHorizTargetChoices.append( RandomFloatRange( minWidth, horizTargetLowEndStart ) )
+
+						float horizTargetHighEndStart = selectedSpawnHorizPosition + minDesiredHorizSpacing
+						if ( horizTargetHighEndStart < maxWidth )
+							newHorizTargetChoices.append( RandomFloatRange( maxWidth, horizTargetHighEndStart ) )
+
+						if ( newHorizTargetChoices.len() == 0 )
+						{
+							newHorizTargetChoices.append( RandomFloatRange( minWidth, maxWidth ) )
+							Warning( "Warning! Had to select random horiz axis location for next loot tick spawn. minDesiredHorizDistributionDist (" + minDesiredHorizSpacing + ") too large, or loot bin area too narrow (" + ( maxWidth - minWidth ) + ")" )
+						}
+
+						
+						horizTarget = newHorizTargetChoices.getrandom()
+
+						
+						i--
+					}
+					
+					else
+						break
+				}
+			}
+			else if ( !moreSpawnEntsRemain && !spawnSelections.contains( selectedEnt ) )
+				spawnSelections.append( selectedEnt )
+		}
+	}
+
+	return spawnSelections
+}
+
+int function SortSpawnPositionsByVertDist( table a, table b )
+{
+	float vertDistA = expect float( a.vertDist )
+	float vertDistB = expect float( b.vertDist )
+
+	if ( vertDistA > vertDistB )
+		return 1
+	else if ( vertDistB > vertDistA )
+		return -1
+
+	return 0
+}
+
+bool function IsEqualVector( vector a, vector b )
+{
+	return DistanceSqr( a, b) <= FLT_EPSILON
+}
+
+bool function IsEqualFloat( float left, float right )
+{
+	return fabs( left - right ) < FLT_EPSILON
+}
+
+float function CalculateFloatArrayVarianceWithGivenPercentile( array<float> inArr, float percentile )
+{
+	array<float> arr = inArr
+	arr.sort()
+
+	
+	int maxIndex = int( percentile * arr.len() )
+
+	float average = 0
+	for( int i = 0; i < maxIndex; i++ )
+	{
+		average += arr[i]
+	}
+
+	average /= maxIndex
+
+	float sumOfSquares = 0
+	for( int i = 0; i < maxIndex; i++ )
+	{
+		float deviationFromAvg = arr[i] - average
+		sumOfSquares += ( deviationFromAvg * deviationFromAvg )
+	}
+
+	return sumOfSquares / maxIndex
+}
+
+float function CalculateIntArrayVarianceWithGivenPercentile( array<int> inArr, float percentile )
+{
+	array<int> arr = inArr
+	arr.sort()
+
+	
+	int maxIndex = int( 0.9 * arr.len() )
+
+	float average = 0
+	for( int i = 0; i < maxIndex; i++ )
+	{
+		average += float( arr[i] )
+	}
+
+	average /= maxIndex
+
+	float sumOfSquares = 0
+	for( int i = 0; i < maxIndex; i++ )
+	{
+		float deviationFromAvg = ( float( arr[i] ) - average )
+		sumOfSquares += ( deviationFromAvg * deviationFromAvg )
+	}
+
+	return sumOfSquares / maxIndex
+}
+
+
+
+float function MetersToInches( float meters )
+{
+	return( meters * METERS_TO_INCHES )
+}
+
+float function MetersToInchesSqr( float meters )
+{
+	float inches = MetersToInches( meters )
+	return( inches * inches )
+}
+
+float function InchesToMeters( float inches )
+{
+	return( inches * INCHES_TO_METERS )
+}
 
 
 
@@ -3834,3 +4116,46 @@ bool function IsPlayerCharacter( entity player, string characterCheck )
 
 	return true
 }
+
+#if DEV
+bool function DEV_ForceLoadAllEntityTypes()
+{
+	return GetCurrentPlaylistVarBool( "dev_force_load_all_entity_types", DEV_FORCE_LOAD_ALL_ENTITIES )
+}
+#endif
+
+
+bool function IsRevTakeover()
+{
+	return GetCurrentPlaylistVarBool("rev_takeover", false)
+}
+
+
+
+
+
+
+
+
+
+
+
+bool function IsInBleedoutOrRevive( entity player )
+{
+	if( !player.IsPlayer() )
+		return false
+
+	bool bleedingOut = Bleedout_IsBleedingOut( player )
+	bool reviveRelated = player.ContextAction_IsBeingRevived() || player.ContextAction_IsReviving()
+
+	return( bleedingOut || reviveRelated )
+}
+
+
+
+
+
+
+
+
+

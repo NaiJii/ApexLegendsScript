@@ -16,6 +16,20 @@ global struct RTKFooterData
 	int						activateGUID = -1
 }
 
+global struct RTKFooterGroupItemModel
+{
+	string label
+	int gamepadButton
+	int keyboardButton
+	int activateGUID = -1
+	
+}
+
+global struct RTKFooterGroupModel
+{
+	array<RTKFooterGroupItemModel> items
+}
+
 struct FileStruct_LifetimeVM
 {
 	table<int, table< int, array<RTKFooterData> > > footers

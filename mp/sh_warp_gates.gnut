@@ -1416,6 +1416,15 @@ void function ShWarpGates_Init()
 
 
 
+
+
+
+
+
+
+
+
+
 void function ServerCallback_StartWarpGateExitSequence( float duration )
 {
 	thread WarpGateExitSequence_Thread( duration )

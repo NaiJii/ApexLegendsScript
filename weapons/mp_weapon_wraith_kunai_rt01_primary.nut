@@ -1,4 +1,3 @@
-
 global function MpWeaponWraithKunai_rt01_Primary_Init
 
 global function OnWeaponActivate_weapon_wraith_kunai_rt01_primary
@@ -26,4 +25,3 @@ void function OnWeaponDeactivate_weapon_wraith_kunai_rt01_primary( entity weapon
 
 	weapon.StopWeaponEffect( KUNAI_RT01_FX_GLOW_FP, KUNAI_RT01_FX_GLOW_3P )
 }
-                         

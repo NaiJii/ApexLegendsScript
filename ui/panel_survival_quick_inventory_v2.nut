@@ -210,8 +210,22 @@ void function InitSurvivalQuickInventoryPanel( var panel )
 
 	if ( !(uiGlobal.uiShutdownCallbacks.contains( Inventory_Shutdown )) )
 		AddUICallback_UIShutdown( Inventory_Shutdown )
+
+	AddUICallback_InputModeChanged( Inventory_OnInputChanged )
 }
 
+void function Inventory_OnInputChanged( bool isController )
+{
+	if( !IsPanelActive( file.mainPanel ) )
+		return
+
+	foreach ( button in file.equipmentButtons )
+	{
+		Hud_ClearToolTipData( button )
+		if ( IsFullyConnected() )
+			RunClientScript( "UICallback_UpdateEquipmentButton", button )
+	}
+}
 
 void function InitInventoryFooter( var panel )
 {
@@ -282,13 +296,72 @@ void function OnSurvivalQuickInventoryPanel_Show( var panel )
 	if ( IsLobby() )
 		return
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 	RunClientScript( "UICallback_BackpackOpened" )
+
+
+
+
+
+
+
+
+
+
+
 
 	RunClientScript( "UICallback_UpdatePlayerInfo", Hud_GetChild( file.mainInventoryPanel, "PlayerInfo" ) )
 	RunClientScript( "UICallback_UpdateTeammateInfo", Hud_GetChild( file.mainInventoryPanel, "TeammateInfo0" ), false )
 	RunClientScript( "UICallback_UpdateTeammateInfo", Hud_GetChild( file.mainInventoryPanel, "TeammateInfo1" ), false )
 	RunClientScript( "UICallback_UpdateUltimateInfo", Hud_GetChild( file.mainInventoryPanel, "PlayerUltimate" ) )
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 void function ClientToUI_UpdateInventoryUltimateTooltip( var button, string ultName )
@@ -338,18 +411,6 @@ void function SurvivalQuickInventory_OnUpdate()
 {
 	GridPanel_Refresh( file.inventoryGridStatic )
 
-
-
-
-
-
-
-
-
-
-
-
-
 	if ( !IsFullyConnected() )
 		return
 
@@ -358,6 +419,20 @@ void function SurvivalQuickInventory_OnUpdate()
 
 	if ( IsLobby() )
 		return
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 	foreach ( button in file.equipmentButtons )
 	{
@@ -654,6 +729,9 @@ bool function OnEquipmentKeyPress( var button, int keyId, bool isDown )
 	if ( IsLobby() )
 		return false
 
+	if ( !IsControllerModeActive() )
+		return false
+
 	if ( keyId == BUTTON_SHOULDER_RIGHT )
 	{
 		if ( IsFullyConnected() )
@@ -835,6 +913,53 @@ void function SurvivalInventoryMenu_SetSpaceForSling( bool hasSling )
 
 	Hud_SetVisible(Hud_GetChild( file.mainInventoryPanel, "SlingDecorations" ), hasSling)
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1413,7 +1538,9 @@ void function EquipmentSlingDecorations( var button, float duration, int actionT
 	OnThreadEnd(
 		function() : ( slingDecorationsRui )
 		{
-			RunClientScript("EquipmentButton_SlingWarningMessage", false )
+			if( CanRunClientScript() )
+				RunClientScript("EquipmentButton_SlingWarningMessage", false )
+
 			RuiSetBool( slingDecorationsRui, "highlightLeftConnector", false)
 			RuiSetBool( slingDecorationsRui, "highlightRightConnector", false)
 			RuiSetBool( slingDecorationsRui, "isNonSwappableWeapon", false )

@@ -37,9 +37,7 @@ global function GetPlayerBattlePassPurchasableLevels
 global function GetPlayerBattlePassPurchasableLevelsWithLegendTokens
 global function GetPlayerBattlePassUnpurchasedLevelsWithLegendTokens
 global function GetRewardPromptLevelArray
-
-	global function GetMilestoneRepImageLevelArray
-
+global function GetMilestoneRepImageLevelArray
 global function BattlePass_GetStoreBundleContentsImage
 
 global function BattlePassPurchasedXP_GetXPAmount
@@ -80,12 +78,12 @@ global function CanPlayerPurchaseBattlePassLevelsWithLegendTokens
 
 
 
-global function CanPlayerPurchaseBattlePass
 
 
 
-global function GetBattlePassXPEventValueDisplay
-global function ShouldBattlePassTabBeEnabled
+
+
+
 
 
 #if DEV
@@ -174,7 +172,7 @@ void function ShBattlePass_LevelInit()
 	RefreshCachedSeasonInfo()
 
 
-
+	Remote_RegisterServerFunction( "ClientCallback_UpdateBattlePassLastInfo", "int", INT_MIN, INT_MAX )
 
 
 
@@ -518,13 +516,13 @@ ItemFlavor ornull function GetPlayerLastActiveBattlePass( EHI playerEHI )
 
 
 
-bool function ShouldBattlePassTabBeEnabled()
-{
-	if ( !IsBattlePassEnabled() )
-		return false
 
-	return true
-}
+
+
+
+
+
+
 
 
 
@@ -807,7 +805,6 @@ array<int> function GetRewardPromptLevelArray( ItemFlavor pass )
 	return rtnArray
 }
 
-
 array<int> function GetMilestoneRepImageLevelArray( ItemFlavor pass, string arrayFieldName, string elementName )
 {
 	array<int> result
@@ -820,7 +817,6 @@ array<int> function GetMilestoneRepImageLevelArray( ItemFlavor pass, string arra
 
 	return result
 }
-
 
 
 
@@ -1529,11 +1525,11 @@ int function BattlePassPurchasedXP_GetXPAmount( ItemFlavor purchasedXPFlav )
 
 
 
-string function GetBattlePassXPEventValueDisplay( entity player, int xpType )
-{
-	
-	return Localize( "#EOG_XP_PLUSNUMBER", GetBattlePassXPEventValue( player, xpType ) )
-}
+
+
+
+
+
 
 
 
@@ -1549,18 +1545,16 @@ ItemFlavor function DEV_BattlePass( EHI playerEHI = EHI_null )
 
 
 
-
-
-
 		if ( playerEHI == EHI_null )
 			playerEHI = ToEHI( GetLocalClientPlayer() )
+
+
+
 
 
 	return expect ItemFlavor( GetPlayerActiveBattlePass( playerEHI ) )
 }
 #endif
-
-
 
 
 
@@ -1734,33 +1728,33 @@ asset function GetBattlePassDisplayBadge( int levelIndex )
 
 
 
-bool function CanPlayerPurchaseBattlePass( entity player, ItemFlavor activeBattlePass )
-{
-	if ( DoesPlayerOwnBattlePass( player, activeBattlePass ) )
-	{
-		printt("CanPlayerPurchaseBattlePass - returning false because player already owns battlepass" + ItemFlavor_GetAsset( activeBattlePass ))
-		return false
-	}
 
-	
 
-		if ( GRX_GetPackCount( ItemFlavor_GetGRXIndex( BattlePass_GetBasicPurchasePack( activeBattlePass ) ) ) != 0 )
-		{
-			printt("CanPlayerPurchaseBattlePass - returning false because for battlepass" + string(ItemFlavor_GetAsset( activeBattlePass )) + "and GRX_GetPackCount( ItemFlavor_GetGRXIndex( BattlePass_GetBasicPurchasePack( activeBattlePass ) ) ) != 0")
-			return false
-		}
-		if ( GRX_GetPackCount( ItemFlavor_GetGRXIndex( BattlePass_GetBundlePurchasePack( activeBattlePass ) ) ) != 0 )
-		{
-			printt("CanPlayerPurchaseBattlePass - returning false because for battlepass" + string(ItemFlavor_GetAsset( activeBattlePass )) + "and GRX_GetPackCount( ItemFlavor_GetGRXIndex( BattlePass_GetBundlePurchasePack( activeBattlePass ) ) ) != 0")
-			return false
-		}
 
-	
-	
-	
 
-	return true
-}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

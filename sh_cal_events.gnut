@@ -39,7 +39,7 @@ global function ItemFlavor_GetCalEventRef
 global function GetCalEventBeingProcessed
 
 
-global function CalEvent_GetTimeRemainingText
+
 
 
 global function SeasonQuest_GetQuestForSeason
@@ -79,6 +79,9 @@ global struct SeasonData
 
 global int UNIX_TIME_FALLBACK_1970 = 1
 global int UNIX_TIME_FALLBACK_2038 = 2145916800 
+
+
+
 
 
 
@@ -137,12 +140,12 @@ void function ShCalEvent_LevelInit()
 
 
 
-		
-		AddCallback_OnItemFlavorRegistered( eItemType.calevent_rankedperiod, StatsCard_OnRankedPeriodRegistered )
 
-			AddCallback_OnItemFlavorRegistered( eItemType.calevent_arenas_ranked_period, StatsCard_OnArenasRankedPeriodRegistered )
 
-		AddCallback_OnItemFlavorRegistered( eItemType.calevent_season, StatsCard_OnSeasonRegistered )
+
+
+
+
 
 
 	AddCallback_RegisterRootItemFlavors( void function() {
@@ -435,12 +438,21 @@ bool function CalEvent_HasFinished( ItemFlavor event, int t )
 
 
 
-
 bool function CalEvent_IsActive( ItemFlavor event, int t )
 {
 	Assert( IsItemFlavorRegistrationFinished() )
 	int finishUnixTime = CalEvent_GetFinishUnixTime( event )
-	return CalEvent_HasStarted( event, t ) && (t < finishUnixTime)
+
+	bool hasStarted = CalEvent_HasStarted( event, t )
+	bool hasNotFinished = ( t < finishUnixTime )
+
+
+
+
+
+
+
+	return hasStarted && hasNotFinished
 }
 
 
@@ -569,17 +581,17 @@ int ornull function CalEvent_GetUnixTimePlaylistOverride( ItemFlavor flav, strin
 
 
 
-string function CalEvent_GetTimeRemainingText( ItemFlavor season )
-{
-	int seasonEndUnixTime   = CalEvent_GetFinishUnixTime( season )
-	int remainingSeasonTime = seasonEndUnixTime - GetUnixTimestamp()
 
-	if ( remainingSeasonTime <= 0 )
-		return Localize( "#BATTLE_PASS_SEASON_ENDED" )
 
-	DisplayTime dt = SecondsToDHMS( remainingSeasonTime )
-	return Localize( GetDaysHoursRemainingLoc( dt.days, dt.hours ), dt.days, dt.hours )
-}
+
+
+
+
+
+
+
+
+
 
 
 

@@ -59,7 +59,10 @@ global const string SPIKE_STRIP_WEAPON_NAME = "mp_ability_spike_strip"
 const string SPIKE_STRIP_EXPLOSION_IMPACT_TABLE = "exp_ferro_tac_SM"
 
 
-const int SPIKE_STRIP_MAX_TRAPS = 3
+const int SPIKE_STRIP_MAX_TRAPS = 2
+
+
+
 const float SPIKE_STRIP_SPIKE_HEALTH = 300
 const float SPIKE_STRIP_SPIKE_DURATION = -1
 const bool SPIKE_STRIP_DEBUG = false
@@ -75,7 +78,10 @@ const int SPIKE_STRIP_NUM_SPIKES_IN_SPIKE_STRIP_EXTRA_WIDTH = 1
 const int SPIKE_STRIP_DISTANCE_BETWEEN_SPIKES = 47
 const int SPIKE_STRIP_DISTANCE_BETWEEN_ROWS = 30
 const float SPIKE_STRIP_MAIN_SPIKE_HEALTH = 300
-const float SPIKE_STRIP_SPIKE_CORE_DORMANT_RADIUS = 350
+const float SPIKE_STRIP_SPIKE_CORE_DORMANT_RADIUS = 440
+
+
+
 const float SPIKE_STRIP_SPIKE_DELAY = 2.0
 const float SPIKE_STRIP_SPIKE_SCALE_DORMANT = 1.0
 const float SPIKE_STRIP_SPIKE_SCALE_ACTIVE = 1.0
@@ -140,6 +146,8 @@ struct
 
 void function MpAbilitySpikeStrip_Init()
 {
+	PrecacheScriptString( SPIKE_STRIP_CORE_SPIKE_NAME )
+	PrecacheScriptString( SPIKE_STRIP_USE_ENTITY_NAME )
 	PrecacheModel( SPIKE_STRIP_SPIKE_CORE_DORMANT )
 	PrecacheModel( SPIKE_STRIP_SPIKE_CORE_ACTIVE )
 	PrecacheModel( SPIKE_STRIP_SPIKE_DORMANT )
@@ -191,6 +199,36 @@ void function MpAbilitySpikeStrip_Init()
 	file.pieceHeight				= GetCurrentPlaylistVarFloat( "catalyst_spikes_pieceHeight", SPIKE_STRIP_PIECE_HEIGHT )
 }
 
+
+
+
+
+
+
+
+int function GetMaxTraps( entity player )
+{
+	int result = file.maxTraps
+
+
+
+
+
+
+	return result
+}
+
+float function GetTriggerRadius( entity player )
+{
+	float result = file.detectionRadius
+
+
+
+
+
+
+	return result
+}
 
 void function OnWeaponActivate_ability_spike_strip( entity weapon )
 {
@@ -1697,6 +1735,100 @@ bool function CanDeployOnEnt( entity ent, vector pos )
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 void function OnClientAnimEvent_ability_spike_strip( entity weapon, string name )
 {
 	GlobalClientEventHandler( weapon, name )
@@ -1729,7 +1861,7 @@ entity function SpikeStripCreatePlacementProxy( asset modelName )
 void function MainSpikeCreated( entity spike )
 {
 	entity player = GetLocalViewPlayer()
-	ShowGrenadeArrow( player, spike, file.detectionRadius, 0.0, true, eThreatIndicatorVisibility.INDICATOR_SHOW_TO_ENEMIES )
+	ShowGrenadeArrow( player, spike, GetTriggerRadius( spike.GetOwner() ), 0.0, true, eThreatIndicatorVisibility.INDICATOR_SHOW_TO_ENEMIES )
 }
 
 void function UseEntityCreated( entity useEnt )

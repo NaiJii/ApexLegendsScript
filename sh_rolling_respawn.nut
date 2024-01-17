@@ -40,14 +40,14 @@ global function RollingRespawn_RegisterNetworking
 
 
 
+global function RollingRespawn_TriggerPlayerRespawn
 
+global function ServerCallback_CL_CreateSpawnRegionRUI
+global function ServerCallback_CL_PlayerReadyToSpawn
+global function ServerCallback_CL_PlayerRespawned
 
-
-
-
-
-
-
+global function ServerCallback_CL_ShowRespawnUI
+global function ServerCallback_CL_HideRespawnUI
 
 
 
@@ -56,6 +56,10 @@ global function RollingRespawn_RegisterNetworking
 void function RollingRespawn_Init()
 {
 
+	if ( GetRespawnStyle() != eRespawnStyle.ROLLING_RESPAWN )
+		return
+
+	Remote_RegisterServerFunction( "ClientCallback_TryRespawnPlayer", "typed_entity", "player_waypoint" )
 
 
 
@@ -69,13 +73,9 @@ void function RollingRespawn_Init()
 
 
 
-
-
-
-
-
-
-
+		AddCallback_OnPingSpawnRequest( RollingRespawn_TriggerPlayerRespawn )
+		AddCallback_OnCharacterSelectMenuOpened( Callback_HideRespawnOverlay )
+		AddCallback_OnCharacterSelectMenuClosed( Callback_ShowRespawnOverlay )
 
 }
 
@@ -373,44 +373,44 @@ void function RollingRespawn_RegisterNetworking()
 
 
 
+void function Callback_HideRespawnOverlay()
+{
+	
+}
 
+void function Callback_ShowRespawnOverlay()
+{
+	
+}
 
+void function RollingRespawn_TriggerPlayerRespawn( entity player, entity waypoint )
+{
+	Remote_ServerCallFunction( "ClientCallback_TryRespawnPlayer", waypoint )
+}
 
+void function ServerCallback_CL_PlayerReadyToSpawn()
+{
+	AnnouncementMessageRight( GetLocalClientPlayer(), Localize( READY_TO_SPAWN ), "", < 182, 212, 209 >, $"", 7.0 )
+}
 
+void function ServerCallback_CL_PlayerRespawned()
+{
+	
+}
 
+void function ServerCallback_CL_CreateSpawnRegionRUI( entity spawnRegion )
+{
+	
+}
 
+void function ServerCallback_CL_ShowRespawnUI( entity waypoint )
+{
+	Waypoint_ShowOnLocalHud( waypoint )
+}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+void function ServerCallback_CL_HideRespawnUI( entity waypoint )
+{
+	Waypoint_HideOnLocalHud( waypoint )
+}
 
 

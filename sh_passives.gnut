@@ -7,6 +7,10 @@ global function ShPassives_Init
 
 
 
+global function PlayerHasPassive
+global function AddCallback_OnPassiveChanged
+global function RemoveCallback_OnPassiveChanged
+global function Pas_GetWattsonUltAccelExtraCount
 
 
 
@@ -21,22 +25,21 @@ global function ShPassives_Init
 
 
 
+#if DEV
+global function DEV_PrintAllPassives
+#endif
 
 
 
 
-
-
-
-
-
-
-
-
+global function PlayerHasStealthMovement
 
 
 global const string MIRAGE_DECOY_DROP_SCRIPTNAME 		= "mirage_decoy_drop"
 const string MIRAGE_DECOY_DROP_MOVER_SCRIPTNAME 		= "mirage_decoy_drop_mover"
+const float UPGRADE_MIRAGE_CLOAK_SPEED_BOOST_AMNT 		= 0.5
+const float MIRAGE_DOWNED_CLOAK_DURATION 				= 5.0
+const float MIRAGE_REVIVE_CLOAK_DURATION 				= 3.0
 
 
 
@@ -44,12 +47,13 @@ const string MIRAGE_DECOY_DROP_MOVER_SCRIPTNAME 		= "mirage_decoy_drop_mover"
 
 
 
+global function ServerToClient_ShowCloakHintText
 
 
 
 
 
-
+global function CodeCallback_OnPassiveChanged
 
 
 
@@ -100,8 +104,10 @@ global enum ePassives
 
 
 
-	PAS_REPAIR,
-	PAS_COVER_FIRE,
+
+
+
+
 	PAS_GUNNER,
 	PAS_LOBA_EYE_FOR_QUALITY,
 
@@ -117,7 +123,7 @@ global enum ePassives
 
 
 
-
+		PAS_CONDUIT,
 
 
 
@@ -130,6 +136,12 @@ global enum ePassives
 
 
 		PAS_WEAPON_SLING,
+
+
+
+
+
+
 
 
 
@@ -256,19 +268,6 @@ global enum ePassives
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 	
 	
 	
@@ -296,18 +295,14 @@ global enum ePassives
 	PAS_NOVA,
 	PAS_PARIAH,
 	PAS_FUSE,
+	PAS_AXIOM,
+	PAS_VANTAGE,
+	PAS_LOCKDOWN,
 
 
 
 
-		PAS_AXIOM,
 
-
-
-
-		PAS_VANTAGE,
-
-		PAS_LOCKDOWN,
 
 
 
@@ -324,6 +319,41 @@ global enum ePassives
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+		PAS_EXTRA_ORDINANCE_SLOT,
+		PAS_HEALING_ITEM_HIGHLIGHT,
+		PAS_EXTRA_ALL_MED_INV,
+		PAS_KNOCK_ADRENALINE,
+		PAS_SQUADWIPE,
+		PAS_ORDNANCE_HIGHLIGHT,
 
 
 	_count,
@@ -371,9 +401,9 @@ struct
 
 
 
+		table<int, array<void functionref( entity, int, bool, bool )> > passiveChangedCallbackListMap
 
-
-
+		int wattson_ult_accel_extra
 
 } file
 
@@ -389,6 +419,11 @@ global ItemFlavor& PAS_LOW_PROFILE_FLAV
 void function PassivesShared_Init()
 {
 
+		PrecacheScriptString( MIRAGE_DECOY_DROP_SCRIPTNAME )
+		file.wattson_ult_accel_extra = GetCurrentPlaylistVarInt( "wattson_ult_accel_extra", 1 )
+
+		for ( int passiveIdx = 0; passiveIdx < ePassives._count; passiveIdx++ )
+			file.passiveChangedCallbackListMap[ passiveIdx ] <- []
 
 
 
@@ -440,12 +475,7 @@ void function PassivesShared_Init()
 
 
 
-
-
-
-
-
-
+		PrecacheParticleSystem( $"P_core_DMG_boost_screen" )
 
 }
 
@@ -514,15 +544,35 @@ void function OnRegisterRootItemFlavors()
 
 
 
+bool function PlayerHasPassive( entity player, int passive )
+{
+	if( !IsValid( player ) )
+		return false
 
+	return player.HasPassive( passive )
+}
 
 
 
 
+bool function PlayerHasStealthMovement( entity player )
+{
+	return false
+}
 
 
 
 
+void function AddCallback_OnPassiveChanged( int passive, void functionref( entity, int, bool, bool ) callback )
+{
+	Assert( !file.passiveChangedCallbackListMap[ passive ].contains( callback ), "Tried to add a callback that was already added" )
+	file.passiveChangedCallbackListMap[ passive ].append( callback )
+}
+void function RemoveCallback_OnPassiveChanged( int passive, void functionref( entity, int, bool, bool ) callback )
+{
+	Assert( file.passiveChangedCallbackListMap[ passive ].contains( callback ), "Tried to remove a callback that was not added" )
+	file.passiveChangedCallbackListMap[ passive ].fastremovebyvalue( callback )
+}
 
 
 
@@ -532,6 +582,16 @@ void function OnRegisterRootItemFlavors()
 
 
 
+#if DEV
+void function DEV_PrintAllPassives( entity player )
+{
+	for ( int passiveIdx = 0; passiveIdx < ePassives._count; passiveIdx++ )
+	{
+		if ( player.HasPassive( passiveIdx ) )
+			printt( "Player " + player + " has passive: " + DEV_GetEnumStringSafe( "ePassives", passiveIdx ) )
+	}
+}
+#endif
 
 
 
@@ -541,8 +601,17 @@ void function OnRegisterRootItemFlavors()
 
 
 
+void function CodeCallback_OnPassiveChanged( entity player, int passiveIdx )
+{
+	if ( !IsValid( player ) )
+		return
 
+	bool nowHasPassive  = player.HasPassive( passiveIdx )
+	bool didHavePassive = !nowHasPassive 
 
+	foreach ( callback in file.passiveChangedCallbackListMap[passiveIdx] )
+		callback( player, passiveIdx, didHavePassive, nowHasPassive )
+}
 
 
 
@@ -790,7 +859,15 @@ void function OnRegisterRootItemFlavors()
 
 
 
+void function ServerToClient_ShowCloakHintText()
+{
+	entity player = GetLocalViewPlayer()
 
+	if (IsValid(player))
+	{
+		AnnouncementMessageRight( player, "#CLOAK_UNARMED_WARNING" )
+	}
+}
 
 
 
@@ -1166,5 +1243,19 @@ void function OnRegisterRootItemFlavors()
 
 
 
+
+
+
+
+
+
+
+
+
+
+int function Pas_GetWattsonUltAccelExtraCount()
+{
+	return file.wattson_ult_accel_extra
+}
 
 

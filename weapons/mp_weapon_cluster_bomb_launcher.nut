@@ -6,7 +6,6 @@ global function OnWeaponOwnerChanged_weapon_cluster_bomb_launcher
 const asset CLUSTER_BOMB_MODEL = $"mdl/weapons_r5/misc_fuse_tactical_grenade/w_fuse_tactical_grenade_projectile.rmdl"
 const asset CLUSTER_BOMB_FIRST_EXPLOSION_FX = $"P_fuse_tac_exp_air"
 const asset CLUSTER_BOMB_SECONDARY_EXPLOSION_FX = $"P_fuse_tac_exp_air"
-const asset CLUSTER_BOMB_TRAIL_FX = $"P_fuse_tac_bomb_trail"
 const asset CLUSTER_BOMB_LAUNCHER_IMPACT_FX = $"P_fuse_tac_impact"
 const asset CLUSTER_BOMB_LAUNCHER_LIGHT_FX = $"P_fuse_tac_light"
 const string CLUSTER_BOMB_INITIAL_IMPACT_TABLE = "exp_fuse_tac_bomb"
@@ -70,7 +69,6 @@ void function MpWeaponClusterBombLauncher_Init()
 	PrecacheModel( CLUSTER_BOMB_MODEL )
 	PrecacheWeapon( CLUSTER_BOMB_WEAPON )
 	PrecacheParticleSystem( CLUSTER_BOMB_LAUNCHER_IMPACT_FX )
-	PrecacheParticleSystem( CLUSTER_BOMB_TRAIL_FX )
 	PrecacheParticleSystem( CLUSTER_BOMB_LAUNCHER_LIGHT_FX )
 	PrecacheParticleSystem( CLUSTER_BOMB_FIRST_EXPLOSION_FX )
 	PrecacheParticleSystem( CLUSTER_BOMB_SECONDARY_EXPLOSION_FX )

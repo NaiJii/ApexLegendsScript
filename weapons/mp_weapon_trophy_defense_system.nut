@@ -203,6 +203,11 @@ struct
 	int trophy_shieldRegenAmount
 	float trophy_shieldRegenInterval
 	float trophy_shieldRegenDelayOnDamage
+
+
+
+
+
 } file
 
 function MpWeaponTrophy_Init()
@@ -510,7 +515,7 @@ TrophyPlacementInfo function _GetPlacementInfo( entity player, entity proxy, vec
 	if ( success && IsValid( useResults.hitEnt ) && IsEntInvalidForPlacingPermanentOnto( useResults.hitEnt ) )
 		success = false
 
-	if ( success && IsOriginInvalidForPlacingPermanentOnto( useResults.endPos ) )
+	if ( success && IsOriginInvalidForPlacingPermanentOnto( useResults.endPos, proxy ) )
 		success = false
 
 
@@ -570,6 +575,104 @@ void function OnCreateClientOnlyModel_weapon_trophy_defense_system( entity weapo
 	else
 		DeployableModelInvalidHighlight( model )
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -2704,4 +2807,50 @@ void function MinimapPackage_TrophySystem( entity ent, var rui )
 		RuiTrackFloat( rui, "objectRadius", ent, RUI_TRACK_MINIMAP_SCALE )
 }
 
+
+int function GetTrophySystem_MaxHealth( entity owner )
+{
+	int maxHealth = TROPHY_HEALTH_AMOUNT
+
+
+
+
+
+
+
+
+	return maxHealth
+}
+
+int function GetTrophySystem_MaxShieldCapacity( entity trophy )
+{
+	int maxCapacity = file.trophy_shieldPoolAmount
+	entity owner = trophy.GetOwner()
+
+
+
+
+
+
+
+
+
+
+
+	return maxCapacity
+}
+
+int function GetTrophySystem_MaxTrophyCount( entity owner )
+{
+	int maxCount = file.trophy_maxCount
+
+
+
+
+
+
+
+
+	return maxCount
+}
 

@@ -1,5 +1,3 @@
-
-
 global function MpWeaponAshHeirloomPrimary_Init
 global function OnWeaponActivate_weapon_ash_heirloom_primary
 global function OnWeaponDeactivate_weapon_ash_heirloom_primary
@@ -173,4 +171,3 @@ void function OnWeaponCustomActivityEnd_weapon_ash_heirloom_primary( entity weap
 
 		}
 }
-                         

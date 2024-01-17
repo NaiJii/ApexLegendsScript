@@ -15,7 +15,6 @@ global function OnWeaponDeactivate_weapon_grenade_gas
 
 
 
-
 const float WEAPON_GAS_GRENADE_DELAY = 1.0
 const float WEAPON_GAS_GRENADE_DURATION = 15.0
 
@@ -92,34 +91,6 @@ void function OnProjectileCollision_weapon_grenade_gas( entity projectile, vecto
 
 	projectile.GrenadeIgnite()
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

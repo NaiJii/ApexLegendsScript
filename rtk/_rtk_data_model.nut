@@ -6,6 +6,7 @@ global function RTKStruct_GetOrCreateScriptArrayOfStructs
 
 global function RTKDataModelType_CreateStruct
 global function RTKDataModelType_DestroyStruct
+global function RTKDataModelType_GetStruct
 global function RTKDataModelType_GetDataPath
 
 global const string RTK_MODELTYPE_COMMON = "common"
@@ -100,6 +101,15 @@ void function RTKDataModelType_DestroyStruct( string type = "", string propertyN
 
 	if( RTKStruct_HasProperty( data, propertyName ) )
 		RTKStruct_RemoveProperty( data, propertyName )
+}
+
+rtk_struct ornull function RTKDataModelType_GetStruct( string type = "", string propertyName = "", bool includeRoot = true, array< string > parentPropertyNames = [] )
+{
+	string path = RTKDataModelType_GetDataPath( type, propertyName, includeRoot, parentPropertyNames )
+	if ( RTKDataModel_HasDataModel( path ) )
+		return RTKDataModel_GetStruct( path )
+
+	return null
 }
 
 string function RTKDataModelType_GetDataPath( string type = "", string propertyName = "", bool includeRoot = true, array< string > parentPropertyNames = [] )

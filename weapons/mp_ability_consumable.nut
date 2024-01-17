@@ -73,6 +73,9 @@ global enum eConsumableType
 
 
 
+
+
+
 	ULTIMATE
 
 	_count
@@ -348,6 +351,21 @@ void function Consumable_Init()
 		file.consumableTypeToInfo[ eConsumableType.HEALTH_SMALL ] <- healthSmall
 	}
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 	{
 		
 		ConsumableInfo ultimateBattery
@@ -374,6 +392,13 @@ void function Consumable_Init()
 	file.modNameToConsumableType[ "phoenix_kit" ] <-        eConsumableType.COMBO_FULL
 	file.modNameToConsumableType[ "ultimate_battery" ] <-    eConsumableType.ULTIMATE
 
+
+
+
+
+
+
+
 	file.consumableUseOrder.append( eConsumableType.SHIELD_LARGE )
 
 
@@ -396,7 +421,48 @@ void function Consumable_Init()
 		SetCallback_UseConsumable( Consumable_HandleConsumableUseCommand )
 		AddCallback_GameStateEnter( eGameState.Resolution, Consumable_OnGamestateEnterResolution )
 
+
+
+
+
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -433,7 +499,7 @@ void function OnWeaponOwnerChanged_Consumable( entity weapon, WeaponOwnerChanged
 	if ( !IsValid( changeParams.oldOwner ) )
 	{
 
-		if ( weaponOwner == GetLocalClientPlayer() || IsSpectatorSpectatingPlayer( weaponOwner ) )
+		if ( weaponOwner == GetLocalViewPlayer() )
 
 		{
 			TryAddWeaponPersistenceData( weapon )
@@ -578,6 +644,17 @@ void function OnWeaponActivate_Consumable( entity weapon )
 
 
 
+
+
+
+
+
+
+
+
+
+
+
 		
 		
 		if ( weapon.GetOwner() != GetLocalClientPlayer() && GetLocalViewPlayer() == weapon.GetOwner() )		
@@ -587,8 +664,20 @@ void function OnWeaponActivate_Consumable( entity weapon )
 
 
 
-		if ( weapon.GetOwner() != GetLocalClientPlayer() && !IsSpectatorSpectatingPlayer( weapon.GetOwner() ) )
+		if ( weapon.GetOwner() != GetLocalClientPlayer() )
 			return
+
+
+
+
+
+
+
+
+
+
+
+
 
 		modName = file.clientPlayerNextMod
 		printt( format( "[CONSUMABlE] Activating consumable (%s)", modName ) )
@@ -605,10 +694,14 @@ void function OnWeaponActivate_Consumable( entity weapon )
 
 		file.healCompletedSuccessfully = false
 
-		if ( CharacterSelect_MenuIsOpen() )
-			CloseCharacterSelectNewMenu()
-		if ( !( IsPrivateMatch() && IsSpectator( GetLocalClientPlayer() ) ) ) 
+		if ( !IsSpectator( GetLocalClientPlayer() ) && !IsWatchingKillReplay() )
+		{
+			if ( CharacterSelect_MenuIsOpen() )
+				CloseCharacterSelectMenu()
+
 			RunUIScript( "CloseAllMenus" )
+		}
+
 
 
 
@@ -644,7 +737,14 @@ void function OnWeaponActivate_Consumable( entity weapon )
 		if ( InPrediction() )
 
 		{
+
+
+
+
 			useData.statusEffectHandles.append( StatusEffect_AddEndless( weaponOwner, eStatusEffect.move_slow, GetCurrentPlaylistVarFloat( "survival_healthkits_move_speed_reduction", 0.4 ) ) )
+
+
+
 			useData.statusEffectHandles.append( StatusEffect_AddEndless( weaponOwner, eStatusEffect.disable_wall_run, 1.0 ) )
 			useData.statusEffectHandles.append( StatusEffect_AddEndless( weaponOwner, eStatusEffect.disable_double_jump, 1.0 ) )
 		}
@@ -814,7 +914,7 @@ void function OnWeaponDeactivate_Consumable( entity weapon )
 
 
 
-		if ( IsValid( weaponOwner ) && weaponOwner != GetLocalClientPlayer() && !IsSpectatorSpectatingPlayer( weaponOwner ) )
+		if ( IsValid( weaponOwner ) && weaponOwner != GetLocalViewPlayer() )
 			return
 
 		Signal( weaponOwner, "ConsumableDestroyRui" )
@@ -1195,7 +1295,7 @@ var function OnWeaponPrimaryAttack_Consumable( entity weapon, WeaponPrimaryAttac
 
 
 
-		if ( player != GetLocalClientPlayer() )
+		if ( player != GetLocalViewPlayer() )
 			return
 
 		file.healCompletedSuccessfully = true
@@ -1341,11 +1441,20 @@ void function Consumable_HandleConsumableUseCommand( entity player, string consu
 
 void function AddModAndFireWeapon_Thread( entity player, string modName )
 {
-	if ( ! (player == GetLocalClientPlayer() && player == GetLocalViewPlayer()) )
+	if ( !( player == GetLocalClientPlayer() && player == GetLocalViewPlayer() ) )
 		return
 
 	if ( player.IsBot() )
 		return
+
+
+
+
+
+
+
+
+
 
 	int consumableType  = file.modNameToConsumableType[ modName ]
 	if ( !Consumable_CanUseConsumable( player, consumableType, true ) )
@@ -1693,7 +1802,16 @@ string function GetCanUseResultString( int consumableUseActionResult )
 			return "#DENY_NO_KITS"
 
 		case eUseConsumableResult.DENY_NO_SHIELDS:
-			return "#DENY_NO_SHIELDS"
+		{
+
+
+
+
+
+
+				return "#DENY_NO_SHIELDS"
+
+		}
 
 		case eUseConsumableResult.DENY_FULL:
 			return "#DENY_FULL"
@@ -2129,6 +2247,23 @@ void function ServerToClient_DoUltAccelScreenFx()
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 bool function Consumable_CanUseUltAccel( entity player )
 {
 	entity ult = player.GetOffhandWeapon( OFFHAND_ULTIMATE )
@@ -2136,6 +2271,10 @@ bool function Consumable_CanUseUltAccel( entity player )
 		return false
 
 	int minToFire = ult.GetWeaponSettingInt( eWeaponVar.ammo_min_to_fire )
+	int burstCount = ult.GetWeaponSettingInt( eWeaponVar.burst_fire_count )
+	if ( burstCount > 0 )
+		minToFire *= burstCount
+
 	if ( ult.GetWeaponPrimaryClipCount() >= minToFire )
 		return false
 
@@ -2275,8 +2414,10 @@ int function Consumable_GetConsumableRecoveryType( int consumableType )
 
 bool function Consumable_CanUseConsumable( entity player, int consumableType, bool printReason = true )
 {
-	if ( IsPlayerShadowZombie( player ) )
-		return false
+
+		if ( IsPlayerShadowZombie( player ) )
+			return false
+
 
 
 	int canUseResult = TryUseConsumable( player, consumableType )
@@ -2357,10 +2498,8 @@ int function TryUseConsumable( entity player, int consumableType )
 	{
 		if ( player.ContextAction_IsRodeo() )
 			break 
-
 		if ( player.ContextAction_IsZipline() && PlayerHasPassive( player, ePassives.PAS_PATHFINDER ) && !S16_PathfinderSkirmisherPassiveActive() )
 			break 
-
 
 		return eUseConsumableResult.DENY_NONE
 	}
@@ -2535,7 +2674,22 @@ string function GetConsumableModOnWeapon( entity weapon )
 		foreach ( int consumableType, ConsumableInfo info in file.consumableTypeToInfo )
 		{
 			if ( mod == info.modName )
+			{
 				return mod
+			}
+
+
+
+
+
+
+
+
+
+
+
+
+
 		}
 	}
 

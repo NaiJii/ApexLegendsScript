@@ -76,6 +76,13 @@ void function CustomizeCharacterMenu_OnOpen()
 			tab.isBannerLogoSmall = true
 			SetTabBaseWidth( tab, 200 )
 		}
+		if ( GetCurrentPlaylistVarBool( "allow_legend_melee_tab", true ) )
+		{
+			var panel = Hud_GetChild( file.menu, "LegendMeleePanel" )
+			TabDef tab = AddTab( file.menu, panel, "#MELEE_BUTTON" )
+			tab.isBannerLogoSmall = true
+			SetTabBaseWidth( tab, 160 )
+		}
 		{
 			var panel = Hud_GetChild( file.menu, "LegendLorePanel" )
 			TabDef tab = AddTab( file.menu, panel, "#BIO_BUTTON" )
@@ -97,6 +104,8 @@ void function CustomizeCharacterMenu_OnOpen()
 		tabData.bannerTitle = Localize( ItemFlavor_GetLongName( character ) ).toupper()
 		tabData.bannerLogoImage = ItemFlavor_GetIcon( character )
 		tabData.bannerLogoScale = 0.7
+		tabData.callToActionWidth = 190
+		tabData.initialFirstTabButtonXPos = 80
 		SetTabBackground( tabData, Hud_GetChild( file.menu, "TabsBackground" ), eTabBackground.CAPSTONE )
 
 		SetTabDefsToSeasonal(tabData)

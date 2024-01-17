@@ -46,6 +46,9 @@ global function Grenade_Launch
 const EMP_MAGNETIC_FORCE = 1600
 const MAG_FLIGHT_SFX_LOOP = "Explo_MGL_MagneticAttract"
 
+global const vector GRENADE_ANG_VEL_DEFAULT = <10, -1600, 10>
+global const vector GRENADE_ANG_VEL_DISC = <0, 30, -2200>
+
 
 
 
@@ -379,7 +382,7 @@ var function Grenade_OnWeaponTossCancelDrop( entity weapon, WeaponPrimaryAttackP
 }
 
 
-entity function Grenade_Launch( entity weapon, vector attackPos, vector throwVelocity, bool isPredicted, bool isLagCompensated, bool applyAngularVelocity = true )
+entity function Grenade_Launch( entity weapon, vector attackPos, vector throwVelocity, bool isPredicted, bool isLagCompensated, vector angularVelocity = GRENADE_ANG_VEL_DEFAULT )
 {
 
 		if ( !weapon.ShouldPredictProjectiles() || !isPredicted )
@@ -406,13 +409,9 @@ entity function Grenade_Launch( entity weapon, vector attackPos, vector throwVel
 
 	
 	
-	vector angularVelocity = <0, 0, 0>
-	if ( applyAngularVelocity )
-	{
-		angularVelocity = <10, -1600, 10>
-		if ( discThrow == 1 )
-			angularVelocity = <0, 30, -2200>
-	}
+
+	if ( discThrow == 1 && angularVelocity == GRENADE_ANG_VEL_DEFAULT )
+		angularVelocity = GRENADE_ANG_VEL_DISC
 
 	int damageFlags = weapon.GetWeaponDamageFlags()
 	WeaponFireGrenadeParams fireGrenadeParams

@@ -11,9 +11,7 @@ struct
 
 	var continueButton
 	var battlePassNextRewardButton
-
-
-
+	var progressionModifiersButton
 
 	array<var>              rewardButtonArray
 	table<BattlePassReward> buttonToRewardTable
@@ -76,9 +74,7 @@ void function InitPostGameBattlePassMenu( var newMenuArg )
 
 
 	file.continueButton = Hud_GetChild( menu, "ContinueButton" )
-
-
-
+	file.progressionModifiersButton = Hud_GetChild( menu, "ProgressionModifiersButton" )
 	Hud_AddEventHandler( file.continueButton, UIE_CLICK, OnContinue_Activate )
 
 	var menuHeaderRui = Hud_GetRui( Hud_GetChild( menu, "MenuHeader" ) )
@@ -220,15 +216,15 @@ void function ShowChallengeProgression( ItemFlavor battlePass )
 #endif
 
 	waitthread WaitToUpdateUntilReady( player )
+	if ( !IsConnected() )
+		return
 
 	var matchSummaryRui = Hud_GetRui( file.matchSummary )
 	SetSeasonColors( matchSummaryRui )
 
 	
 	Hud_SetVisible( file.matchSummary, true )
-
-
-
+	Hud_SetVisible( file.progressionModifiersButton, false )
 	Hud_SetVisible( file.battlePassNextRewardButton, true )
 
 	
@@ -267,9 +263,7 @@ void function ShowChallengeProgression( ItemFlavor battlePass )
 	bool playLevelUpAudio = false
 
 	int earnedStars    = 0
-
-
-
+	int earnedBonusStars = 0
 	int gainedLevels   = 0
 	int archivedPrizes = 0
 
@@ -287,6 +281,8 @@ void function ShowChallengeProgression( ItemFlavor battlePass )
 
 	int archiveButtonIndex = 0
 	int rowIndex           = 0 
+	table<int, ChallengeProgressData> challengesTracker
+
 	foreach ( ChallengeProgressData baseChallengeData in challengeProgressDataArray )
 	{
 		array<ChallengeProgressData> groupArray = [baseChallengeData]
@@ -324,10 +320,12 @@ void function ShowChallengeProgression( ItemFlavor battlePass )
 						int bpLevels = Voucher_GetEffectBattlepassLevels( reward ) * quantity
 						int stars    = Voucher_GetEffectBattlepassStars( reward ) * quantity
 
-
-
-
-
+						if ( !CheckForRepeatedChallenges(challengeData, challengesTracker) )
+						{
+							int bonusStars = challengeData.bonus
+							stars += bonusStars	
+							earnedBonusStars += bonusStars 
+						}
 						earnedStars += stars 
 
 						
@@ -421,6 +419,7 @@ void function ShowChallengeProgression( ItemFlavor battlePass )
 				SetBattlePassLevelReward( battlePass, file.battlePassNextRewardButton, nextPassLevel, ownBattlePass )
 				SetBattlePassLevelBadgeForLevel( player, matchSummaryRui, battlePass, currentPassLevel + 1, currentPassLevel >= passMaxLevel )
 				UpdatePostGameValues( matchSummaryRui, progressTowardsNextLevel, earnedStars, gainedLevels, archivedPrizes )
+				UpdateProgressionModifiersElements( earnedBonusStars )
 			}
 
 			
@@ -434,9 +433,6 @@ void function ShowChallengeProgression( ItemFlavor battlePass )
 			}
 		}
 	}
-
-
-
 	if ( instantUpdate )
 	{
 		RuiSetBool( matchSummaryRui, "supressAnimation", false )
@@ -444,6 +440,7 @@ void function ShowChallengeProgression( ItemFlavor battlePass )
 		SetBattlePassLevelReward( battlePass, file.battlePassNextRewardButton, nextPassLevel, ownBattlePass )
 		SetBattlePassLevelBadgeForLevel( player, matchSummaryRui, battlePass, currentPassLevel + 1, currentPassLevel >= passMaxLevel )
 		UpdatePostGameValues( matchSummaryRui, progressTowardsNextLevel, earnedStars, gainedLevels, archivedPrizes )
+		UpdateProgressionModifiersElements( earnedBonusStars )
 	}
 
 	if ( playLevelUpAudio )
@@ -459,6 +456,17 @@ void function ShowChallengeProgression( ItemFlavor battlePass )
 		thread TryDisplayBattlePassAwards( true )
 }
 
+bool function CheckForRepeatedChallenges(ChallengeProgressData challengeData, table<int, ChallengeProgressData> challenges)
+{
+	int challengeId = challengeData.challengeGUID
+	bool isRepeatedChallenge = challengeId in challenges
+	if (!isRepeatedChallenge)
+	{
+		challenges[challengeId] <- challengeData
+		return false
+	}
+	return true
+}
 
 void function UpdatePostGameValues( var rui, int progressTowardsNextLevel, int earnedStars, int gainedLevels, int archivedPrizes )
 {
@@ -555,6 +563,7 @@ void function UpdateChallengeProgressbutton( entity player, var button, Challeng
 	RuiSetBool( rui, "challengeIsInfinite", isInfinite )
 
 	RuiSetGameTime( rui, "flareRewardStartTime", RUI_BADGAMETIME )
+	RuiSetBool( rui, "showMythicBoostIndicator",  challengeData.progressBonus != 0 )
 
 	int gameMode = Challenge_GetGameMode( challengeFlav, isAlt )
 	RuiSetString( rui, "challengeModeTag", Challenge_GetGameModeTag( gameMode ) )
@@ -581,7 +590,11 @@ void function UpdateChallengeProgressbutton( entity player, var button, Challeng
 void function WaitToUpdateUntilReady( entity player )
 {
 	
-	bool showRankedSummary = GetPersistentVarAsInt( "showRankedSummary" ) != 0
+
+	bool showRankedSummary = Ranked_GetXProgMergedPersistenceData( GetLocalClientPlayer(), RANKED_SHOW_RANKED_SUMMARY_PERSISTENCE_VAR_NAME ) != 0
+
+
+
 	if ( showRankedSummary )
 	{
 		WaitFrame() 
@@ -591,8 +604,8 @@ void function WaitToUpdateUntilReady( entity player )
 		}
 	}
 
-	string postMatchSurveyMatchId = string( GetPersistentVar( "postMatchSurveyMatchId" ) )
-	float postMatchSurveySampleRateLowerBound = expect float( GetPersistentVar( "postMatchSurveySampleRateLowerBound" ) )
+	string postMatchSurveyMatchId = string( UISafeGetPersistentVar( "postMatchSurveyMatchId" ) )
+	float postMatchSurveySampleRateLowerBound = expect float( UISafeGetPersistentVar( "postMatchSurveySampleRateLowerBound" ) )
 	if ( !showRankedSummary && file.isFirstTime && TryOpenSurvey( eSurveyType.POSTGAME, postMatchSurveyMatchId, postMatchSurveySampleRateLowerBound ) )
 	{
 		while ( IsDialog( GetActiveMenu() ) )
@@ -710,9 +723,7 @@ void function ClearGameBattlePassMenu()
 
 	Hud_SetVisible( file.matchSummary, false )
 	Hud_SetVisible( file.battlePassNextRewardButton, false )
-
-
-
+	Hud_SetVisible( file.progressionModifiersButton, false )
 
 	foreach ( var button in file.rewardButtonArray )
 		Hud_SetVisible( button, false )
@@ -758,44 +769,36 @@ void function OnContinue_Activate( var button )
 		CloseActiveMenu()
 }
 
+void function UpdateProgressionModifiersElements( int bonusStars )
+{
+	BoostTable boosts = Boost_GetPreviousAppliedBoosts( GetLocalClientPlayer() )
+	Hud_ClearToolTipData( file.progressionModifiersButton )
+	ToolTipData toolTipData
+	toolTipData.titleText = Localize( "#PROGRESSION_MODIFIERS_BATTLEPASS" )
+	toolTipData.tooltipFlags = toolTipData.tooltipFlags | eToolTipFlag.SOLID
+	toolTipData.descText = GetFormatedTooltipDescriptionFromActiveBoosts( boosts )
+	Hud_SetToolTipData( file.progressionModifiersButton, toolTipData )
+	HudElem_SetRuiArg( file.progressionModifiersButton, "textColor", Boost_GetBoostEventCategoryColorFromCategory( eBoostCategory.BP_STARS ) )
+	HudElem_SetRuiArg( file.progressionModifiersButton, "earnedStars", bonusStars )
+	Hud_SetVisible( file.progressionModifiersButton, Boost_GetBoostEventQuantityFromCategory( eBoostCategory.BP_STARS, boosts ) > 0 )
+}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+string function GetFormatedTooltipDescriptionFromActiveBoosts( BoostTable boosts )
+{
+	string formatedString = ""
+	int idx = 0
+	foreach ( Boost boost in boosts )
+	{
+		idx++
+		if ( boost.boostCategory == eBoostCategory.BP_STARS )
+		{
+			formatedString += Localize( boost.boostDescriptionShort )
+			if ( idx < boosts.len() )
+				formatedString += "\n"
+		}
+	}
+	return formatedString
+}
 
 
 

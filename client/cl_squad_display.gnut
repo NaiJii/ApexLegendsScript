@@ -67,7 +67,7 @@ void function OnPlayerTeamChanged( entity player, int oldTeam, int newTeam )
 		{
 			PlayerInfo info
 			info.player = player
-			info.uid = player.GetPlatformUID()
+			info.uid = player.GetUserID()
 			info.eaid = player.GetEadpUserIdStr()
 			info.hardware = player.GetUnspoofedHardware()
 			info.unspoofedUid = player.GetUnspoofedPlatformUserIdStr()

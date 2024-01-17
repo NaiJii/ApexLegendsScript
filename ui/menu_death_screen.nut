@@ -26,6 +26,9 @@ global function DeathScreenIsOpen
 global function DeathScreenOnReportButtonClick
 global function DeathScreenOnBlockButtonClick
 global function DeathScreenTryToggleGladCard
+
+
+
 global function DeathScreenPingRespawn
 global function DeathScreenSpectateNext
 global function DeathScreenSkipDeathCam
@@ -45,6 +48,9 @@ struct
 	bool      tabsInitialized
 	float     menuOpenTime
 	bool      isGladCardShowing = true	
+
+
+
 	bool      canShowGladCard = true	
 	bool      canReportRecapPlayer
 	int       observerMode
@@ -641,7 +647,16 @@ void function DeathScreenMenuOnNavBack()
 				if( GetGameState() < eGameState.Playing ) 
 					UI_CloseDeathScreenMenu()
 				else
-					ActivateTab( tabData, eDeathScreenPanel.SPECTATE )
+				{
+					if ( file.isEliminated && IsTabIndexEnabled( tabData, eDeathScreenPanel.SPECTATE ) )
+					{
+						ActivateTab( tabData, eDeathScreenPanel.SPECTATE )
+					}
+					else if ( InputIsButtonDown( KEY_ESCAPE ) )
+					{
+						OpenSystemMenu()
+					}
+				}
 			}
 		}
 		else
@@ -793,25 +808,27 @@ bool function CanSkipDeathCam()
 	if ( GetGameState() > eGameState.Playing )
 		return false
 
+	bool playlistEnabled = GamemodeUtility_GetKillReplayActive()
 
-	if ( IsFullyConnected() && Control_IsModeEnabled() )
+
+	if ( IsFullyConnected() && Control_IsModeEnabled() && !playlistEnabled)
 		return false
 
 
 
-	if ( IsFullyConnected() && TDM_IsModeEnabled() )
+	if ( IsFullyConnected() && TDM_IsModeEnabled() && !playlistEnabled)
 		return false
 
 
 
-	if ( IsFullyConnected() && GunGame_IsModeEnabled() )
+	if ( IsFullyConnected() && GunGame_IsModeEnabled() && !playlistEnabled)
 		return false
 
-
-
-
-
-
+	
+	
+	
+	
+	
 
 	return file.shouldShowSkip
 }
@@ -825,8 +842,8 @@ bool function CanSkipRecap()
 		return false
 
 
-	if ( Control_IsModeEnabled() )
-		return true
+
+
 
 
 
@@ -914,6 +931,13 @@ void function DeathScreenTryToggleGladCard( var button )
 }
 
 
+
+
+
+
+
+
+
 void function DeathScreenUpdateCursor()
 {
 	int tabIndex = GetMenuActiveTabIndex( file.menu )
@@ -988,7 +1012,7 @@ bool function DeathScreenIsOpen()
 void function ChangeLegend_OnActivate( var button )
 {
 	if( Hud_IsVisible( DeathScreenGetChangeLegendButton() ) && DeathScreenIsOpen() )
-		RunClientScript( "UICallback_OpenCharacterSelectNewMenu" )
+		RunClientScript( "UICallback_OpenCharacterSelectMenu" )
 }
 
 void function ChangeLoadout_OnActivate( var button )

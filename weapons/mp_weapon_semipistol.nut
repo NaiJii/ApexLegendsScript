@@ -3,6 +3,18 @@ global function OnWeaponDeactivate_weapon_semipistol
 global function OnWeaponReload_weapon_semipistol
 global function OnProjectileCollision_weapon_semipistol
 
+
+
+
+
+
+
+
+
+
+
+
+
 void function OnWeaponActivate_weapon_semipistol( entity weapon )
 {
 

@@ -283,17 +283,6 @@ var function OnWeaponPrimaryAttack_weapon_mobile_hmg( entity weapon, WeaponPrima
 			PlayerUsedOffhand( weaponOwner, weapon )
 		}
 
-
-
-
-
-
-
-
-
-
-
-
 		return OnWeaponPrimaryAttack_weapon_basic_bolt( weapon, attackParams )
 	}
 	else

@@ -677,6 +677,25 @@ float function SniperUlt_GetMarkedDuration()
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 void function OnClientAnimEvent_ability_sniper_ult( entity weapon, string name )
 {
 	GlobalClientEventHandler( weapon, name )
@@ -822,5 +841,6 @@ void function SniperUlt_Mark_Client_Stop( entity ent, int statusEffect, bool act
 	
 	ent.Signal( "SniperUlt_Mark_StopSignal" )
 }
+
 
 

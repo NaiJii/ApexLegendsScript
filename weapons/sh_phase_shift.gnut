@@ -23,6 +23,9 @@ const SHIFTER_DISAPPEAR_FX_TITAN = $"P_phase_shift_main_XO"
 
 const SHIFTER_DASH_APPEAR_FX = $"P_phase_dash_end"
 const SHIFTER_DASH_DISAPPEAR_FX = $"P_phase_dash_start"
+
+
+
 const SHIFTER_DASH_DISAPPEAR_ON_WRAITH_FX = $"P_phase_dash_start_mdl"
 
 const string SHIFTER_MOVER_SCRIPTNAME = "phaseshift_mover"
@@ -143,6 +146,9 @@ void function MpAbilityShifter_Init()
 	PrecacheParticleSystem( SHIFTER_SCREEN_FX_START )
 	PrecacheParticleSystem( SHIFTER_DASH_APPEAR_FX )
 	PrecacheParticleSystem( SHIFTER_DASH_DISAPPEAR_FX )
+
+
+
 	PrecacheParticleSystem( SHIFTER_DASH_DISAPPEAR_ON_WRAITH_FX )
 
 	PrecacheScriptString( SHIFTER_MOVER_SCRIPTNAME )
@@ -195,10 +201,12 @@ int function PhaseShift( entity ent, float warmupTime, float duration, int shift
 			return 0
 		}
 
+		bool seeOtherNonShifters = false
+
 		switch ( shiftStyle )
 		{
 			case PHASETYPE_BALANCE:
-				ent.SetSeeOtherNonShifters( true )
+				seeOtherNonShifters = true
 				StatusEffect_AddTimed( ent, eStatusEffect.speed_boost, 0.05, duration, 0.25 )
 				break
 
@@ -207,11 +215,8 @@ int function PhaseShift( entity ent, float warmupTime, float duration, int shift
 			case PHASETYPE_BREACH:
 			case PHASETYPE_TUNNEL:
 
-				if ( PlayerHasPassive( ent, ePassives.PAS_REVENANT_REWORK ) )
-					ent.SetSeeOtherNonShifters( true )
-				else
 
-					ent.SetSeeOtherNonShifters( false )
+
 				StatusEffect_AddTimed( ent, eStatusEffect.speed_boost, 0.05, duration, 0.25 )
 			break
 			case PHASETYPE_DASH:
@@ -219,9 +224,16 @@ int function PhaseShift( entity ent, float warmupTime, float duration, int shift
 
 
 			default:
-				ent.SetSeeOtherNonShifters( false )
 				break
 		}
+
+
+
+
+
+
+
+		ent.SetSeeOtherNonShifters( seeOtherNonShifters )
 
 		
 		if ( !fxOnly )
@@ -250,6 +262,25 @@ int function PhaseShift( entity ent, float warmupTime, float duration, int shift
 
 	unreachable
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

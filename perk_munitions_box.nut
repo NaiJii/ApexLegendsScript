@@ -1,5 +1,9 @@
 const string MUNITIONS_BOX_SCRIPT_NAME = "assault_perk_loot_bin"
+
+
+
 global const string MUNITIONS_BOX_LOOT_BIN_SKIN_NAME = "MunitionsBox"
+
 
 const int HOP_UP_DROP_CHANCE = 20
 const int MAG_DROP_CHANCE = 65
@@ -15,6 +19,7 @@ global function Perk_MunitionsBox_Init
 global function Perk_SwapMunitionsBoxAndSkirmisherPerks
 
 
+global function Perk_MunitionsBox_IsEntMunitionsBox
 
 
 
@@ -46,8 +51,7 @@ global function Perk_SwapMunitionsBoxAndSkirmisherPerks
 
 
 
-
-
+global function MunitionsBox_ServerToClient_DisplayOpenedMunitionsBoxPrompt
 
 
 void function Perk_MunitionsBox_Init()
@@ -58,15 +62,15 @@ void function Perk_MunitionsBox_Init()
 	PerkInfo munitionsBox
 	munitionsBox.perkId          = ePerkIndex.MUNITIONS_BOX
 
+		munitionsBox.minimapStateIndex = eMinimapObject_prop_script.MUNITIONS_BOX
+		munitionsBox.minimapPingType = ePingType.MUNITIONS_BOX
+		munitionsBox.mapFeatureTitle = "#PERK_FEATURE_MUNITIONS_BOX"
+		munitionsBox.mapFeatureDescription = "#PERK_FEATURE_MUNITIONS_BOX_DESC"
+		munitionsBox.trackEntityPosition = true
 
-
-
-
-
-
-
-
-
+			munitionsBox.worldspaceIconUpOffset = 20
+			munitionsBox.ruiThinkThread = Perk_MunitionsBin_RuiThinkThread
+			munitionsBox.staticPingDistance = 1500
 
 
 
@@ -87,13 +91,13 @@ void function Perk_MunitionsBox_Init()
 
 
 
+	AddCreateCallback( "prop_dynamic", OnMunitionsBoxSpawned )
+	AddCreateCallback( "prop_script", OnMunitionsBoxSpawned )
 
 
 
-
-
-
-
+		Remote_RegisterClientFunction( "MunitionsBox_ServerToClient_DisplayOpenedMunitionsBoxPrompt" )
+		Remote_RegisterServerFunction( "MunitionsBox_ClientToServer_MarkMunitionsBoxLoot" )
 
 }
 
@@ -190,15 +194,44 @@ bool function MunitionsBox_BoostOpenerLoot()
 }
 
 
+bool function CanPlayerUseMunitionsBoxCallback( entity player, entity lootBin )
+{
+	bool result =  CanPlayerUseMunitionsBox( player )
 
+	if( !result )
+	{
+		AddPlayerHint( 0.1, 0, Perks_GetIconForPerk( ePerkIndex.MUNITIONS_BOX ), "Munitions Bins can be used by Assault Legends" )
+	}
 
 
+	return result
+}
 
+bool function CanPlayerUseMunitionsBox( entity player )
+{
+	if( !IsValid( player ) || !player.IsPlayer() || !Perks_DoesPlayerHavePerk( player, ePerkIndex.MUNITIONS_BOX ) || Bleedout_IsBleedingOut( player ) )
+		return false
 
+	return true
+}
 
+bool function Perk_MunitionsBox_IsEntMunitionsBox( entity ent )
+{
+	return ent.GetScriptName() == LOOT_BIN_SCRIPTNAME && ent.GetSkin() == ent.GetSkinIndexByName( MUNITIONS_BOX_LOOT_BIN_SKIN_NAME )
+}
 
+void function OnMunitionsBoxSpawned( entity ent )
+{
+	if( !Perk_MunitionsBox_IsEntMunitionsBox( ent ) )
+		return
 
+	if( !AllPlayersCanOpenMunitionsBin() )
+	{
+		AddCallback_CanOpenLootBin( ent, CanPlayerUseMunitionsBoxCallback )
+	}
 
+	Perks_AddMinimapEntityForPerk( ePerkIndex.MUNITIONS_BOX, ent )
+}
 
 
 
@@ -1407,43 +1440,20 @@ bool function MunitionsBox_BoostOpenerLoot()
 
 
 
+void function MunitionsBox_ServerToClient_DisplayOpenedMunitionsBoxPrompt()
+{
+	AddOnscreenPromptFunction( "quickchat", InvokePingOpenedMunitionsBox, 6.0, Localize( "#PING_OPEN_MUNITIONS_BOX" ) )
+}
 
+void function InvokePingOpenedMunitionsBox( entity player )
+{
+	Remote_ServerCallFunction( "MunitionsBox_ClientToServer_MarkMunitionsBoxLoot" )
+}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+void function Perk_MunitionsBin_RuiThinkThread( var rui, entity ent )
+{
+	RuiSetFloat( rui, "minAlphaDist", 1500 )
+	RuiSetFloat( rui, "maxAlphaDist", 2000 )
+}
 
 

@@ -16,6 +16,16 @@ bool function RTKMutator_NotEqual( float input, float other )
 	return !RTKMutator_Equal( input, other )
 }
 
+bool function RTKMutator_IntEqual( int input, int other )
+{
+	return input == other
+}
+
+bool function RTKMutator_IntNotEqual( int input, int other )
+{
+	return !RTKMutator_IntEqual( input, other )
+}
+
 bool function RTKMutator_StrEqual( string input, string other )
 {
 	return  input == other
@@ -93,4 +103,14 @@ string function RTKMutator_IfTrueSwapString( string input , bool shouldSwap, str
 string function RTKMutator_IfFalseSwapString( string input , bool shouldSwap, string newString )
 {
 	return shouldSwap ? input : newString
+}
+
+bool function RTKMutator_IsArrayEmpty( rtk_array input )
+{
+	return RTKArray_GetCount( input ) == 0
+}
+
+int function RTKMutator_GetArrayCount( rtk_array input )
+{
+	return RTKArray_GetCount( input )
 }

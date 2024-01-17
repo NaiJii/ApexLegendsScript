@@ -15,8 +15,8 @@ global function CharacterQuip_GetEffectColor1
 global function CharacterQuip_GetEffectColor2
 
 
-
-
+global function PerformQuip
+global function CharacterQuip_ShortenTextForCommsMenu
 
 
 
@@ -28,7 +28,6 @@ global function CharacterQuip_GetEffectColor2
 
 global function CreateNestedRuiForQuip
 global function EmoteIcon_PopulateNestedRui
-global function ItemFlavor_GetQuipArrayForCharacter
 global function ItemFlavor_GetFavoredQuipArrayForCharacter
 
 
@@ -39,6 +38,7 @@ global function Loadout_FavoredQuip
 global function Loadout_FavoredQuipArrayForCharacter
 global function Loadout_IsCharacterQuipLoadoutEntry
 global function ItemFlavor_CanEquipToWheel
+global function ItemFlavor_GetQuipArrayForCharacter
 
 
 
@@ -59,6 +59,10 @@ struct FileStruct_LifetimeLevel
 FileStruct_LifetimeLevel& fileLevel
 
 
+const string ANIM_3P_KEY = "anim3p" 
+const string OVERRIDE_ANIMS_ARRAY_KEY = "overrideAnims"
+const string OVERRIDE_CHARACTER_KEY = "character"
+
 void function ShQuips_LevelInit()
 {
 	FileStruct_LifetimeLevel newFileLevel
@@ -67,7 +71,7 @@ void function ShQuips_LevelInit()
 
 void function RegisterEquippableQuipsForCharacter( ItemFlavor characterClass, array<ItemFlavor> quipList, array<ItemFlavor> characterEmotesList )
 {
-	foreach( int index, ItemFlavor quip in quipList )
+	foreach ( int index, ItemFlavor quip in quipList )
 	{
 		if ( GetGlobalSettingsAsset( ItemFlavor_GetAsset( quip ), "parentItemFlavor" ) == "" )
 		{
@@ -75,10 +79,10 @@ void function RegisterEquippableQuipsForCharacter( ItemFlavor characterClass, ar
 		}
 
 
-
-
-
-
+		if ( CharacterQuip_UseHoloProjector( quip ) )
+		{
+			PrecacheModel( CharacterQuip_GetModelAsset( quip ) )
+		}
 
 	}
 
@@ -165,29 +169,29 @@ void function RegisterEquippableQuipsForCharacter( ItemFlavor characterClass, ar
 
 
 
+void function PerformQuip( entity player, int index )
+{
+	if ( !IsAlive( player ) )
+		return
 
+	ItemFlavor quip      = GetItemFlavorByGUID( index )
 
+	CommsAction act
+	act.index = eCommsAction.QUIP
+	act.aliasSubname = CharacterQuip_GetAliasSubName( quip )
+	act.hasCalm = false
+	act.hasCalmFar = false
+	act.hasUrgent = false
+	act.hasUrgentFar = false
 
+	CommsOptions opt
+	opt.isFirstPerson = (player == GetLocalViewPlayer())
+	opt.isFar = false
+	opt.isUrgent = false
+	opt.pauseQueue = player.GetTeam() == GetLocalViewPlayer().GetTeam()
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+	PlaySoundForCommsAction( player, null, act, opt )
+}
 
 
 
@@ -229,15 +233,17 @@ bool function CharacterQuip_IsTheEmpty( ItemFlavor flavor )
 {
 	AssertEmoteIsValid( flavor )
 
+	if ( ItemFlavor_GetType( flavor ) == eItemType.character_emote )
+		return false 
+
 	return ( GetGlobalSettingsBool( ItemFlavor_GetAsset( flavor ), "isTheEmpty" ) )
 }
 
-
-array<ItemFlavor> function ItemFlavor_GetQuipArrayForCharacter( ItemFlavor characterClass, bool characterEmotesOnly = false )
+array<ItemFlavor> function ItemFlavor_GetQuipArrayForCharacter( entity player, ItemFlavor characterClass, bool characterEmotesOnly = false )
 {
 	array<ItemFlavor> quips = []
 
-	EHI playerEHI = LocalClientEHI()
+	EHI playerEHI = ToEHI( player )
 
 	foreach ( LoadoutEntry entry in Loadout_QuipArrayForCharacter( characterClass ) )
 	{
@@ -252,7 +258,6 @@ array<ItemFlavor> function ItemFlavor_GetQuipArrayForCharacter( ItemFlavor chara
 
 	return quips
 }
-
 
 
 array<ItemFlavor> function ItemFlavor_GetFavoredQuipArrayForCharacter( ItemFlavor characterClass, bool characterEmotesOnly = false )
@@ -276,11 +281,26 @@ array<ItemFlavor> function ItemFlavor_GetFavoredQuipArrayForCharacter( ItemFlavo
 }
 
 
-string function CharacterQuip_GetAnim3p( ItemFlavor flavor )
+string function CharacterQuip_GetAnim3p( ItemFlavor quip, ItemFlavor character )
 {
-	AssertEmoteIsValid( flavor )
+	AssertEmoteIsValid( quip )
 
-	return GetGlobalSettingsString( ItemFlavor_GetAsset( flavor ), "anim3p" )
+	if ( ItemFlavor_GetType( quip ) != eItemType.character_emote )
+		return ""
+
+	string anim3p = GetGlobalSettingsString( ItemFlavor_GetAsset( quip ), ANIM_3P_KEY )
+
+	foreach ( var overridePair in IterateSettingsAssetArray( ItemFlavor_GetAsset( quip ), OVERRIDE_ANIMS_ARRAY_KEY ) )
+	{
+		asset overrideCharacter = GetSettingsBlockAsset( overridePair, OVERRIDE_CHARACTER_KEY )
+		if ( IsValidItemFlavorSettingsAsset( overrideCharacter ) && character == GetItemFlavorByAsset( overrideCharacter ) )
+		{
+			anim3p = GetSettingsBlockString( overridePair, ANIM_3P_KEY )
+			break
+		}
+	}
+
+	return anim3p
 }
 
 string function CharacterQuip_GetAnimLoop3p( ItemFlavor flavor )
@@ -296,6 +316,14 @@ var function CharacterQuip_SelectWeightedAnimFlourish3p( ItemFlavor flavor )
 
 	var flourishSettingsArray = GetSettingsBlockArray( GetSettingsBlockForAsset( ItemFlavor_GetAsset( flavor ) ), "flourishSequences" )
 	int flourishCount = GetSettingsArraySize( flourishSettingsArray )
+
+#if DEV
+	int forceIdx = GetConVarInt( "force_sequence_index" )
+
+	if ( forceIdx >= 0 && forceIdx < flourishCount )
+		return GetSettingsArrayElem( flourishSettingsArray, forceIdx )
+
+#endif
 
 	if ( flourishCount <= 0 )
 		return null
@@ -471,7 +499,7 @@ string function CharacterQuip_ShortenTextForCommsMenu( ItemFlavor flav )
 		int TEXT_MAX_LEN = 26
 		int TEXT_MAX_LEN_W_DOTS = TEXT_MAX_LEN - 2
 
-
+		txt = CondenseText( txt, WORD_MAX_LEN, TEXT_MAX_LEN )
 
 	}
 	return txt

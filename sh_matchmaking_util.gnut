@@ -24,23 +24,23 @@ void function StartMatchmaking_( string playlist, bool requestNoFillTeam )
 	StartMatchmaking( playlist )
 
 
-	if ( Dev_CommandLineHasParm( "-auto_ezlaunch" ) )
-	{
-		thread function()
-		{
-			RegisterSignal( "StartMatchmaking_" )
-			Signal( uiGlobal.signalDummy, "StartMatchmaking_" )
-			EndSignal( uiGlobal.signalDummy, "StartMatchmaking_" )
 
-			wait( 1.0 )
-			if ( !IsConnected() )
-				return
-			if ( !AreWeMatchmaking() )
-				return
 
-			ClientCommand( "ezLaunch" )
-		}()
-	}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 	Chroma_StartMatchmaking()

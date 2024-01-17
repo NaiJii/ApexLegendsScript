@@ -7,12 +7,8 @@ global function OnWeaponTossCancel_weapon_sonic_blast
 global function MpAbilitySonicBlast_Init
 global function GetSonicBlastSilenceDuration
 global function GetSonicBlastRange
-
 global function GetSonicBlastDoesSonarScan
-
-
 global function SonicBlast_TargetEntityShouldBeHighlighted
-
 
 const asset SONIC_BLAST_FX_IMPACT = $"P_wpn_foa_kickup_dust"
 const asset SONIC_BLAST_FX_CAST_FP = $"P_wpn_foa_cast_FP"
@@ -38,14 +34,10 @@ global function ServerToClient_SpawnedSonicBlast
 global function ShouldBlastHitVictim
 global const float SONIC_BLAST_RADIUS = 200.0
 global const float SONIC_BLAST_IN_FRONT_START_DISTANCE = 20.0
-
 const float SONIC_BLAST_RANGE_EXTENSION = 10.0 / INCHES_TO_METERS
 const float SONAR_DURATION = 2.50
 const float SILENCE_DURATION = 8.0
 const float SLOW_DURATION = 0.5 
-
-
-
 
 const float SONIC_BLAST_PROJECTILE_TRAVEL_TIME = 0.5
 const float SONIC_BLAST_DEBUG_DRAW_SPHERE_DURATION = 3.75
@@ -94,9 +86,7 @@ struct
 	float sonicBlastTubeLength
 	bool sonicBlastDoesDamage
 	bool sonicBlastInterrupts
-
 	bool sonicBlastDoesFullSonarScan
-
 	int sonicBlastDamage
 
 	bool heartbeatSensorActive
@@ -118,6 +108,7 @@ void function MpAbilitySonicBlast_Init()
 	PrecacheParticleSystem( FX_DRONE_TARGET )
 
 	PrecacheScriptString( SONIC_BLAST_THREAT_TARGETNAME )
+	PrecacheScriptString( SONIC_BLAST_MOVER_SCRIPTNAME )
 
 	file.sonicBlastRange = GetSonicBlastRange()
 	file.sonicBlastRangeSqr = pow( file.sonicBlastRange, 2 )
@@ -129,20 +120,17 @@ void function MpAbilitySonicBlast_Init()
 	file.sonicBlastInterrupts = GetSonicBlastInterrupts()
 	file.sonicBlastTubeLength = file.sonicBlastRadius * 4.175 
 	file.sonicBlastDamage = GetSonicBlastDamage()
-
 	file.sonicBlastDoesFullSonarScan = GetSonicBlastDoesSonarScan()
-
-
 
 
 		StatusEffect_RegisterEnabledCallback( eStatusEffect.seer_highlight_target, SonarBlast_StartHighlightStatusEffect )
 		StatusEffect_RegisterDisabledCallback( eStatusEffect.seer_highlight_target, SonarBlast_StopHighlightStatusEffect )
 
 
-
 	RegisterSignal( "SonicBlastReleased" )
 	RegisterSignal( "SonicBlastCancelled" )
 	RegisterSignal( "HitBySeerTact" )
+	RegisterSignal( "PlayerHealthRevealed" )
 }
 
 void function OnWeaponActivate_ability_sonic_blast( entity weapon )
@@ -322,9 +310,6 @@ void function OnWeaponTossPrep_weapon_sonic_blast( entity weapon, WeaponTossPrep
 
 
 
-
-
-
 void function DoHeartbeatSensorUI_Thread( entity player, entity weapon )
 {
 	Assert ( IsNewThread(), "Must be threaded off." )
@@ -349,13 +334,9 @@ void function DoHeartbeatSensorUI_Thread( entity player, entity weapon )
 		}
 	)
 
-	float pulloutTime = weapon.GetWeaponSettingFloat( eWeaponVar.toss_pullout_time )
-
+	
 
 	wait HEARTBEAT_SENSOR_INITIAL_ACTIVATION_DELAY_DEFAULT
-
-
-
 
 	InitializeHeartbeatSensorUI( player )
 	ActivateHeartbeatSensor( player, true )
@@ -890,27 +871,6 @@ var function OnWeaponTossReleaseAnimEvent_weapon_sonic_blast( entity weapon, Wea
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 bool function SonicBlast_TargetEntityShouldBeHighlighted( entity ent )
 {
 
@@ -934,8 +894,6 @@ void function SonarBlast_StopHighlightStatusEffect( entity ent, int statusEffect
 {
 	ManageHighlightEntity( ent )
 }
-
-
 
 
 bool function ShouldBlastHitVictim( vector startPos, vector blastVector, vector blastVecNormalized, entity victim, int weaponOwnerTeam )
@@ -1002,6 +960,11 @@ void function ServerToClient_ShowHealthRUI_Thread( entity owner, entity victim, 
 	if ( !IsValid( victim ) )
 		return
 
+
+		
+		victim.Signal( "PlayerHealthRevealed" )
+		victim.EndSignal( "PlayerHealthRevealed" )
+
 	victim.EndSignal( "OnDestroy" )
 	victim.EndSignal( "OnDeath" )
 
@@ -1036,13 +999,13 @@ void function ServerToClient_ShowHealthRUI_Thread( entity owner, entity victim, 
 	{
 		bool phaseShifted = victim.IsPlayer() ? victim.IsPhaseShiftedOrPending() : false
 
-			bool scanBlocked = IsValid( owner ) && FerroWall_BlockScan( owner.EyePosition(), victim.GetWorldSpaceCenter() )
 
 
 
-			if ( phaseShifted || scanBlocked )
 
 
+
+			if ( phaseShifted )
 
 		{
 			if ( visible )
@@ -1361,11 +1324,7 @@ float function GetSonicBlast_Silence_Duration_Base( entity player )
 
 bool function GetSonicBlastDoesSonarScan()
 {
-
 	return GetCurrentPlaylistVarBool( "seer_tac_does_sonar_scan", true )
-
-
-
 }
 
 
@@ -1377,11 +1336,7 @@ bool function GetSonicBlastInterrupts()
 
 float function GetSonicBlastRange()
 {
-
 	return GetHeartbeatSensorRange() + SONIC_BLAST_RANGE_EXTENSION
-
-
-
 }
 
 

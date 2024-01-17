@@ -63,11 +63,12 @@ global function HeirloomEvent_IsRewardMythicSkin
 
 
 
-global function HeirloomEvent_GetHeirloomButtonImage
-global function HeirloomEvent_GetMythicButtonImage
-global function HeirloomEvent_GetHeirloomHeaderText
-global function HeirloomEvent_GetHeirloomUnlockDesc
-global function HeirloomEvent_IsCompletionRewardOwned
+
+
+
+
+
+
 
 
 
@@ -77,16 +78,17 @@ global function CollectionEvent_GetFrontTabText
 
 
 
-global function CollectionEvent_GetCurrentMaxEventPackPurchaseCount
 
 
 
 
 
-global function CollectionEvent_GetPackOffers
-global function CollectionEvent_GetLobbyButtonImage 
-global function CollectionEvent_HasLobbyTheme 
-global function CollectionEvent_IsItemFlavorFromEvent
+
+
+
+
+
+
 
 
 
@@ -112,7 +114,9 @@ global struct CollectionEventRewardGroup
 }
 
 
-global const array< int > HEIRLOOM_EVENTS = [ eItemType.calevent_collection, eItemType.calevent_themedshop ]
+	global const array< int > HEIRLOOM_EVENTS = [ eItemType.calevent_collection, eItemType.calevent_themedshop, eItemType.calevent_milestone ]
+
+
 
 
 
@@ -132,13 +136,13 @@ struct FileStruct_LifetimeLevel
 }
 
 
+FileStruct_LifetimeLevel fileLevel 
 
 
-FileStruct_LifetimeLevel& fileLevel 
 
-struct {
-	
-} fileVM 
+
+
+
 
 
 
@@ -153,8 +157,8 @@ struct {
 void function CollectionEvents_Init()
 {
 
-		FileStruct_LifetimeLevel newFileLevel
-		fileLevel = newFileLevel
+
+
 
 
 	AddCallback_OnItemFlavorRegistered( eItemType.calevent_collection, void function( ItemFlavor ev ) {
@@ -376,7 +380,11 @@ string function CollectionEvent_GetFrontPageGRXOfferLocation( ItemFlavor event )
 
 array<CollectionEventRewardGroup> function CollectionEvent_GetRewardGroups( ItemFlavor event )
 {
-	Assert( ItemFlavor_GetType( event ) == eItemType.calevent_collection )
+
+		
+		Assert( ItemFlavor_GetType( event ) == eItemType.calevent_collection || ItemFlavor_GetType( event ) == eItemType.calevent_milestone )
+
+
 
 	array<CollectionEventRewardGroup> groups = []
 	foreach ( var groupBlock in IterateSettingsAssetArray( ItemFlavor_GetAsset( event ), "rewardGroups" ) )
@@ -660,112 +668,112 @@ asset function CollectionEvent_GetHeaderIcon( ItemFlavor event )
 
 
 
-asset function HeirloomEvent_GetHeirloomButtonImage( ItemFlavor event )
-{
-	Assert( HEIRLOOM_EVENTS.contains( ItemFlavor_GetType( event ) ) )
-	return GetGlobalSettingsAsset( ItemFlavor_GetAsset( event ), "heirloomButtonImage" )
-}
-
-
-
-asset function HeirloomEvent_GetMythicButtonImage( ItemFlavor event, int tier )
-{
-	Assert( HEIRLOOM_EVENTS.contains( ItemFlavor_GetType( event ) ) )
-
-	if ( tier == 1 )
-		return GetGlobalSettingsAsset( ItemFlavor_GetAsset( event ), "prestigeButtonImage2" )
-	else if ( tier == 2 )
-		return GetGlobalSettingsAsset( ItemFlavor_GetAsset( event ), "prestigeButtonImage3" )
-
-	return GetGlobalSettingsAsset( ItemFlavor_GetAsset( event ), "heirloomButtonImage" )
-}
 
 
 
 
-string function HeirloomEvent_GetHeirloomHeaderText( ItemFlavor event )
-{
-	Assert( HEIRLOOM_EVENTS.contains( ItemFlavor_GetType( event ) ) )
-
-	string headerText = "#COLLECTION_EVENT_HEIRLOOM_BOX_TITLE"
-	if ( HeirloomEvent_AwardHeirloomShards( event ) )
-		headerText = "#CURRENCY_HEIRLOOM_NAME_SHORT"
-	else if ( HeirloomEvent_IsRewardMythicSkin( event ) )
-		headerText = "#COLLECTION_EVENT_MYTHIC_BOX_TITLE"
-	else if ( !CollectionEvent_IsRewardHeirloom( event ) )
-		headerText = "#COLLECTION_EVENT_REACTIVE_BOX_TITLE"
-
-	return Localize( headerText ).toupper()
-}
-
-
-
-bool function CollectionEvent_IsRewardHeirloom( ItemFlavor event )
-{
-	Assert( HEIRLOOM_EVENTS.contains( ItemFlavor_GetType( event ) ) )
-	ItemFlavor reward = HeirloomEvent_GetPrimaryCompletionRewardItem( event )
-
-	if ( ItemFlavor_GetQuality( reward ) == eRarityTier.MYTHIC )
-		return true
-
-	return false
-}
-
-
-
-string function HeirloomEvent_GetHeirloomUnlockDesc( ItemFlavor event )
-{
-	Assert( HEIRLOOM_EVENTS.contains( ItemFlavor_GetType( event ) ) )
-	return GetGlobalSettingsString( ItemFlavor_GetAsset( event ), "heirloomUnlockDesc" )
-}
-
-
-
-bool function HeirloomEvent_IsCompletionRewardOwned( ItemFlavor event, bool isInventoryReady )
-{
-	Assert( HEIRLOOM_EVENTS.contains( ItemFlavor_GetType( event ) ) )
-
-	bool isOwned = false
-
-	if ( HeirloomEvent_AwardHeirloomShards( event ) )
-	{
-		return false
-	}
-	else
-	{
-		ItemFlavor completionRewardPack = HeirloomEvent_GetCompletionRewardPack( event )
-		array<ItemFlavor> rewardPackContents = GRXPack_GetPackContents( completionRewardPack )
-		foreach ( ItemFlavor flav in rewardPackContents )
-		{
-			isOwned = isInventoryReady && GRX_IsItemOwnedByPlayer( flav )
-
-			if ( HeirloomEvent_IsRewardMythicSkin( event ) && isOwned == true )
-			{
-				
-				break
-			}
-		}
-	}
-
-	return isOwned
-}
-
-
-
-bool function CollectionEvent_HasLobbyTheme( ItemFlavor event )
-{
-	Assert( ItemFlavor_GetType( event ) == eItemType.calevent_collection )
-	return GetGlobalSettingsBool( ItemFlavor_GetAsset( event ), "themeLobby" )
-}
 
 
 
 
-asset function CollectionEvent_GetLobbyButtonImage( ItemFlavor event )
-{
-	Assert( ItemFlavor_GetType( event ) == eItemType.calevent_collection )
-	return GetGlobalSettingsAsset( ItemFlavor_GetAsset( event ), "lobbyButtonImage" )
-}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -778,7 +786,11 @@ int function HeirloomEvent_GetItemCount( ItemFlavor event, bool onlyOwned, entit
 
 	int count = 0
 	array < ItemFlavor > eventItems
-	if ( ItemFlavor_GetType( event ) == eItemType.calevent_collection )
+
+	if ( ItemFlavor_GetType( event ) == eItemType.calevent_collection || ItemFlavor_GetType( event ) == eItemType.calevent_milestone )
+
+
+
 	{
 		eventItems = []
 		array<CollectionEventRewardGroup> rewardGroups = CollectionEvent_GetRewardGroups( event )
@@ -817,33 +829,37 @@ int function HeirloomEvent_GetItemCount( ItemFlavor event, bool onlyOwned, entit
 
 
 
-array<ItemFlavor> function CollectionEvent_GetEventItems( ItemFlavor event )
-{
-	array<ItemFlavor> eventItems
-	if ( ItemFlavor_GetType( event ) == eItemType.calevent_collection )
-	{
-		array<CollectionEventRewardGroup> rewardGroups = CollectionEvent_GetRewardGroups( event )
-		foreach ( CollectionEventRewardGroup rewardGroup in rewardGroups )
-		{
-			foreach ( ItemFlavor reward in rewardGroup.rewards )
-			{
-				eventItems.append( reward )
-			}
-		}
-	}
-	return eventItems
-}
 
-bool function CollectionEvent_IsItemFlavorFromEvent( ItemFlavor event, int itemIdx )
-{
-	array<ItemFlavor> eventItems = CollectionEvent_GetEventItems( event )
-	foreach( ItemFlavor item in eventItems )
-	{
-		if ( item.grxIndex == itemIdx )
-			return true
-	}
-	return false
-}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -854,46 +870,47 @@ int function HeirloomEvent_GetCurrentRemainingItemCount( ItemFlavor event, entit
 
 
 
-array<GRXScriptOffer> ornull function CollectionEvent_GetPackOffers( ItemFlavor event )
-{
-	if ( GRX_IsOfferRestricted() )
-		return null
-
-	ItemFlavor packFlav          = CollectionEvent_GetMainPackFlav( event )
-	string offerLocation         = CollectionEvent_GetFrontPageGRXOfferLocation( event )
-	array<GRXScriptOffer> offers = GRX_GetItemDedicatedStoreOffers( packFlav, offerLocation )
-	offers.sort( int function( GRXScriptOffer a, GRXScriptOffer b ){
-		if ( a.items[0].itemQuantity > b.items[0].itemQuantity )
-			return 1
-		else if (  a.items[0].itemQuantity < b.items[0].itemQuantity )
-			return -1
-		return 0
-	} )
-	return offers.len() > 0 ? offers : null
-}
-
-
-
-int function CollectionEvent_GetCurrentMaxEventPackPurchaseCount( ItemFlavor event, entity player )
-{
 
 
 
 
-		if ( CollectionEvent_GetPackOffers( event ) == null )
-			return 0
 
 
 
-	ItemFlavor packFlav = CollectionEvent_GetMainPackFlav( event )
 
 
 
-		int ownedPackCount = GRX_GetPackCount( ItemFlavor_GetGRXIndex( packFlav ) )
 
 
-	return HeirloomEvent_GetCurrentRemainingItemCount( event, player ) - ownedPackCount
-}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

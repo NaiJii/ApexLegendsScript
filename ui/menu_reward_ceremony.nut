@@ -358,6 +358,7 @@ void function ContinueButton_OnActivate( var button )
 	{
 		storeInspect_JumpingToBPFromBPStorePurchase = false
 		JumpToSeasonTab( "PassPanel" )
+		return
 	}
 
 	if ( file.isCurrentGiftBattlepass )
@@ -436,7 +437,22 @@ void function PassAwardsDialog_UpdateAwards()
 	if ( !showButtons )
 	{
 		numButtons = 0
-		PresentItem( file.displayAwards[0].flav, file.displayAwards[0].level )
+		
+		ItemFlavor ornull activeEvent = GetActiveMilestoneEvent( GetUnixTimestamp() )
+		if ( activeEvent != null && MilestoneEvent_IsMilestoneGrantReward( expect ItemFlavor( activeEvent ), ItemFlavor_GetGRXIndex( file.displayAwards[0].flav ) ) )
+		{
+			thread function() : ()
+			{
+				EndSignal( uiGlobal.signalDummy, "LevelShutdown" )
+				wait 0.25 
+				if ( GetActiveMenu() == GetMenu( "RewardCeremonyMenu" ) )
+					PresentItem( file.displayAwards[0].flav, file.displayAwards[0].level )
+			}()
+		}
+		else
+		{
+			PresentItem( file.displayAwards[0].flav, file.displayAwards[0].level )
+		}
 	}
 
 	Hud_InitGridButtonsDetailed( file.awardPanel, numButtons, 1, maxint( 1, minint( numButtons, 8 ) ) )

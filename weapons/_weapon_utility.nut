@@ -43,6 +43,7 @@ global function IsWeaponInSingleShotMode
 global function IsWeaponInBurstMode
 global function IsWeaponOffhand
 global function IsWeaponInAutomaticMode
+global function IsMeleeWeaponNotFists
 global function OnWeaponReadyToFire_ability_tactical
 global function GetMeleeWeapon
 global function OnWeaponRegenEndGeneric
@@ -191,6 +192,8 @@ global function GetInfiniteAmmo
 
 
 
+global function CodeCallback_GetIsModOptic
+
 
 global struct MarksmansTempoSettings
 {
@@ -234,7 +237,7 @@ global enum eShatterRoundsTypes
 	_count
 }
 global const string SHATTER_ROUNDS_HOPUP_MOD = "hopup_shatter_rounds"
-global const string SHATTER_ROUNDS_MOD = "altfire_shatter_rounds"
+global const string SHATTER_ROUNDS_ALTFIRE_MOD = "altfire_shatter"
 global const string SHATTER_ROUNDS_HIPFIRE_MOD = "shatter_rounds_hipfire"
 global const string SHATTER_ROUNDS_THINK_END_SIGNAL = "shatter_rounds_think_end"
 global const string SHATTER_ROUNDS_ADS_THINK_THREAD_ABORT_SIGNAL = "shatter_rounds_ads_think_end"
@@ -1723,7 +1726,7 @@ bool function PlantStickyEntity( entity ent, DeployableCollisionParams cp, vecto
 		}
 	}
 
-	if ( IsOriginInvalidForPlacingPermanentOnto( plantPosition ) )
+	if ( IsOriginInvalidForPlacingPermanentOnto( plantPosition, ent ) )
 		return false
 
 
@@ -2818,12 +2821,18 @@ entity function GetMeleeWeapon( entity player )
 	array<entity> weapons = player.GetMainWeapons()
 	foreach ( weaponEnt in weapons )
 	{
-		if ( weaponEnt.IsWeaponMelee() )
+		if ( weaponEnt.IsWeaponOffhandMelee() )
 			return weaponEnt
 	}
 
 	return null
 }
+
+
+
+
+
+
 
 
 
@@ -4414,6 +4423,18 @@ bool function IsWeaponInAutomaticMode( entity weapon )
 	return !weapon.GetWeaponSettingBool( eWeaponVar.is_semi_auto )
 }
 
+bool function IsMeleeWeaponNotFists( entity player )
+{
+	if ( !IsValid(player) )
+		return false
+
+	entity meleeWeapon = player.GetOffhandWeapon( OFFHAND_MELEE )
+	bool isHeirloom = meleeWeapon.GetWeaponSettingBool( eWeaponVar.is_heirloom )
+	bool isArtifact = meleeWeapon.GetWeaponSettingBool( eWeaponVar.is_artifact )
+
+	return isHeirloom || isArtifact
+}
+
 
 bool function OnWeaponAttemptOffhandSwitch_Never( entity weapon )
 {
@@ -4868,6 +4889,82 @@ void function PlayDelayedShellEject( entity weapon, float time, int count = 1, b
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 void function UICallback_UpdateLaserSightColor()
 {
 	Remote_ServerCallFunction( "ClientCallback_UpdateLaserSightColor" )
@@ -4879,11 +4976,6 @@ bool function TryCharacterButtonCommonReadyChecks( entity player )
 		return false
 	if ( player != GetLocalClientPlayer() )
 		return false
-	if ( IsControllerModeActive() )
-	{
-		if ( TryOnscreenPromptFunction( player, "quickchat" ) )
-			return false
-	}
 
 	if ( HoverVehicle_PlayerIsDriving( player ) )
 		return false
@@ -5012,9 +5104,10 @@ vector function CalcProjectileTrajectory( vector startPos, vector targetPos, flo
 
 	if ( debugDraw )
 	{
-		DebugDrawSphere( startPos, 5, COLOR_YELLOW, false, 5.0 )
-		DebugDrawSphere( targetPos, 5, COLOR_YELLOW, false, 5.0 )
-		DebugDrawArrow( startPos, startPos + launchVel, 10, COLOR_YELLOW, false, 5.0 )
+		const float DRAW_TIME = 0.1
+		DebugDrawSphere( startPos, 5, COLOR_YELLOW, false, DRAW_TIME )
+		DebugDrawSphere( targetPos, 5, COLOR_YELLOW, false, DRAW_TIME )
+		DebugDrawArrow( startPos, startPos + launchVel, 10, COLOR_YELLOW, false, DRAW_TIME )
 	}
 
 	return launchVel
@@ -5816,6 +5909,8 @@ void function ShatterRounds_RemoveShatterRounds( entity weapon )
 
 
 
+
+
 void function OnWeaponActivate_Smart_Reload ( entity weapon, SmartReloadSettings settings )
 {
 	if ( !IsValid( weapon ) )
@@ -5901,6 +5996,22 @@ void function OnWeaponReload_Smart_Reload ( entity weapon, int milestoneIndex )
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 		weapon.RemoveMod( LMG_OVERLOADED_AMMO_MOD )
 	}
 }
@@ -5933,6 +6044,11 @@ void function OnWeaponDeactivate_Smart_Reload ( entity weapon )
 
 	if( !IsValid( weapon ) || !IsValid( player) )
 		return
+
+
+
+
+
 
 
 
@@ -6256,15 +6372,6 @@ void function KineticLoaderChokeFunctionality_ServerThink( entity player, entity
 }
 void function KineticLoaderFunctionality_ServerThink( entity player, entity weapon )
 {
-
-
-
-
-
-
-
-
-
 
 
 
@@ -6849,3 +6956,7 @@ bool function GetInfiniteAmmo( entity weapon )
 
 
 
+bool function CodeCallback_GetIsModOptic( entity weapon, string modName )
+{
+	return SURVIVAL_Loot_IsRefValid( modName ) && GetAttachPointForAttachmentOnWeapon( weapon.GetWeaponClassName(), modName ) == "sight"
+}

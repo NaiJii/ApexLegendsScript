@@ -60,10 +60,10 @@ void function OpenRankedInfoPage( var button )
 void function ShowRankedAboutPanel( var button )
 {
 
+	UI_OpenFeatureTutorialDialog( GAMEMODE_SURVIVAL_RANKED )
 
 
-	Hud_Show( file.panelRankInfo )
-	Hud_Show( file.closeButtonRankInfo )
+
 
 }
 
@@ -87,9 +87,14 @@ void function OnRankedInfoMenu_Open()
 	int ladderPosition                   = Ranked_GetLadderPosition( player  )
 	SharedRankedDivisionData currentRank = GetCurrentRankedDivisionFromScoreAndLadderPosition( currentScore, ladderPosition )
 	SharedRankedTierData currentTier     = currentRank.tier
+	SharedRankedDivisionData ornull nextDivision = GetNextRankedDivisionFromScore( currentScore )
 
 
 
+
+
+
+	bool hasPromoTrial					 = RankedTrials_PlayerHasIncompleteTrial( GetLocalClientPlayer() )
 
 
 	array< SharedRankedDivisionData > divisionData =  Ranked_GetRankedDivisionDataForTier( currentRank.tier )
@@ -116,10 +121,46 @@ void function OnRankedInfoMenu_Open()
 	RuiSetInt( mainRui, "currentScore", currentScore )
 	RuiSetBool( mainRui, "inSeason", IsRankedInSeason() )
 	RuiSetBool( mainRui, "inProvisional", inProvisional )
+
+	asset promoCapImage = $""
+	if ( nextDivision != null )
+	{
+		expect SharedRankedDivisionData( nextDivision )
+		promoCapImage = nextDivision.tier.promotionalMetallicImage
+	}
+
+	RuiSetBool( mainRui, "inPromoTrials", hasPromoTrial )
+	RuiSetAsset( mainRui, "promoCapImage", promoCapImage )
+	RuiSetBool( mainRui, "showPromoPip", RankedTrials_NextRankHasTrial( currentRank, nextDivision ) && !RankedTrials_IsKillswitchEnabled() )
+
 	RuiSetString( mainRui, "currentRankString", currentRank.divisionName )
-	RuiSetString( mainRui, "provisionalCount", string (player.GetPersistentVarAsInt( "rankedProvisionalMatchesCompleted" ) ) )
-	RuiSetString( mainRui, "provisionalCountMax", string (Ranked_GetNumProvisionalMatchesRequired() ) )
 	RuiSetString( mainRui, "currentRankBracketString", (currentRank.emblemDisplayMode == emblemDisplayMode.DISPLAY_DIVISION) ? currentRank.emblemText : "" )
+
+	if ( inProvisional )
+	{
+
+		RuiSetString( mainRui, "provisionalCount", string ( Ranked_GetXProgMergedPersistenceData( GetLocalClientPlayer(), RANKED_PROVISIONAL_MATCH_COUNT_PERSISTENCE_VAR_NAME ) ) )
+
+
+
+		RuiSetString( mainRui, "provisionalCountMax", string (Ranked_GetNumProvisionalMatchesRequired() ) )
+	}
+
+	else if ( hasPromoTrial )
+	{
+		ItemFlavor currentTrial = RankedTrials_GetAssignedTrial( player )
+		int trialsAttempts = RankedTrials_GetGamesPlayedInTrialsState( player )
+		int maxAttempts = RankedTrials_GetGamesAllowedInTrialsState( player, currentTrial )
+
+		RuiSetString( mainRui, "provisionalCount", string ( trialsAttempts ) )
+		RuiSetString( mainRui, "provisionalCountMax", string ( maxAttempts ) )
+	}
+
+	else
+	{
+		RuiSetString( mainRui, "provisionalCount", "0" )
+		RuiSetString( mainRui, "provisionalCountMax", "1" )
+	}
 
 	int entryCost = Ranked_GetCostForEntry()
 	RuiSetString( mainRui, "currentEntryFeeString", ( entryCost == 0 )? "#RANKED_FREE": string( entryCost ) )
@@ -151,8 +192,12 @@ void function OnRankedInfoMenu_Open()
 	}
 
 	var scoreBarRui = Hud_GetRui( Hud_GetChild( file.menu, "RankedProgressBar" ) )
-	if (inProvisional)
+	if ( inProvisional )
 		InitRankedScoreBarRui( scoreBarRui, currentScore, Ranked_GetLadderPosition( GetLocalClientPlayer() ))
+
+	else if ( hasPromoTrial )
+		InitRankedScoreBarRui( scoreBarRui, currentScore, Ranked_GetLadderPosition( GetLocalClientPlayer() ))
+
 	else
 		InitRankedScoreBarRuiForDoubleBadge( scoreBarRui, currentScore, Ranked_GetLadderPosition( GetLocalClientPlayer() ))
 
@@ -169,6 +214,18 @@ void function OnRankedInfoMenu_Open()
 	RuiSetInt( rankedScoringTableRui, "thirdPlaceRP", Ranked_GetPointsForPlacement( 3 ) )
 	RuiSetInt( rankedScoringTableRui, "secondPlaceRP", Ranked_GetPointsForPlacement( 2 ) )
 	RuiSetInt( rankedScoringTableRui, "firstPlaceRP", Ranked_GetPointsForPlacement( 1 ) )
+
+
+		var rankedProgressBar = Hud_GetChild( file.menu, "RankedProgressBar" )
+		Hud_ClearToolTipData( rankedProgressBar )
+		ToolTipData promoTooltip
+		promoTooltip.titleText = ""
+		promoTooltip.descText = Localize( "#RANKED_ABOUT_PROMO_TOOLTIP" )
+		promoTooltip.tooltipFlags = eToolTipFlag.SOLID
+		Hud_SetVisible( rankedProgressBar, true )
+		Hud_SetToolTipData( rankedProgressBar, promoTooltip )
+
+
 
 
 
@@ -256,6 +313,7 @@ void function OnRankedInfoMenu_Open()
 
 void function InitRankedScoreBarRui( var rui, int score, int ladderPosition )
 {
+	bool inProvisional 					  = !Ranked_HasCompletedProvisionalMatches( GetLocalClientPlayer() )
 	array<SharedRankedTierData> divisions = Ranked_GetTiers()
 	SharedRankedDivisionData currentRank  = GetCurrentRankedDivisionFromScoreAndLadderPosition( score, ladderPosition )
 	SharedRankedTierData currentTier      = currentRank.tier
@@ -276,8 +334,30 @@ void function InitRankedScoreBarRui( var rui, int score, int ladderPosition )
 		RuiSetInt( rui, "currentTierColorOffset", currentTier.index )
 	}
 
+	bool showSingleBadge = false
+
+		bool hasTrial = RankedTrials_PlayerHasIncompleteTrial( GetLocalClientPlayer() )
+		showSingleBadge = !Ranked_HasCompletedProvisionalMatches( GetLocalClientPlayer() ) || hasTrial
+
+		RuiSetBool( rui, "inProvisional", inProvisional )
+		RuiSetBool( rui, "inPromoTrials", hasTrial )
+
+		SharedRankedDivisionData ornull nextDivision = GetNextRankedDivisionFromScore( score )
+		RuiSetBool( rui, "showPromoPip", RankedTrials_NextRankHasTrial( currentRank, nextDivision ) && !RankedTrials_IsKillswitchEnabled() )
+
+		asset promoCapImage = $""
+		if ( nextTier != null )
+		{
+			expect SharedRankedTierData( nextTier )
+			promoCapImage = nextTier.promotionalMetallicImage
+		}
+		RuiSetAsset( rui, "promoCapImage", promoCapImage )
+
+
+
+
 	
-	if ( !Ranked_HasCompletedProvisionalMatches(GetLocalClientPlayer() ) )
+	if ( showSingleBadge )
 	{
 		RuiDestroyNestedIfAlive( rui, "rankedBadgeHandle0" )
 

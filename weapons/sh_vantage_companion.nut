@@ -9,7 +9,6 @@ global function VantageCompanion_GetPlayerLaunchState
 
 
 
-
 global function Launch_CalcLaunchToPos
 
 
@@ -239,6 +238,9 @@ struct
 	float TUNING_VANTAGE_COMPANION_RANGE_BASE
 	float TUNING_VANTAGE_COMPANION_RANGE_MAX
 
+
+
+
 	var vantageTacticalRui
 
 	int   previousCompanionState
@@ -269,6 +271,9 @@ void function VantageCompanion_Init()
 	file.TUNING_VANTAGE_COMPANION_RANGE_BASE = GetCurrentPlaylistVarFloat( "vantage_tactical_base_range", VANTAGE_COMPANION_RANGE_BASE )
 	file.TUNING_VANTAGE_COMPANION_RANGE_MAX = GetCurrentPlaylistVarFloat( "vantage_tactical_max_range", VANTAGE_COMPANION_RANGE_MAX )
 
+
+
+
 #if DEV
 	Assert( eCompanionState.COUNT == sCompanionStateStrings.len(), "Must define a string for each state." )
 	Assert( ePlayerLaunchState.COUNT == sPlayerLaunchStateStrings.len(), "Must define a string for each state." )
@@ -290,7 +295,46 @@ void function VantageCompanion_Init()
 
 }
 
+float function VantageCompanion_GetRangeBase( entity owner )
+{
+	float result = file.TUNING_VANTAGE_COMPANION_RANGE_BASE
 
+
+
+
+
+
+
+	return result
+}
+
+float function VantageCompanion_GetRangeMax( entity owner )
+{
+	float result = file.TUNING_VANTAGE_COMPANION_RANGE_MAX
+
+
+
+
+
+
+
+
+	return result
+}
+
+float function VantageCompanion_GetSpeed( entity owner )
+{
+	float result = VANTAGE_COMPANION_BASE_SPEED
+
+
+
+
+
+
+
+
+	return result
+}
 
 const float UPDATE_RATE = 0.1
 
@@ -311,7 +355,7 @@ OrderPosData function FindEchoOrderPos( entity player )
 	
 	vector startTraceInitial = player.EyePosition()
 	vector playerViewVector  = player.GetPlayerOrNPCViewVector()
-	vector endTraceInitial   = startTraceInitial + playerViewVector * file.TUNING_VANTAGE_COMPANION_RANGE_BASE
+	vector endTraceInitial   = startTraceInitial + playerViewVector * VantageCompanion_GetRangeBase( player )
 
 	TraceResults trInitial = TraceLine( startTraceInitial, endTraceInitial, [ player ], TRACE_MASK_PLAYERSOLID , TRACE_COLLISION_GROUP_PLAYER_MOVEMENT )
 
@@ -836,7 +880,7 @@ void function TestCompanionSendPoint_Thread( entity player, entity echoEnt )
 
 	while (true)
 	{
-		TraceResults tr = TraceLine( player.EyePosition(), player.EyePosition() + player.GetPlayerOrNPCViewVector() * (file.TUNING_VANTAGE_COMPANION_RANGE_BASE - 15) , [ player, echoEnt ], TRACE_MASK_PLAYERSOLID , TRACE_COLLISION_GROUP_PLAYER_MOVEMENT )
+		TraceResults tr = TraceLine( player.EyePosition(), player.EyePosition() + player.GetPlayerOrNPCViewVector() * (VantageCompanion_GetRangeBase( player ) - 15) , [ player, echoEnt ], TRACE_MASK_PLAYERSOLID , TRACE_COLLISION_GROUP_PLAYER_MOVEMENT )
 
 		int pointInRange = tr.fraction < 1.0 ? 1 : 0
 
@@ -867,13 +911,13 @@ void function TestCompanionSendPoint_Thread( entity player, entity echoEnt )
 
 }
 
-CompanionFlightParams function GetVantageCompanionFlightData()
+CompanionFlightParams function GetVantageCompanionFlightData( entity owner )
 {
 	CompanionFlightParams flightData
 
 	flightData.boundsMin			= VANTAGE_COMPANION_BOUND_MINS
 	flightData.boundsMax			= VANTAGE_COMPANION_BOUND_MAXS
-	flightData.entSpeed				= VANTAGE_COMPANION_BASE_SPEED
+	flightData.entSpeed				= VantageCompanion_GetSpeed( owner )
 	flightData.initHeightOffset		= VANTAGE_COMPANION_INIT_HEIGHT_OFFSET
 	flightData.minHeightOffset		= ECHO_ORDER_MIN_HEIGHT
 	flightData.finalOffset			= VANTAGE_COMPANION_FINAL_HEIGHT_OFFSET
@@ -954,6 +998,13 @@ vector function Launch_CalcLaunchToPos( entity player, entity echoEnt )
 
 	return finalLaunchToPos
 }
+
+
+
+
+
+
+
 
 
 
@@ -1990,13 +2041,17 @@ void function VantageCompanion_OnPropScriptCreated( entity echoEnt )
 {
 	if ( echoEnt.GetScriptName() == VANTAGE_COMPANION_SCRIPTNAME )
 	{
+		entity echoOwner = echoEnt.GetOwner()
+		if ( !IsValid( echoOwner) )
+			return
+
 		CompanionData newData
-		file.companionData[echoEnt.GetOwner()] <- newData
+		file.companionData[echoOwner] <- newData
 
 		EchoCompanionData newEchoData
-		file.echoData[echoEnt.GetOwner()] <- newEchoData
+		file.echoData[echoOwner] <- newEchoData
 
-		if ( echoEnt.GetOwner() == GetLocalViewPlayer() )
+		if ( echoOwner == GetLocalViewPlayer() )
 		{
 			thread VantageCompanion_CreateHUDMarker( echoEnt )
 			

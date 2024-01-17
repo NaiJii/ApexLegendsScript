@@ -25,9 +25,7 @@ const float MINIMAP_MARKER_DEBOUNCE_TIME = 0.75
 const float LOCK_FX_LIFETIME = 1.25
 const float TOTAL_FIRE_TIME_BUFFER = 1.75
 const float ECHO_LOCATOR_TUNING_DEATHFIELD_DAMAGE_SCALAR = 1.0
-
 const float ECHO_LOCATOR_MOVEMENT_SPEED_CHECK = 170 
-
 const float ECHO_LOCATOR_DUMMIE_SPEED_CHECK = 100 
 
 const asset ECHO_LOCATOR_HEART_MODEL = $"mdl/props/pariah_heart/pariah_heart.rmdl"
@@ -111,9 +109,7 @@ struct
 	int echoLocatorRadiusSqr
 	int echoLocatorHP
 	float echoLocatorSphereModelScale
-
 	bool useWalkSpeedForMovementCheck
-
 
 	array<entity> playersInsideEchoLocators
 	table<entity, int> enemiesInsideEchoLocator
@@ -160,9 +156,7 @@ void function MpWeaponEchoLocator_Init()
 	file.echoLocatorRadiusSqr        = int( pow( file.echoLocatorRadius, 2 ) )
 	file.echoLocatorSphereModelScale = file.echoLocatorRadius / 1050.0 
 	file.echoLocatorHP 		 = GetEchoLocatorHP()
-
 	file.useWalkSpeedForMovementCheck = GetEchoLocatorUseWalkSpeed()
-
 
 
 		StatusEffect_RegisterEnabledCallback( eStatusEffect.inside_echo_locator, EchoLocator_StartVisualEffect )
@@ -370,27 +364,8 @@ void function OnEchoLocatorPlanted( entity projectile, DeployableCollisionParams
 
 
 
+
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -1469,7 +1444,6 @@ bool function DoesPlayerPassEchoLocatorMovementCheck( entity player, float playe
 	
 	if ( playerSpeed > 0 )
 	{
-
 		if ( file.useWalkSpeedForMovementCheck )
 		{
 			bool isADS = false
@@ -1496,7 +1470,6 @@ bool function DoesPlayerPassEchoLocatorMovementCheck( entity player, float playe
 		}
 		else
 		{
-
 			bool isTrainingDummie = IsTrainingDummie( player )
 
 			if ( player.IsPlayerDecoy() )
@@ -1528,9 +1501,7 @@ bool function DoesPlayerPassEchoLocatorMovementCheck( entity player, float playe
 					return true
 				}
 			}
-
 		}
-
 	}
 
 	return false
@@ -1625,9 +1596,7 @@ void function EchoLocatorFootstepVFX_Thread( entity echoLocator )
 	echoLocator.EndSignal( "OnDestroy" )
 
 	table<entity, float> lastPingTimeForLoco
-
 	table<entity, float> lastPingTimeForWeapon
-
 	table<entity, bool> wasInAir
 
 	table<entity, lockFXData> lockFXID
@@ -1793,12 +1762,10 @@ void function EchoLocatorFootstepVFX_Thread( entity echoLocator )
 					lastPingTimeForLoco[ent] <- 0.0
 				}
 
-
 				if ( !( ent in lastPingTimeForWeapon ) )
 				{
 					lastPingTimeForWeapon[ent] <- 0.0
 				}
-
 
 				if ( !( ent in wasInAir ) )
 				{
@@ -1819,34 +1786,6 @@ void function EchoLocatorFootstepVFX_Thread( entity echoLocator )
 				}
 			}
 		}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 		file.enemiesInsideEchoLocator[echoLocator] = validTouchingEnts.len()
 
@@ -1880,15 +1819,9 @@ void function EchoLocatorFootstepVFX_Thread( entity echoLocator )
 				{
 					float footstepFxDelta = Time() - lastPingTimeForLoco[potentialVictim]
 
-
 					if ( !EffectDoesExist( lockFXID[potentialVictim].fxHandle ) && weaponCheckResult.checkPassed  )
-
-
-
 					{
-
-							lastPingTimeForWeapon[potentialVictim] = Time()
-
+						lastPingTimeForWeapon[potentialVictim] = Time()
 						if ( potentialVictim.IsPlayer() || isCombatDummie || potentialVictim.IsPlayerDecoy() )
 						{
 							
@@ -1901,7 +1834,7 @@ void function EchoLocatorFootstepVFX_Thread( entity echoLocator )
 
 								lockFXID[potentialVictim].fxHandle    = StartParticleEffectOnEntity( potentialVictim, GetParticleSystemIndex( ECHO_LOCATOR_TARGET_ANIMATED ), FX_PATTACH_POINT_FOLLOW, potentialVictim.LookupAttachment( "CHESTFOCUS" ) )
 
-									Effects_SetParticleFlag( lockFXID[potentialVictim].fxHandle, PARTICLE_SCRIPT_FLAG_LOS_BLOCKSCAN, true )
+
 
 								lockFXID[potentialVictim].initialLock = false
 							}
@@ -1910,7 +1843,7 @@ void function EchoLocatorFootstepVFX_Thread( entity echoLocator )
 							{
 								lockFXID[potentialVictim].fxHandle    = StartParticleEffectOnEntity( potentialVictim, GetParticleSystemIndex( ECHO_LOCATOR_TARGET_NON_ANIMATED ), FX_PATTACH_POINT_FOLLOW, potentialVictim.LookupAttachment( "CHESTFOCUS" ) )
 
-									Effects_SetParticleFlag( lockFXID[potentialVictim].fxHandle, PARTICLE_SCRIPT_FLAG_LOS_BLOCKSCAN, true )
+
 
 								lockFXID[potentialVictim].initialLock = false
 							}
@@ -2046,7 +1979,6 @@ void function EchoLocatorFootstepVFX_Thread( entity echoLocator )
 				else
 				{
 					float deltaLastPingTime = Time() - lastPingTimeForLoco[potentialVictim]
-
 					float lastWeaponFireTime = Time() - lastPingTimeForWeapon[potentialVictim]
 
 					float timeDeltaThreshold = LOCK_FX_LIFETIME
@@ -2062,7 +1994,6 @@ void function EchoLocatorFootstepVFX_Thread( entity echoLocator )
 					{
 						EffectStop( data.fxHandle, false, true )
 					}
-
 
 					
 					float deltaCheck = data.initialLock ? ECHO_LOCATOR_INITIAL_MARKER_DURATION : LOCK_FX_DEBOUNCE_TIME
@@ -2145,7 +2076,7 @@ void function EchoLocatorFootstepVFXClient( entity victim, int team )
 	vector color = ( victim.IsPlayer() || IsTrainingDummie( victim ) || victim.IsPlayerDecoy() ) ? ENEMY_COLOR_FX : NEUTRAL_COLOR_FX
 	EffectSetControlPointVector( handle, 1, color )
 
-		Effects_SetParticleFlag( handle, PARTICLE_SCRIPT_FLAG_LOS_BLOCKSCAN, true )
+
 
 }
 
@@ -2295,12 +2226,10 @@ int function GetEchoLocatorHP()
 	return GetCurrentPlaylistVarInt( "seer_ult_hp", ECHO_LOCATOR_HP )
 }
 
-
 bool function GetEchoLocatorUseWalkSpeed()
 {
 	return GetCurrentPlaylistVarBool( "seer_ult_speed_override", false )
 }
-
 
 
 

@@ -5,6 +5,9 @@ global function OnWeaponAttemptOffhandSwitch_portableAutoLoader
 global function OnWeaponTossReleaseAnimEvent_ability_portable_auto_loader
 global function OnWeaponActivate_ability_portable_auto_loader
 
+
+
+
 const float AUTO_LOADER_DURATION = 30.0
 const float AUTOLOADER_RANGE = 256.0
 const vector AUTOLOADER_START_EFFECT_COLOR = <134, 182, 255>
@@ -63,6 +66,8 @@ void function MpAbilityPortableAutoLoader_Init()
 	RegisterSignal( "AutoLoaderEnded" )
 	RegisterSignal( "EndUltBackpackVFX" )
 
+	RegisterNetworkedVariable( BALLISTIC_ULT_ACTIVE_NETVAR, SNDC_PLAYER_GLOBAL, SNVT_BOOL )
+
 	file.autoLoaderDuration = GetCurrentPlaylistVarFloat( "ballistic_ult_auto_loader_duration", AUTO_LOADER_DURATION )
 	file.additionalTime = GetCurrentPlaylistVarFloat( "ballistic_ult_additional_time", ADDITIONAL_TIME )
 
@@ -75,9 +80,8 @@ void function MpAbilityPortableAutoLoader_Init()
 		RegisterConCommandTriggeredCallback( "+offhand4", AttemptSwapToSlingWhileUltIsActive )
 		StatusEffect_RegisterEnabledCallback( eStatusEffect.has_auto_loader, AutoLoaderScreenVFXEnabled )
 		StatusEffect_RegisterDisabledCallback( eStatusEffect.has_auto_loader, AutoLoaderScreenVFXDisabled )
+		RegisterNetVarBoolChangeCallback( BALLISTIC_ULT_ACTIVE_NETVAR, OnBallisticUltStatusChange )
 
-
-	RegisterNetworkedVariable( BALLISTIC_ULT_ACTIVE_NETVAR, SNDC_PLAYER_GLOBAL, SNVT_BOOL )
 }
 
 void function OnWeaponActivate_ability_portable_auto_loader( entity weapon )
@@ -96,6 +100,37 @@ bool function IsBallisticUltActive( entity player )
 bool function DoesPlayerHaveAutoLoaderBuff( entity player )
 {
 	return StatusEffect_HasSeverity( player, eStatusEffect.has_auto_loader )
+}
+
+
+
+
+
+
+
+
+float function GetAutoLoaderVFXRange( entity player )
+{
+	float result = AUTOLOADER_RANGE
+
+
+
+
+
+
+	return result
+}
+
+float function GetAutoLoaderRange( entity player )
+{
+	float result = MAX_DISTANCE
+
+
+
+
+
+
+	return result
 }
 
 bool function OnWeaponAttemptOffhandSwitch_portableAutoLoader( entity weapon )
@@ -669,6 +704,16 @@ var function OnWeaponTossReleaseAnimEvent_ability_portable_auto_loader( entity w
 
 
 
+
+
+
+
+
+
+
+
+
+
 void function OnPrimaryWeaponStatusUpdate_FastReloadIcon( entity player, var weaponRui, bool turnOn )
 {
 	if( turnOn )
@@ -698,10 +743,14 @@ void function AttemptSwapToSlingWhileUltIsActive( entity player )
 void function AutoLoaderScreenVFXEnabled( entity ent, int statusEffect, bool actuallyChanged )
 {
 	entity viewPlayer = GetLocalViewPlayer()
-	if( viewPlayer != GetLocalClientPlayer() || ent != viewPlayer )
+
+	if ( !actuallyChanged && viewPlayer == GetLocalClientPlayer() )
 		return
 
-	thread AutoLoader_1PFX_Thread( ent )
+	if ( ent != viewPlayer )
+		return
+
+	thread AutoLoader_1PFX_Thread( viewPlayer )
 }
 
 void function AutoLoaderScreenVFXDisabled( entity ent, int statusEffect, bool actuallyChanged )
@@ -739,6 +788,18 @@ void function AutoLoader_1PFX_Thread( entity player )
 		EffectSetControlPointVector( fxHandle, 1, <1.0, 999, 0> )
 
 		WaitFrame()
+	}
+}
+
+void function OnBallisticUltStatusChange( entity player, bool ultIsActive )
+{
+	if( !ultIsActive )
+	{
+		entity slingWeapon = GetPlayerSlingWeapon( player )
+		if( IsValid( slingWeapon ) )
+		{
+			slingWeapon.ForceChargeEndNoAttack()
+		}
 	}
 }
 

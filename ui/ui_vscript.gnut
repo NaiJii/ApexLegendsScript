@@ -11,7 +11,11 @@ global function AddUICallback_OnLevelInit
 global function AddUICallback_InputModeChanged
 global function AddUICallback_KeyBindSet
 global function AddUICallback_UIShutdown
-
+global function RemoveUICallback_InputModeChanged
+#if PC_PROG_NX_UI
+global function AddUICallback_NXOperationModeChanged
+global function RemoveUICallback_NXOperationModeChanged
+#endif
 
 global struct CTAData
 {
@@ -170,6 +174,7 @@ global struct MenuDef
 
 	bool        isDialog = false
 	bool        isPopup = false
+	bool        isOverlay = false
 	DialogData& dialogData
 	bool        isDynamicHeight = false
 	bool        gamepadCursorEnabled = true
@@ -276,6 +281,9 @@ global struct UIGlobals
 	array<void functionref(bool)>            inputModeChangeCallbacks
 	array<void functionref(string, string)>  keyBindSetCallbacks
 	array<void functionref()>                uiShutdownCallbacks
+#if PC_PROG_NX_UI
+	array<void functionref()>            	 nxOperationModeChangedCallbacks
+#endif
 
 	table<var, MenuDef> menuData
 
@@ -429,9 +437,29 @@ void function AddUICallback_InputModeChanged( void functionref( bool ) callbackF
 	uiGlobal.inputModeChangeCallbacks.append( callbackFunc )
 }
 
+void function RemoveUICallback_InputModeChanged( void functionref( bool ) callbackFunc )
+{
+	if ( uiGlobal.inputModeChangeCallbacks.contains( callbackFunc ) )
+	{
+		uiGlobal.inputModeChangeCallbacks.removebyvalue( callbackFunc )
+	}
+}
+
 
 void function AddUICallback_KeyBindSet( void functionref( string, string ) callbackFunc )
 {
 	uiGlobal.keyBindSetCallbacks.append( callbackFunc )
 }
+
+#if PC_PROG_NX_UI
+void function AddUICallback_NXOperationModeChanged( void functionref() callbackFunc )
+{
+	uiGlobal.nxOperationModeChangedCallbacks.append( callbackFunc )
+}
+
+void function RemoveUICallback_NXOperationModeChanged( void functionref() callbackFunc )
+{
+	uiGlobal.nxOperationModeChangedCallbacks.removebyvalue( callbackFunc )
+}
+#endif
 

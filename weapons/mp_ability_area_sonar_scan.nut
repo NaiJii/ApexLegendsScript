@@ -19,9 +19,7 @@ const int AREA_SCAN_SKIN_INDEX = 9
 
 const float AREA_SONAR_SCAN_RADIUS = 3000.0
 const float AREA_SONAR_SCAN_HUD_FEEDBACK_DURATION = 3.0
-
 global const float AREA_SONAR_SCAN_HIGHLIGHT_DURATION = 1.5
-
 const float AREA_SONAR_SCAN_CONE_FOV = 125.0
 
 const bool AREA_SONAR_PERF_TESTING = false
@@ -106,10 +104,6 @@ float function AreaSonarScan_GetConeFOV()
 {
 	return file.areaSonarScanFOV
 }
-
-
-
-
 
 
 

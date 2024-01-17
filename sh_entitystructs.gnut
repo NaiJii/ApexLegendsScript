@@ -49,11 +49,11 @@ global struct EHIScriptStruct
 		table<int, array<void functionref( EHI, ItemFlavor )> > itemFlavorLoadoutSlotChangedCallbacksMap
 
 
+		array<int> netVarsLastSeenValuesMap
+		string obfuscatedID = ""
 
 
 
-
-		array<int> loadoutSlotsLastSeenContentsMap
 
 
 	

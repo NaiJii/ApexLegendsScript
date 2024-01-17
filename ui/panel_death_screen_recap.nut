@@ -5,6 +5,9 @@ struct
 {
 	var panel
 	array<var> blockArray
+
+
+
 } file
 
 void function InitDeathScreenRecapPanel( var panel )
@@ -50,6 +53,10 @@ void function OnOpenPanel( var panel )
 	RegisterButtonPressedCallback( GetPCBlockKey(), DeathScreenOnBlockButtonClick )
 	RegisterButtonPressedCallback( KEY_TAB, DeathScreenSkipRecap )
 	RegisterButtonPressedCallback( KEY_SPACE, DeathScreenSkipRecap )
+
+
+
+
 	DeathScreenUpdateCursor()
 	UpdateFooterOptions()
 
@@ -71,6 +78,10 @@ void function OnClosePanel( var panel )
 	DeregisterButtonPressedCallback( KEY_TAB, DeathScreenSkipRecap )
 	DeregisterButtonPressedCallback( KEY_SPACE, DeathScreenSkipRecap )
 
+
+
+
+
 	RunClientScript( "UICallback_CloseDeathRecap" )
 }
 
@@ -80,6 +91,8 @@ void function UI_UpdateRespawnStatus( int respawnStatus )
 	var menu = GetParentMenu( file.panel )
 	var headerElement = Hud_GetChild( menu, "Header" )
 	HudElem_SetRuiArg( headerElement, "respawnStatus", respawnStatus, eRuiArgType.INT )
+	UpdateSystemMenuRespawnStatus( respawnStatus )
+
 }
 
 void function DamageBlockButtonClick( var button )
@@ -116,3 +129,10 @@ void function OnDevButtonClick( var button )
 	isEnabled = !isEnabled
 }
 
+
+
+
+
+
+
+      

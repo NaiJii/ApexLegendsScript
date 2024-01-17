@@ -106,7 +106,6 @@ void function GunGame_Init()
 
 
 
-
 	
 	Remote_RegisterClientFunction( "ServerCallback_AnnounceScored", "int", 0, 512 )
 	
@@ -115,7 +114,7 @@ void function GunGame_Init()
 	
 	Remote_RegisterClientFunction( "ServerCallback_UpdateWeaponPreviews", "int", 0, 256, "int", 0, 512, "int", -1, 256, "int", 0, 512, "int", -1, 256 )
 	Remote_RegisterClientFunction( "ServerCallback_GunGame_SetSummaryScreen" )
-	Remote_RegisterServerFunction( "ClientCallback_UpdateWeaponPreviewHUD", "entity" )
+	Remote_RegisterServerFunction( "ClientCallback_UpdateWeaponPreviewHUD" )
 	for( int i = 0; i < MAX_TEAMS; ++i )
 		RegisterNetworkedVariable( GUNGAME_SQUAD_WEAPON_INDEX + i, SNDC_GLOBAL, SNVT_INT, -1 )
 
@@ -137,6 +136,8 @@ void function GunGame_Init()
 	AddCallback_GameStateEnter( eGameState.PickLoadout, GunGame_OnPlayerGameStateEntered )
 
 }
+
+
 
 
 
@@ -757,17 +758,14 @@ void function GunGame_OnPlayerGameStateEntered()
 		if ( !IsValid( player ) )
 			continue
 
-		SetCustomPlayerInfo( player )
+		Squads_SetCustomPlayerInfo( player )
 	}
 }
 
 void function GunGame_OnSpectateTargetChanged( entity player, entity previousTarget, entity currentTarget )
 {
-	if ( IsValid( currentTarget ) )
-	{
-		Remote_ServerCallFunction( "ClientCallback_UpdateWeaponPreviewHUD", currentTarget )
-		SquadLeader_UpdateAllUnitFramesRui()
-	}
+	Remote_ServerCallFunction( "ClientCallback_UpdateWeaponPreviewHUD" )
+	SquadLeader_UpdateAllUnitFramesRui()
 }
 
 void function ServerCallback_AnnounceWeaponSkip( int lootIndex )
@@ -854,7 +852,7 @@ void function Client_OnTeamChanged( entity player, int oldTeam, int newTeam )
 	if( !IsValid( player ) )
 		return
 
-	SetCustomPlayerInfo( player )
+	Squads_SetCustomPlayerInfo( player )
 }
 
 void function GunGame_OnSelectedWeaponChanged( entity selectedWeapon )
@@ -862,7 +860,7 @@ void function GunGame_OnSelectedWeaponChanged( entity selectedWeapon )
 	if ( file.gamemodeRUI == null )
 		return
 
-	if ( !IsValid(selectedWeapon) || selectedWeapon == null || selectedWeapon.IsWeaponMelee())
+	if ( !IsValid(selectedWeapon) || selectedWeapon == null || selectedWeapon.IsWeaponOffhandMelee() )
 		return
 
 	entity localPlayer = GetLocalViewPlayer()
@@ -917,7 +915,7 @@ void function DisplayGunGameScore_thread()
 			if ( !IsValid( player ) )
 				continue
 
-			SetCustomPlayerInfo( player )
+			Squads_SetCustomPlayerInfo( player )
 		}
 
 		entity localViewPlayer = GetLocalViewPlayer()
@@ -1123,7 +1121,9 @@ void function GunGame_ScoreboardSetup()
 	clGlobal.hideScoreboardFunc = HideScoreboardOrMap_Teams
 	Teams_AddCallback_ScoreboardData( GunGame_GetScoreboardData )
 	Teams_AddCallback_Header( GunGame_ScoreboardUpdateHeader )
-	Teams_AddCallback_GetTeamColor( GunGame_ScoreboardGetTeamColor )
+	Teams_AddCallback_GetTeamColor( GunGame_GetTeamColor )
+	Teams_AddCallback_GetTeamName( GunGame_GetTeamName )
+	Teams_AddCallback_GetTeamIcon( GunGame_GetTeamIcon )
 	Teams_AddCallback_PlayerScores( GunGame_GetPlayerScores )
 	Teams_AddCallback_SortScoreboardPlayers( GunGame_SortPlayersByScore )
 }
@@ -1223,11 +1223,29 @@ void function GunGame_ScoreboardUpdateHeader( var headerRui, var frameRui, int t
 
 
 
-vector function GunGame_ScoreboardGetTeamColor( int team )
+vector function GunGame_GetTeamColor( int team )
 {
 	int squadIndex = Squads_GetSquadUIIndex( team )
 
-	return Squads_GetSquadColor( team - TEAM_IMC )
+	return Squads_GetSquadColor( squadIndex )
+}
+
+
+
+string function GunGame_GetTeamName( int team )
+{
+	int squadIndex = Squads_GetSquadUIIndex( team )
+
+	return Squads_GetSquadName( squadIndex )
+}
+
+
+
+asset function GunGame_GetTeamIcon( int team )
+{
+	int squadIndex = Squads_GetSquadUIIndex( team )
+
+	return Squads_GetSquadIcon( squadIndex )
 }
 
 

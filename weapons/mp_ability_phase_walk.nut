@@ -127,6 +127,13 @@ bool function OnWeaponChargeBegin_ability_phase_walk( entity weapon )
 
 
 
+
+
+
+
+
+
+
 	PhaseShift( player, 0, chargeTime, PHASETYPE_BALANCE )
 
 	player.Signal( "WreckingBall_CleanupFX" )

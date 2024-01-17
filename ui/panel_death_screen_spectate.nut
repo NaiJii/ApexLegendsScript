@@ -29,6 +29,10 @@ void function SpectateOnOpenPanel( var panel )
 
 	RegisterButtonPressedCallback( KEY_LSHIFT, DeathScreenTryToggleGladCard )
 	RegisterButtonPressedCallback( KEY_RSHIFT, DeathScreenTryToggleGladCard )
+
+
+
+
 	RegisterButtonPressedCallback( KEY_SPACE, DeathScreenPingRespawn )
 	RegisterButtonPressedCallback( GetPCReportKey(), DeathScreenOnReportButtonClick )
 	
@@ -56,6 +60,10 @@ void function SpectateOnClosePanel( var panel )
 {
 	DeregisterButtonPressedCallback( KEY_LSHIFT, DeathScreenTryToggleGladCard )
 	DeregisterButtonPressedCallback( KEY_RSHIFT, DeathScreenTryToggleGladCard )
+
+
+
+
 	DeregisterButtonPressedCallback( KEY_SPACE, DeathScreenPingRespawn )
 	DeregisterButtonPressedCallback( GetPCReportKey(), DeathScreenOnReportButtonClick )
 	
@@ -63,5 +71,7 @@ void function SpectateOnClosePanel( var panel )
 	DeregisterButtonPressedCallback( MOUSE_WHEEL_UP, DeathScreenSpectateNext )
 	DeregisterButtonPressedCallback( MOUSE_WHEEL_DOWN, DeathScreenSpectateNext )
 	DeregisterButtonPressedCallback( KEY_TAB, DeathScreenSkipDeathCam )
+
+	RunClientScript( "UICallback_HideSpectateTab")
 }
 

@@ -169,15 +169,7 @@ void function LoreReaderMenu_TestOpen( string seqPathName )
 
 void function OnMenuClose()
 {
-	if ( s_latestAmbientTrack.len() > 0 )
-		StopUISound( s_latestAmbientTrack )
-
-	for( int idx = 0; idx < s_latestLoopingTracks.len(); ++idx )
-	{
-		if ( s_latestLoopingTracks[idx].len() > 0 )
-			StopUISound( s_latestLoopingTracks[idx] )
-	}
-
+	StopAllUISounds()
 	CancelCustomUIMusic()
 }
 

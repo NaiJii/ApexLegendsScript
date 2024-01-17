@@ -5,11 +5,11 @@ global function ShGamepad_LevelInit
 
 
 
+global function RefreshCustomGamepadBinds
 
-
-
-
-
+global function AddCallback_OnRefreshCustomGamepadBinds
+global function RemoveCallback_OnRefreshCustomGamepadBinds
+global function GetButtonBoundTo
 
 
 
@@ -31,15 +31,15 @@ global function GetAbilityABind
 
 
 
-global function GetCustomBindCommandForButtonIndexPilot
-global function GetCustomBindCommandForButtonIndexTitan
-global function GetCustomButtonIndexForCommandIndexPilot
-global function GetCustomButtonIndexForCommandIndexTitan
 
-global function ChangeCustomGamepadButtonIndexToCommandIndex_Pilot
-global function ChangeCustomGamepadButtonIndexToCommandIndex_Titan
-global function GetButtonIndexForButtonEnum
-global function RefreshCustomGamepadBinds_UI
+
+
+
+
+
+
+
+
 
 
 global enum eGamepadUseSchemeType
@@ -177,7 +177,7 @@ void function ShGamepad_LevelInit()
 
 
 
-
+		AddCallback_OnSettingsUpdated( UpdateSettings )
 
 }
 
@@ -379,42 +379,42 @@ string function GetCustomBindCommandForButtonIndexPilot( int buttonIndex )
 
 
 
-string function GetCustomBindCommandForButtonIndexTitan( int buttonIndex )
-{
-	return GetCustomBindCommandForButtonIndex_( buttonIndex, "gamepad_custom_titan", CUSTOM_BIND_ALIASES_TITAN )
-}
 
 
 
 
-int function GetCustomButtonIndexForCommandIndex_( int commandIndex, string convarName )
-{
-	Assert( (commandIndex >= 0) && (commandIndex < GAMEPAD_CUSTOM_BUTTONS_COUNT) )
-	array<int> bindList = BuildCommandForButtonArrayFromConVar( convarName )
-	for ( int buttonIndex = 0; buttonIndex < GAMEPAD_CUSTOM_BUTTONS_COUNT; ++buttonIndex )
-	{
-		if ( bindList[buttonIndex] == commandIndex )
-			return buttonIndex
-	}
-
-	return -1
-}
 
 
 
 
-int function GetCustomButtonIndexForCommandIndexPilot( int commandIndex )
-{
-	return GetCustomButtonIndexForCommandIndex_( commandIndex, "gamepad_custom_pilot" )
-}
 
 
 
 
-int function GetCustomButtonIndexForCommandIndexTitan( int commandIndex )
-{
-	return GetCustomButtonIndexForCommandIndex_( commandIndex, "gamepad_custom_titan" )
-}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -441,48 +441,48 @@ string function IntArrayToCSS( array<int> srcArray )
 
 
 
-bool function ChangeCustomGamepadButtonIndexToCommandIndex_( int newButtonIndex, int newCommandIndex, string convarName )
-{
-	array<int> arr = BuildCommandForButtonArrayFromConVar( convarName )
-	Assert( arr.len() == GAMEPAD_CUSTOM_BUTTONS_COUNT )
-
-	int oldButtonIndex = -1
-	for ( int idx = 0; idx < GAMEPAD_CUSTOM_BUTTONS_COUNT; ++idx )
-	{
-		if ( arr[idx] == newCommandIndex )
-		{
-			oldButtonIndex = idx
-			break
-		}
-	}
-
-	if ( (oldButtonIndex == -1) || (oldButtonIndex == newButtonIndex) )
-		return false
-
-	int oldCommandIndex = arr[newButtonIndex]
-	arr[newButtonIndex] = newCommandIndex
-	arr[oldButtonIndex] = oldCommandIndex
-
-	string newValue = IntArrayToCSS( arr )
-	SetConVarString( convarName, newValue )
-	return true
-}
 
 
 
 
-bool function ChangeCustomGamepadButtonIndexToCommandIndex_Pilot( int newButtonIndex, int newCommandIndex )
-{
-	return ChangeCustomGamepadButtonIndexToCommandIndex_( newButtonIndex, newCommandIndex, "gamepad_custom_pilot" )
-}
 
 
 
 
-bool function ChangeCustomGamepadButtonIndexToCommandIndex_Titan( int newButtonIndex, int newCommandIndex )
-{
-	return ChangeCustomGamepadButtonIndexToCommandIndex_( newButtonIndex, newCommandIndex, "gamepad_custom_titan" )
-}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -676,78 +676,78 @@ void function SetCustomGamepadBindsForTitan( entity player )
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-void function RefreshCustomGamepadBinds_UI()
+void function RefreshCustomGamepadBinds()
 {
-	if ( !IsFullyConnected() )
-	{
-		SetStandardAbilityBindingsForPilot( GetLocalClientPlayer() )
+	entity player = GetLocalClientPlayer()
+	if ( !IsValid( player ) )
 		return
+
+	if ( player.IsTitan() )
+		SetStandardAbilityBindingsForTitan( player )
+	else
+		SetStandardAbilityBindingsForPilot( player )
+
+	foreach ( func in file.onRefreshCustomGamepadBinds )
+	{
+		func( player )
+	}
+}
+
+void function AddCallback_OnRefreshCustomGamepadBinds( void functionref(entity) func )
+{
+	if ( GetBugReproNum() == 30741 )
+		Assert( !file.onRefreshCustomGamepadBinds.contains( func ) )
+
+	if ( !file.onRefreshCustomGamepadBinds.contains( func ) )
+		file.onRefreshCustomGamepadBinds.append( func )
+}
+
+void function RemoveCallback_OnRefreshCustomGamepadBinds( void functionref(entity) func )
+{
+	Assert( file.onRefreshCustomGamepadBinds.contains( func ) )
+
+	file.onRefreshCustomGamepadBinds.fastremovebyvalue( func )
+}
+
+int function GetButtonBoundTo( string command )
+{
+	foreach ( buttonID, index in GAMEPAD_BUTTON_INDICES )
+	{
+		if ( ButtonIsBoundToAction( buttonID, command ) )
+			return buttonID
+
+		if ( ButtonIsBoundToHoldAction( buttonID, command ) )
+			return buttonID
 	}
 
-	RunClientScript( "RefreshCustomGamepadBinds" )
+	return -1
 }
 
 
 
 
-int function GetButtonIndexForButtonEnum( int buttonEnum )
-{
-	if ( buttonEnum in GAMEPAD_BUTTON_INDICES )
-		return GAMEPAD_BUTTON_INDICES[ buttonEnum ]
 
-	Assert( false, ("Invalid button enum: " + buttonEnum) )
-	return 0
-}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -5,12 +5,16 @@ global function Teams_AddCallback_SortScoreboardPlayers
 global function Teams_AddCallback_Header
 global function Teams_AddCallback_ScoreboardTitle
 global function Teams_AddCallback_GetTeamColor
+global function Teams_AddCallback_GetTeamName
+global function Teams_AddCallback_GetTeamIcon
 global function Teams_AddCallback_OnPlayerClick
 global function Teams_AddCallback_IsEnabled
 global function Teams_PopulatePlayerRow
 global function Teams_PopulateHeaderRui
 global function Teams_GetMaxTeamSize
 global function Teams_GetTeamColor
+global function Teams_GetTeamName
+global function Teams_GetTeamIcon
 
 global function UICallback_ScoreboardMenu_BindTeamHeader
 global function UICallback_ScoreboardMenu_BindTeamRow
@@ -83,6 +87,8 @@ struct {
 	array< entity > functionref( array< entity >, ScoreboardData ) Callback_SortScoreboardPlayers
 	void functionref( var, var, int ) Callback_Header
 	vector functionref( int ) Callback_GetTeamColor
+	string functionref( int ) Callback_GetTeamName
+	asset functionref( int ) Callback_GetTeamIcon
 	string functionref() Callback_ScoreboardTitle
 	vector functionref( EHI ) Callback_OnPlayerClick
 	bool functionref() Callback_IsEnabled
@@ -145,6 +151,18 @@ void function Teams_AddCallback_GetTeamColor(  vector functionref( int ) callbac
 {
 	Assert( !IsValid( file.Callback_GetTeamColor ), "_GetTeamColor already has a callback function - " + string( callbackFunc ) + ", ensure this is only called once" )
 	file.Callback_GetTeamColor = callbackFunc
+}
+
+void function Teams_AddCallback_GetTeamName(  string functionref( int ) callbackFunc )
+{
+	Assert( !IsValid( file.Callback_GetTeamName ), "_GetTeamName already has a callback function - " + string( callbackFunc ) + ", ensure this is only called once" )
+	file.Callback_GetTeamName = callbackFunc
+}
+
+void function Teams_AddCallback_GetTeamIcon(  asset functionref( int ) callbackFunc )
+{
+	Assert( !IsValid( file.Callback_GetTeamIcon ), "_GetTeamIcon already has a callback function - " + string( callbackFunc ) + ", ensure this is only called once" )
+	file.Callback_GetTeamIcon = callbackFunc
 }
 
 void function Teams_AddCallback_OnPlayerClick(  vector functionref( EHI ) callbackFunc )
@@ -557,11 +575,34 @@ vector function Teams_GetTeamColor( int teamIndex )
 {
 	vector teamColor
 	if( IsValid(file.Callback_GetTeamColor) )
-		teamColor = file.Callback_GetTeamColor( Teams_NormalizeTeamIndex( teamIndex ) )
+	{
+		if( AllianceProximity_IsUsingAlliances() )
+			teamIndex = AllianceProximity_GetAllianceFromTeam( teamIndex )
+
+		teamColor = file.Callback_GetTeamColor( teamIndex )
+	}
 	else
-		teamColor = SrgbToLinear( GetSkydiveSmokeColorForTeam( teamIndex + TEAM_IMC) / 255.0 )
+		teamColor = GetSkydiveSmokeColorForTeam( teamIndex )
 
 	return teamColor
+}
+
+string function Teams_GetTeamName( int teamIndex )
+{
+	string teamName
+	if( IsValid(file.Callback_GetTeamName) )
+		teamName = file.Callback_GetTeamName( Teams_NormalizeTeamIndex( teamIndex ) )
+
+	return teamName
+}
+
+asset function Teams_GetTeamIcon( int teamIndex )
+{
+	asset teamIcon = $""
+	if( IsValid(file.Callback_GetTeamIcon) )
+		teamIcon = file.Callback_GetTeamIcon( Teams_NormalizeTeamIndex( teamIndex ) )
+
+	return teamIcon
 }
 
 void function Teams_PopulateFrameRui( var scoreFrameRui, int teamIndex, ScoreboardData data, float rowWidth )

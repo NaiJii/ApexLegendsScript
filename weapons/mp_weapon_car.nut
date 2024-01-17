@@ -126,7 +126,16 @@ var function OnWeaponPrimaryAttack_weapon_Car( entity weapon, WeaponPrimaryAttac
 
 	if ( clipCount > 0 )
 	{
+
+			GoldenHorsePurple_OnWeaponPrimaryAttack( weapon, attackParams )
+
+
 		weapon.FireWeapon_Default( attackParams.pos, attackParams.dir, 1.0, 1.0, false )
+
+
+			GoldenHorsePurple_PostFire( weapon )
+
+
 		return weapon.GetWeaponSettingInt( eWeaponVar.ammo_per_shot )
 	}
 	else if ( clipCount <= 0 )
@@ -169,8 +178,6 @@ void function Weapon_CAR_TryApplyAmmoSwap( entity player, entity weapon )
 
 	Remote_ServerCallFunction( CMDNAME_CAR_AMMO_SWAP )
 }
-
-
 
 
 

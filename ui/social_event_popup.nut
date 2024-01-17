@@ -120,6 +120,9 @@ void function SocialEventUpdate()
 	if ( (!IsVCPopUp( currMenu ) && IsDialog( currMenu )) || !IsLobby() )
 		return
 
+	if( !IsPersistenceAvailable( )) 	
+		return;
+
 	file.activeEventInvalid = false
 
 	UpdateFriendRequestCache()
@@ -175,7 +178,8 @@ bool function CompareSocialEvents( SocialEvent ornull first, SocialEvent ornull 
 
 void function SocialEvent_TryPurgeCrossplayFriendRequests()
 {
-	if ( IsMatchPreferenceFlagActive( eMatchPreferenceFlags.CROSSPLAY_INVITE_AUTO_DENY ) )
+
+	if( ( GetPersistentVarAsInt( "matchPreferences" ) & eMatchPreferenceFlags.CROSSPLAY_INVITE_AUTO_DENY ) > 0) 
 	{
 		array<SocialEvent> events = clone file.socialEventCache
 		foreach ( SocialEvent event in events )

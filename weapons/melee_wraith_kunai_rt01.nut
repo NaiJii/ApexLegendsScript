@@ -1,4 +1,3 @@
-
 global function MeleeWraithKunai_rt01_Init
 
 global function OnWeaponActivate_melee_wraith_kunai_rt01
@@ -54,4 +53,3 @@ void function OnWeaponDeactivate_melee_wraith_kunai_rt01( entity weapon )
 	weapon.StopWeaponEffect( EFFECT_KUNAI_RT01_ATTACK_SWIPE_FP, EFFECT_KUNAI_RT01_ATTACK_SWIPE_3P )
 	weapon.StopWeaponEffect( EFFECT_KUNAI_RT01_ATTACK_STAB_FP, EFFECT_KUNAI_RT01_ATTACK_STAB_3P )
 }
-                         

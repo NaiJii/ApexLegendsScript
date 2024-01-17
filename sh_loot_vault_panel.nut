@@ -265,7 +265,7 @@ void function Sh_Loot_Vault_Panel_Init()
 
 	if( VaultPanels_PingFromMap_Enabled() )
 	{
-		Remote_RegisterServerFunction( FUNCNAME_PingVaultFromMap, "entity" )
+		Remote_RegisterServerFunction( FUNCNAME_PingVaultFromMap, "typed_entity", "prop_dynamic" )
 		Remote_RegisterClientFunction( FUNCNAME_VaultPanelMarkerEntSet, "entity", "entity" )
 	}
 

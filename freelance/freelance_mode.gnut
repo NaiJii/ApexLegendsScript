@@ -203,8 +203,8 @@ void function FreelanceMode_SharedInit()
 		QuestS05EndInit()
 
 
-
-
+	if ( GetCurrentPlaylistVarBool( "freelance_mode_dropdown", false ) )
+		DropDownModeInit()
 
 }
 

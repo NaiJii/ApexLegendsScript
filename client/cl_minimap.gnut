@@ -77,7 +77,6 @@ global function MinimapObjectThread
 
 global function Minimap_AddAssetCountLimit
 
-global function MiniMapIsDisabled
 global function GetMinimapFrameRui
 global function GetMinimapYouRui
 global function GetUnitFramesRui
@@ -366,7 +365,7 @@ void function ClMinimap_Init()
 	StatusEffect_RegisterDisabledCallback( eStatusEffect.minimap_jammed, MinimapJammed_Disabled )
 
 	file.fullmap_legendRui = RuiCreate( $"ui/map_legend.rpak", clGlobal.topoFullscreenFullMap, FULLMAP_RUI_DRAW_LAYER, 20 )
-	InitHUDRui( file.fullmap_legendRui, false )
+	InitHUDRui( file.fullmap_legendRui )
 	Fullmap_AddRui( file.fullmap_legendRui )
 
 	if ( !IsPrivateMatch() )
@@ -380,7 +379,7 @@ void function ClMinimap_Init()
 		file.fullmap_challengeRuiArray.append( RuiCreate( $"ui/minimap_challenge_row.rpak", clGlobal.topoFullscreenFullMap, FULLMAP_RUI_DRAW_LAYER, RUI_SORT_SCREENFADE - 1 ) )
 		foreach( rui in file.fullmap_challengeRuiArray )
 		{
-			InitHUDRui( rui, false )
+			InitHUDRui( rui )
 			Scoreboard_AddRui( rui )
 		}
 
@@ -423,13 +422,13 @@ void function ClMinimap_Init()
 
 	foreach ( rui in file.fullmap_unitframesRui )
 	{
-		InitHUDRui( rui, false )
+		InitHUDRui( rui )
 		Scoreboard_AddRui( rui )
 	}
 
 	foreach ( rui in file.fullmap_jipframesRui )
 	{
-		InitHUDRui( rui, false )
+		InitHUDRui( rui )
 	}
 
 	asset fullmap_gamestateRuiAsset = GetFullmapGameStateAsset()
@@ -440,7 +439,7 @@ void function ClMinimap_Init()
 		file.fullmap_gamestateRui = RuiCreate( fullmap_gamestateRuiAsset, clGlobal.topoFullscreenFullMap, FULLMAP_RUI_DRAW_LAYER, 20)
 
 
-	InitHUDRui( file.fullmap_gamestateRui, false )
+	InitHUDRui( file.fullmap_gamestateRui )
 	Scoreboard_AddRui( file.fullmap_gamestateRui )
 
 	foreach( func in file.onFullmapCreated_Callbacks )
@@ -488,7 +487,7 @@ void function OnSpectatorVisibleEnemiesChanged( bool enemiesVisible )
 var function CreateMinimapRui( asset ruiAsset, int sortKey = 0 )
 {
 	var rui = RuiCreate( ruiAsset, clGlobal.topoFullscreenHudPermanent, RUI_DRAW_HUD, sortKey )
-	InitHUDRui( rui, true )
+	InitHUDRui( rui )
 	return rui
 }
 
@@ -741,7 +740,7 @@ void function MinimapObjectThread( entity ent )
 				
 
 				
-				if ( AllianceProximity_IsUsingAllianceProximity() )
+				if ( AllianceProximity_ShouldTryToTransmitPingOrIconToAlliance( false ) )
 				{
 					switch ( ent.Minimap_GetCustomState() ) {
 						
@@ -988,7 +987,6 @@ var function Minimap_CommonAdd( asset ruiAsset, int zOrder, vector objPos = < 0,
 void function Minimap_CommonCleanup( var rui )
 {
 	file.minimapOtherRuis.removebyvalue( rui )
-	ReleaseHUDRui( rui )
 	RuiDestroy( rui )
 }
 
@@ -1049,6 +1047,15 @@ var function Minimap_AddEnemyToMinimap( entity enemy, asset enemyIconOverride = 
 	RuiTrackInt( rui, "customState", enemy, RUI_TRACK_MINIMAP_CUSTOM_STATE )
 	RuiSetFloat( rui, "objectScale", scaleOverride <= 0 ? 1.5 : scaleOverride )
 	RuiSetImage( rui, "iconOverride", enemyIconOverride )
+
+	
+	RuiSetFloat3( rui, "objColor", GetKeyColor( COLORID_MINIMAP_ENEMY_REF ) * ( 1.0 / 255.0 ) )
+
+		if ( IsRevTakeover() )
+		{
+			RuiSetFloat3( rui, "objColor", Teams_GetTeamColor( enemy.GetTeam() ) )
+		}
+
 
 	return rui
 }
@@ -1322,6 +1329,7 @@ void function MinimapPackage_PlayerInit( entity ent, var rui )
 
 	if ( IsFriendlyTeam( ent.GetTeam(), GetLocalViewPlayer().GetTeam() ) && ent.GetTeam() != GetLocalViewPlayer().GetTeam() )
 	{
+		
 		RuiSetFloat3( rui, "iconColorOverride", (GetKeyColor( COLORID_FRIENDLY ) / 255.0)  )
 		RuiSetBool( rui, "shouldOverrideClampedIcon", true )
 		RuiSetFloat2( rui, "iconScaleOverride", <0.65, 0.65, 0.0> )
@@ -1633,14 +1641,6 @@ void function CinematicEventFlagChanged( entity player )
 }
 
 
-bool function MiniMapIsDisabled()
-{
-	if ( GetCurrentPlaylistVarBool( "disable_minimap", false ) )
-		return true
-	return false
-}
-
-
 void function Minimap_UpdateMinimapVisibility( entity player )
 {
 	if ( !IsValid( player ) )
@@ -1922,7 +1922,14 @@ void function UpdateFullmapRuiTracks()
 	UpdateEquipmentSlot( viewPlayer, viewPlayerRui )
 
 	RuiSetInt( viewPlayerRui, "frameSlot", -1 )
-	RuiSetBool( viewPlayerRui, "useShadowFormFrame", viewPlayer.IsShadowForm() )
+
+	bool isPlayerShadow = false
+
+
+		isPlayerShadow = IsPlayerShadowZombie( viewPlayer )
+
+
+	RuiSetBool( viewPlayerRui, "useShadowFormFrame", viewPlayer.IsShadowForm() && !isPlayerShadow )
 
 
 		RuiTrackBool( viewPlayerRui, "hasAltStatus", viewPlayer, RUI_TRACK_SCRIPT_NETWORK_VAR_BOOL, GetNetworkedVariableIndex( EXPIRED_BANNER_RECOVERY_NETVAR ) )
@@ -1978,7 +1985,7 @@ void function UpdateFullmapRuiTracks()
 				if( GetCurrentPlaylistVarBool("has_squad_based_ui", false) )
 				{
 					entity player = GetLocalViewPlayer()
-					playerColor = SrgbToLinear( GetPlayerInfoColor(player ) / 255.0 )
+					playerColor = SrgbToLinear( GetPlayerInfoColor( player ) / 255.0 )
 				}
 				else
 					playerColor = SrgbToLinear( GetKeyColor( COLORID_MEMBER_COLOR0, 1 + slotIndex ) / 255.0 )
@@ -1993,7 +2000,7 @@ void function UpdateFullmapRuiTracks()
 		UpdateEquipmentSlot( teamMember, rui )
 
 		RuiSetInt( rui, "frameSlot", slotIndex )
-		RuiSetBool( rui, "useShadowFormFrame", teamMember.IsShadowForm() )
+		RuiSetBool( rui, "useShadowFormFrame", teamMember.IsShadowForm() && !isPlayerShadow )
 
 
 
@@ -2020,6 +2027,9 @@ void function UpdateFullmapRuiTracks()
 		}
 		else
 		{
+
+
+
 			UpdateMinimapChallengeRui( file.fullmap_challengeRuiArray )
 		}
 

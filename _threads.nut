@@ -94,10 +94,10 @@ string function VM_NAME()
 
 
 
+		return "CL"
 
 
-		Assert( UI )
-		return "UI"
+
 
 }
 
@@ -131,9 +131,9 @@ void function printt_spamLog( ... )
 		msg = (msg + " " + vargv[i])
 
 
-	SpamLog( format( "[%.3f] %s\n", UITime(), msg ) )
 
 
+	SpamLog( format( "[%.3f] %s\n", Time(), msg ) )
 
 }
 

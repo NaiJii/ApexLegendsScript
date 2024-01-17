@@ -8,7 +8,9 @@ global table<string, bool> FORBIDDEN_DIALOGUE_EVENT_NAMES = {
 	
 }
 
-global function SCB_VerifyRegisteredDialogue
+
+
+
 
 
 
@@ -46,6 +48,7 @@ global function GetValidVoices
 global function SCB_PlayDialogueOnEntity
 global function SCB_PlayDialogueAtPosition
 global function SCB_PlayDialogueOnEnvironmentSpeakers
+global function SCB_PlayDialogueOnEnvironmentSpeakersNoResponse
 global function SCB_AbortCurrentDialogue
 global function SCB_AbortAllMainQueuedAndCurrentDialogue
 
@@ -179,6 +182,7 @@ global enum eDialogueFlags
 	USE_CUSTOM_QUEUE = (1 << 8 ),
 	USE_CUSTOM_SPEAKERS = ( 1 << 9 ),
 	BLOCK_ANNOUNCER = ( 1 << 10 ),
+	EMIT_FROM_FIXED_POSITION = ( 1 << 11 ),
 }
 
 
@@ -264,7 +268,6 @@ void function SPDialogueInit()
 
 	Remote_RegisterServerFunction( "ClientCallback_DialogueFinishedForID", "int", INT_MIN, INT_MAX )
 	Remote_RegisterServerFunction( "ClientCallback_AllDialogueFinished" )
-	Remote_RegisterServerFunction( "ClientCallback_SendDynDiagPIN", "string")
 
 
 
@@ -273,6 +276,8 @@ void function SPDialogueInit()
 
 
 	AddCallback_OnItemFlavorRegistered( eItemType.character, OnCharacterRegistered )
+
+
 
 
 
@@ -308,6 +313,7 @@ void function SPDialogueInit()
 const string FUNCNAME_PlayDialogueOnEntity = "SCB_PlayDialogueOnEntity"
 const string FUNCNAME_PlayDialogueAtPosition = "SCB_PlayDialogueAtPosition"
 const string FUNCNAME_PlayDialogueOnEnvironmentSpeakers = "SCB_PlayDialogueOnEnvironmentSpeakers"
+const string FUNCNAME_PlayDialogueOnEnvironmentSpeakersNoResponse = "SCB_PlayDialogueOnEnvironmentSpeakersNoResponse"
 const string FUNCNAME_AbortCurrentDialogue = "SCB_AbortCurrentDialogue"
 const string FUNCNAME_AbortAllMainQueuedAndCurrentDialogue = "SCB_AbortAllMainQueuedAndCurrentDialogue"
 
@@ -320,14 +326,16 @@ void function Dialog_RegisterNetworking()
 	Remote_RegisterClientFunction( FUNCNAME_PlayDialogueOnEntity, "int", -1, INT_MAX, "int", INT_MIN, INT_MAX, "int", INT_MIN, INT_MAX )
 	Remote_RegisterClientFunction( FUNCNAME_PlayDialogueAtPosition, "int", -1, INT_MAX, "int", INT_MIN, INT_MAX, "vector", -MAX_WORLD_COORD, MAX_WORLD_COORD, 32 )
 	Remote_RegisterClientFunction( FUNCNAME_PlayDialogueOnEnvironmentSpeakers, "int", 0, INT_MAX, "int", 0, INT_MAX, "int", 0, INT_MAX, "int", -1, INT_MAX, "entity", "int", -1, NUM_TOTAL_DIALOGUE_QUEUES )
+	Remote_RegisterClientFunction( FUNCNAME_PlayDialogueOnEnvironmentSpeakersNoResponse, "int", 0, INT_MAX, "int", 0, INT_MAX, "int", 0, INT_MAX, "int", -1, INT_MAX, "int", -1, NUM_TOTAL_DIALOGUE_QUEUES )
 	Remote_RegisterClientFunction( FUNCNAME_AbortCurrentDialogue )
 	Remote_RegisterClientFunction( FUNCNAME_AbortAllMainQueuedAndCurrentDialogue )
 
 	Remote_RegisterClientFunction( FUNCNAME_PlayDialogueOnCustomSpeakers, "int", 0, INT_MAX, "int", 0, INT_MAX, "int", -1, NUM_CUSTOM_QUEUES )
 	Remote_RegisterClientFunction( FUNCNAME_AbortAllCustomSpeakersQueuedAndCurrentDialogue, "int", -1, NUM_CUSTOM_QUEUES )
 
-	
-	Remote_RegisterClientFunction( "SCB_VerifyRegisteredDialogue", "string" )
+
+
+
 }
 
 DialogueData function GetDataForAliasId( int index )
@@ -566,12 +574,6 @@ void function RegisterCSVDialogue( asset dt )
 		if ( (voice.len() > 0) && (!file.validVoices.contains( voice )) && (extraPerspective != "radio") )
 			Warning( "Dialogue '%s' in source '%s' specifies unknown voice '%s'.", name, string( dt ), voice )
 
-		if ( (voice.len() > 0) && (radioDisplayName.len() > 0) )
-		{
-			Warning( "Dialogue '%s' has both voice '%s' and radioDisplay '%s'. Will only use voice.", name, voice, radioDisplayName )
-			radioDisplayName = ""
-		}
-
 		RegisterDialogueLine( name, alias, priority, radioDisplayName, voice, radioIntercept, vduVideo, dialogueText, dialogueTextDur, extraPerspective, canPlayIfSolo, dt, soloLegendFlavors )
 	}
 
@@ -636,6 +638,23 @@ void function RegisterDialogueLine( string name, string alias, int priority, str
 
 	s_prevNameRegistered = name
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1294,6 +1313,11 @@ void function SCB_PlayDialogueAtPosition( int aliasID, int dialogueFlags, vector
 }
 
 
+void function SCB_PlayDialogueOnEnvironmentSpeakersNoResponse( int aliasID, int numSpeakers, int dialogueFlags, int responseID, int customQueueIdx )
+{
+	SCB_PlayDialogueOnEnvironmentSpeakers( aliasID, numSpeakers, dialogueFlags, responseID, null, customQueueIdx )
+}
+
 void function SCB_PlayDialogueOnEnvironmentSpeakers( int aliasID, int numSpeakers, int dialogueFlags, int responseID, entity responseSpeaker, int customQueueIdx )
 {
 	Assert( !IsBitFlagSet( dialogueFlags, eDialogueFlags.USE_CUSTOM_QUEUE ) , "Environment speaker dialogue must NOT be called using the custom queue." )
@@ -1562,7 +1586,7 @@ void function PlayClientDialogue_Internal( int aliasID, int dialogueFlags, array
 	printf( "Playing Dialogue - '%s'#%d -> '%s', priority:%d, from:'%s'  %s", data.group.groupName, data.indexInGroup, milesAlias, data.priority, string( data.group.sourceDataTable ), (isDevText ? " (dev text)" : "") )
 
 	if ( milesAlias.find( "_cond" ) >= 0 || milesAlias.find( "_flavor" ) >= 0 )  {
-		Remote_ServerCallFunction("ClientCallback_SendDynDiagPIN", milesAlias)
+		PIN_DynamicDialogue( milesAlias )
 	}
 
 	float duration
@@ -1590,8 +1614,7 @@ void function PlayClientDialogue_Internal( int aliasID, int dialogueFlags, array
 	var waveformRUI = null
 	if ( (radioDisplayName != "") && (specificImage != $"") && file.useVDU )
 	{
-		
-		waveformRUI = CreateDialogPopup( radioDisplayName, duration + extraWait, specificImage, (isDevText ? data.dialogueText : "") )
+		waveformRUI = CreateDialogPopup( radioDisplayName, duration + extraWait, specificImage, data.dialogueText )
 
 		foreach ( void functionref() cb in file.dialoguePopupCreatedCallbacks )
 			cb()
@@ -1652,7 +1675,7 @@ void function PlayClientDialogue_Internal( int aliasID, int dialogueFlags, array
 	if ( IsBitFlagSet( dialogueFlags, eDialogueFlags.BLOCK_ANNOUNCER ) )
 		file.blockAnnouncer = true
 
-	if ( !(milesAlias in FORBIDDEN_DIALOGUE_EVENT_NAMES) )
+	if ( !(milesAlias in FORBIDDEN_DIALOGUE_EVENT_NAMES) && !IsWatchingKillReplay() )
 	{
 		foreach ( entity speaker in speakers )
 		{
@@ -1662,6 +1685,11 @@ void function PlayClientDialogue_Internal( int aliasID, int dialogueFlags, array
 				{
 					if ( waveformRUI == null )
 						thread DevDialogueWithoutSoundAlias( speakerName, data.dialogueText, duration )
+				}
+				else if ( IsBitFlagSet( dialogueFlags, eDialogueFlags.EMIT_FROM_FIXED_POSITION ) )
+				{
+					file.currentDialoguePlayingHandle = EmitSoundAtPosition( speaker.GetTeam(), speaker.GetOrigin(), milesAlias )
+					file.currentDialoguePlayingName = data.name
 				}
 				else
 				{
@@ -1905,13 +1933,6 @@ void function SetUseDialogueVDU( bool useVDU )
 }
 
 
-
-
-
-
-
-
-
 #if DEV
 bool function ShouldTryToReplaceMissingVoiceWithTempVoice()
 {
@@ -1957,39 +1978,24 @@ bool function ShouldPlayDialogueIfSolo( DialogueData data, entity speaker )
 
 
 
-void function SCB_VerifyRegisteredDialogue( string sv_verification )
-{
-#if DEV
-	printt( "\t| DEV ONLY: CL verifying registered dialogue!" )
-	string cl_verification = GenerateRegisteredDialogueVerification()
-	if ( sv_verification != cl_verification )
-	{
-		array<string> sv_verificationSplit = split( sv_verification, ";" )
-		array<string> cl_verificationSplit = split( cl_verification, ";" )
-
-		for( int i = sv_verificationSplit.len() - 1; i >= 0; i-- )
-		{
-			Assert( cl_verificationSplit[ i ] == sv_verificationSplit[ i ], format( "Client and server mismatch! SV has '%s' while client has '%s'. One of these is not registered on both SV and CL. Or one of these is registered in a different order on SV than CL.", sv_verificationSplit[ i ], cl_verificationSplit[ i ] ) )
-		}
-	}
-	printt( "\t|\t Verification completed!" )
-#endif
-}
 
 
-string function GenerateRegisteredDialogueVerification()
-{
-	string verification
 
-#if DEV
-	foreach( string dtName in file.registeredDataTableNames )
-	{
-		
-		
-		string dtNameNoPath = split( dtName, "//" ).top()
-		string dtNameNoExtension = split( dtNameNoPath, "/." )[ 0 ]
-		verification += dtNameNoExtension + ";"
-	}
-#endif
-	return verification
-}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                            

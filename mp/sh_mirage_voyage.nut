@@ -6,6 +6,7 @@ global function ClMirageVoyage_Init
 
 
 
+global function IsMirageVoyageEnabled
 
 
 

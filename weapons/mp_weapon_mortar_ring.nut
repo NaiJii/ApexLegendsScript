@@ -169,7 +169,7 @@ var function OnWeaponPrimaryAttack_ability_mortar_ring( entity weapon, WeaponPri
 	{
 		float launchSpeed = GraphCapped( crosshairData.distanceToTarget, 0, MORTAR_MAX_FIRE_DISTANCE, MORTAR_RING_LAUNCH_SPEED_MIN, MORTAR_RING_LAUNCH_SPEED_MAX  )
 		ArcSolution as = SolveBallisticArc( weapon.GetAttackPosition(), launchSpeed, crosshairData.airburstTarget, GetConVarFloat( "sv_gravity" ) )
-		vector arcPos = weapon.SimulateGrenadeImpactPos( ZERO_VECTOR, as.fire_velocity, as.duration )
+		vector arcPos = weapon.SimulateGrenadeImpactPos( ZERO_VECTOR, as.fire_velocity, as.duration, -1 )
 		float distanceToArcPos =  Distance( arcPos, owner.CameraPosition() )
 		inRange = InRange( distanceToArcPos )
 	}
@@ -282,7 +282,7 @@ void function WeaponActiveThread_Client( entity owner, entity weapon )
 			ArcSolution as = SolveBallisticArc( weapon.GetAttackPosition(), launchSpeed, crosshairData.airburstTarget, GetConVarFloat( "sv_gravity" ) )
 			weapon.SetIndicatorEffectVelocityOverride( as.fire_velocity )
 			weapon.SetIndicatorEffectDurationOverride( as.duration )
-			arcPos = weapon.SimulateGrenadeImpactPos( ZERO_VECTOR, as.fire_velocity, as.duration )
+			arcPos = weapon.SimulateGrenadeImpactPos( ZERO_VECTOR, as.fire_velocity, as.duration, -1 )
 			float distanceToArcPos =  Distance( arcPos, crosshairData.crosshairStart )
 			newInRange = InRange( distanceToArcPos )
 			newClearance = ( Distance( crosshairData.airburstTarget, arcPos ) <= 50 )

@@ -497,8 +497,21 @@ void function TestOptimizations( array<entity> testEmptyTypedArray = [] )
 	array<string> testEmptyArrayAssignment
 	testEmptyArrayAssignment = []
 
-	int zero = 0
-	int notnottest = int(!!(bool(zero))) 
+	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 }
 
 
@@ -737,14 +750,14 @@ void function DumpConstTable( table constTable )
 	string constFileName = ""
 
 
+		constFileName = "scripts/codeconsts_CLIENT.txt"
+		DevTextBufferWrite( "\n// [CLIENT] generated file: do not modify\n// To generate: r2_static_128 -scriptdocs\n\n" )
 
 
 
 
 
 
-		constFileName = "scripts/codeconsts_UI.txt"
-		DevTextBufferWrite( "\n// [UI] generated file: do not modify\n// To generate: r2_static_128 -scriptdocs\n\n" )
 
 
 	array< ConstTableEntry > constTableEntries

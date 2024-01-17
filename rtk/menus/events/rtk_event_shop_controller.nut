@@ -4,12 +4,15 @@ global function RTKMutator_AlphaFromShopItemState
 global function RTKMutator_TierXPosition
 global function RTKMutator_TierYPosition
 global function GetActiveTierBindingPath
+global function GetSweepstakesOffer
 global function IsOfferPartOfEventShop
+global function EventShop_UpdatePreviewedOffer
 
 global struct RTKEventShopPanel_Properties
 {
 	rtk_panel offersGrid
 	rtk_panel tierList
+	rtk_behavior challengesGridButton
 }
 
 global struct RTKEventShopOfferItemModel
@@ -19,9 +22,9 @@ global struct RTKEventShopOfferItemModel
 	int price
 	int quantity
 	asset icon
+	bool isSweepstakes
 	bool isGenericIcon
 	int quality
-	vector qualityColor
 	int state
 	bool isRecurring
 	bool isAvailable
@@ -52,12 +55,36 @@ global struct RTKEventShopTierModel
 
 global struct RTKEventShopTooltipInfoModel
 {
-	int index
-	bool showActionText
-	bool showIcon
-	bool isRecurring
 	string titleText
+	string subtitleText
 	string bodyText
+	string additionalText
+	string actionText
+	vector titleColor
+	vector bodyTextAltColor
+	vector additionalTextAltColor
+	asset icon
+	bool isTitleVisible
+	bool isSubtitleVisible
+	bool isActionTextVisible
+	bool isAdditionalTextVisible
+	bool isIconVisible
+}
+
+global struct RTKEventShopModel
+{
+	string gridTitle
+	string rewardsTitle
+	array<RTKEventShopOfferItemModel> offers
+	array<RTKEventShopTierModel> tiers
+	RTKEventShopTooltipInfoModel& tooltipInfo
+}
+
+
+global enum eShopCurrencyProgression
+{
+	GAMEPLAY,
+	CHALLENGES
 }
 
 global enum eShopItemState
@@ -84,6 +111,9 @@ struct
 	int ownedOffers = 0
 	ItemFlavor ornull activeEventShop = null
 	string activeTierBindingPath = ""
+	string currencyShortName = ""
+	string currencyLongName = ""
+	GRXScriptOffer& sweepstakesOffer
 } file
 
 void function RTKEventShopPanel_OnInitialize( rtk_behavior self )
@@ -91,25 +121,32 @@ void function RTKEventShopPanel_OnInitialize( rtk_behavior self )
 	PrivateData p
 	self.Private( p )
 
+	if ( !GRX_IsInventoryReady() || !GRX_AreOffersReady() )
+		return
 	
 	entity player = GetLocalClientPlayer()
-	file.accumulatedCurrency = GetStat_Int( player, ResolveStatEntry( CAREER_STATS.s17_eventrefactor_currency), eStatGetWhen.CURRENT )
 
-	rtk_struct eventShop = RTKDataModelType_CreateStruct( RTK_MODELTYPE_MENUS, "eventShop" )
-	rtk_array offersArray = RTKStruct_AddArrayOfStructsProperty(eventShop, "offers", "RTKEventShopOfferItemModel")
-	rtk_array tiersArray = RTKStruct_AddArrayOfStructsProperty(eventShop, "tiers", "RTKEventShopTierModel")
-	rtk_struct tooltipInfo = RTKDataModelType_CreateStruct( RTK_MODELTYPE_MENUS, "tooltipInfo", "RTKEventShopTooltipInfoModel", ["eventShop"] )
+	file.accumulatedCurrency = GoldenHorse_GetEventCurrencyLifetimeTotal( player )
 
-	if ( RTKArray_GetCount( offersArray ) > 0 )
-		RTKArray_Clear( offersArray )
 
-	if ( RTKArray_GetCount( tiersArray ) > 0 )
-		RTKArray_Clear( tiersArray )
+	rtk_struct eventShop = RTKDataModelType_CreateStruct( RTK_MODELTYPE_MENUS, "eventShop", "RTKEventShopModel" )
+	rtk_array offersArray = RTKDataModel_GetArray( RTKDataModelType_GetDataPath( RTK_MODELTYPE_MENUS, "offers", true, ["eventShop"] ) )
+	rtk_array tiersArray = RTKDataModel_GetArray( RTKDataModelType_GetDataPath( RTK_MODELTYPE_MENUS, "tiers", true, ["eventShop"] ) )
+	rtk_struct tooltipInfo = RTKDataModel_GetStruct( RTKDataModelType_GetDataPath( RTK_MODELTYPE_MENUS, "tooltipInfo", true, ["eventShop"] ) )
 
-	file.activeEventShop = GetActiveEventShop( GetUnixTimestamp() )
-	string offerLocation = EventShop_GetGRXOfferLocation( expect ItemFlavor( file.activeEventShop ) )
+	file.activeEventShop = EventShop_GetCurrentActiveEventShop()
+
+	file.currencyShortName = ItemFlavor_GetShortName( EventShop_GetEventShopCurrency( expect ItemFlavor( file.activeEventShop ) ) )
+	file.currencyLongName = ItemFlavor_GetLongName( EventShop_GetEventShopCurrency( expect ItemFlavor( file.activeEventShop ) ) )
+
+	RTKEventShopModel eventShopModel
+	eventShopModel.gridTitle =  Localize( EventShop_GetGridTitle( expect ItemFlavor( file.activeEventShop ) ), Localize( file.currencyLongName ) )
+	eventShopModel.rewardsTitle = Localize( EventShop_GetRewardsTitle( expect ItemFlavor( file.activeEventShop ) ), Localize( file.currencyShortName ) )
+	RTKStruct_SetValue( eventShop, eventShopModel )
 
 	
+	string offerLocation = EventShop_GetGRXOfferLocation( expect ItemFlavor( file.activeEventShop ) )
+	Assert( GRX_IsLocationActive( offerLocation ), "Location not active, please make sure that the currency you're using is registered in the MTX_CurrencyName[] inside the microtransactions.h file" )
 	file.offers = GRX_GetLocationOffers( offerLocation )
 
 	file.offers.sort( int function( GRXScriptOffer a, GRXScriptOffer b ) {
@@ -121,12 +158,10 @@ void function RTKEventShopPanel_OnInitialize( rtk_behavior self )
 		return 0
 	} )
 
-	foreach (GRXScriptOffer offer in file.offers)
+	foreach (int index, GRXScriptOffer offer in file.offers)
 	{
 		
 		rtk_struct offerStruct = RTKArray_PushNewStruct( offersArray )
-		RTKEventShopOfferItemModel offerModel
-		RTKStruct_GetValue( offerStruct, offerModel )
 
 		
 		
@@ -134,35 +169,30 @@ void function RTKEventShopPanel_OnInitialize( rtk_behavior self )
 		expect ItemFlavor( coreItemFlav )
 
 		
+		EventShopOfferData offerData = EventShop_GetOfferByCoreItem( expect ItemFlavor( file.activeEventShop ), coreItemFlav )
+
+		
+
+		
+		RTKEventShopOfferItemModel offerModel
 		offerModel.title = offer.titleText
 		offerModel.description = offer.descText
 		offerModel.price = EventShop_GetItemPrice(offer)
 		offerModel.quantity = EventShop_GetCoreItemQuantity(offer)
-		offerModel.icon = ItemFlavor_GetIcon( coreItemFlav )
+		offerModel.icon = offerData.gridIcon != $"" ? offerData.gridIcon : ItemFlavor_GetIcon( coreItemFlav )
+		offerModel.isSweepstakes = offerData.isSweepstakesOffer
 		offerModel.isGenericIcon = false
 		offerModel.quality = ItemFlavor_GetQuality( coreItemFlav, 0 ) + 1
-		offerModel.qualityColor = GetKeyColor( COLORID_HUD_LOOT_TIER0, ItemFlavor_GetQuality( coreItemFlav, 0 ) + 1 ) / 255.0
-		offerModel.isRecurring = false
-		offerModel.isOwned = GRXOffer_IsFullyClaimed( offer )
+		offerModel.isRecurring = offerData.isLockedOffer
+		offerModel.isOwned = GRXOffer_IsFullyClaimed( offer ) || ( offer.purchaseLimit > 1 && offer.purchaseCount >= offer.purchaseLimit )
 		offerModel.isAvailable = offer.isAvailable
 		offerModel.canAfford = GRX_CanAfford( offer.prices[0], 1 )
-
 		offerModel.state = ItemShopState( offer, false )
 
-		if ( ItemFlavor_GetTypeName(coreItemFlav) == "#itemtype_battlepass_purchased_xp_NAME" ) 
+		if ( offerData.isLockedOffer )
 		{
 			offerModel.isAvailable = IsRecurringOfferAvailableToPurchase()
-			offerModel.isRecurring = true
 			offerModel.state = ItemShopState( offer, true )
-		}
-
-		if ( ItemFlavor_GetTypeName(coreItemFlav) == "#itemtype_character_emote_icon_NAME" )
-		{
-			
-			offerModel.icon = $"rui/menu/buttons/battlepass/icon_holospray"
-
-			
-			offerModel.isGenericIcon = true
 		}
 
 		file.ownedOffers += GRXOffer_IsFullyClaimed( offer ) ? 1 : 0
@@ -178,7 +208,6 @@ void function RTKEventShopPanel_OnInitialize( rtk_behavior self )
 
 		
 		RTKEventShopTierModel tierModel
-		RTKStruct_GetValue(tierStruct, tierModel )
 
 		
 		tierModel.unlockValue = file.tiers[i].unlockValue
@@ -217,9 +246,7 @@ void function RTKEventShopPanel_OnInitialize( rtk_behavior self )
 		RTKStruct_SetValue( tierStruct, tierModel )
 	}
 
-	
-	if (file.offers.len() > 0)
-		UpdateItemPresentation( file.offers[file.offers.len() - 1] )
+	EventShop_UpdatePreviewedOffer()
 
 	
 	rtk_panel ornull offersGrid = self.PropGetPanel( "offersGrid" )
@@ -232,7 +259,7 @@ void function RTKEventShopPanel_OnInitialize( rtk_behavior self )
 			{
 				self.AutoSubscribe( button, "onHighlighted", function( rtk_behavior button, int prevState ) : ( self, newChildIndex ) {
 					UpdateItemPresentation( file.offers[newChildIndex] )
-					UpdateTooltipInfo( true, newChildIndex )
+					UpdateGridTooltipInfo( newChildIndex )
 				} )
 
 				ItemFlavor ornull coreItemFlav = EventShop_GetCoreItemFlav( file.offers[newChildIndex] )
@@ -242,7 +269,17 @@ void function RTKEventShopPanel_OnInitialize( rtk_behavior self )
 					continue
 
 				self.AutoSubscribe( button, "onPressed", function( rtk_behavior button, int keycode, int prevState ) : ( self, newChildIndex ) {
-					StoreInspectMenu_AttemptOpenWithOffer( file.offers[newChildIndex], true )
+					EventShopOfferData offerData = EventShop_GetOfferData( expect ItemFlavor( file.activeEventShop ), newChildIndex )
+
+					if ( offerData.isSweepstakesOffer )
+					{
+						file.sweepstakesOffer = file.offers[newChildIndex]
+						UI_OpenEventShopSweepstakesFlowDialog()
+					}
+					else
+					{
+						StoreInspectMenu_AttemptOpenWithOffer( file.offers[newChildIndex], true )
+					}
 				} )
 			}
 		} )
@@ -273,9 +310,18 @@ void function RTKEventShopPanel_OnInitialize( rtk_behavior self )
 				} )
 
 				self.AutoSubscribe( button, "onHighlighted", function( rtk_behavior button, int prevState ) : ( self, newChildIndex ) {
-					UpdateTooltipInfo( false, newChildIndex )
+					UpdateTierTooltipInfo( newChildIndex )
 				} )
 			}
+		} )
+	}
+
+	rtk_behavior ornull challengesGridButton = self.PropGetBehavior( "challengesGridButton" )
+	if ( challengesGridButton != null )
+	{
+		expect rtk_behavior( challengesGridButton )
+		self.AutoSubscribe( challengesGridButton, "onPressed", function( rtk_behavior button, int keycode, int prevState ) : ( self ) {
+			JumpToChallenges( "challengeseventshop" )
 		} )
 	}
 
@@ -288,16 +334,21 @@ string function GetActiveTierBindingPath()
 	return file.activeTierBindingPath
 }
 
-int function ItemShopState( GRXScriptOffer offer, bool isRecurring )
+GRXScriptOffer function GetSweepstakesOffer()
+{
+	return file.sweepstakesOffer
+}
+
+int function ItemShopState( GRXScriptOffer offer, bool isLocked )
 {
 	
 	
-	bool offerAvailableToPurchase = isRecurring ? IsRecurringOfferAvailableToPurchase() : offer.isAvailable
+	bool offerAvailableToPurchase = isLocked ? IsRecurringOfferAvailableToPurchase() : offer.isAvailable
 
 	if ( offerAvailableToPurchase )
 	{
 		
-		if ( GRXOffer_IsFullyClaimed( offer ) )
+		if ( GRXOffer_IsFullyClaimed( offer ) || ( offer.purchaseLimit > 1 && offer.purchaseCount >= offer.purchaseLimit ) )
 			return eShopItemState.OWNED
 
 		
@@ -325,40 +376,59 @@ float function TierProgress( int currentValue, int totalValue )
 	return clamp( float( currentValue ) / float( totalValue ), 0.0, 1.0 )
 }
 
-void function UpdateTooltipInfo( bool showRecurringOfferInfo = true, int index = 0 )
+void function UpdateGridTooltipInfo( int index = 0 )
 {
-	rtk_struct tooltipInfoModel = RTKDataModel_GetStruct( RTKDataModelType_GetDataPath( RTK_MODELTYPE_MENUS, "tooltipInfo", true, ["eventShop"] ) )
+	rtk_struct tooltipInfo = RTKDataModel_GetStruct( RTKDataModelType_GetDataPath( RTK_MODELTYPE_MENUS, "tooltipInfo", true, ["eventShop"] ) )
 
-	RTKStruct_SetInt( tooltipInfoModel, "index", index )
+	string titleText = Localize( file.offers[ index ].titleText )
+	int purchaseLimit = file.offers[ index ].purchaseLimit
+	int purchaseCount = file.offers[ index ].purchaseCount
+	int quantity = EventShop_GetCoreItemQuantity(file.offers[ index ] )
 
-	if ( showRecurringOfferInfo )
+	RTKEventShopTooltipInfoModel tooltipInfoModel
+
+	
+	tooltipInfoModel.titleText = titleText
+	tooltipInfoModel.bodyText = Localize( "#EVENTS_EVENT_SHOP_GRID_BODY", titleText )
+	tooltipInfoModel.additionalText = Localize( "#EVENTS_EVENT_SHOP_GRID_COUNTER_AVAILABLE", (purchaseLimit - purchaseCount), purchaseLimit )
+	tooltipInfoModel.isIconVisible = purchaseLimit > 1 || GRXOffer_IsFullyClaimed( file.offers[ index ] )
+	tooltipInfoModel.isAdditionalTextVisible = purchaseLimit > 1
+	tooltipInfoModel.icon = GRXOffer_IsFullyClaimed( file.offers[ index ] ) ? $"ui_image/rui/menu/buttons/checked.rpak" : ( purchaseLimit > 1 ? $"ui_image/rui/menu/events/event_shop/repeatable.rpak" : $"" )
+
+	
+	if ( purchaseLimit > 1 && quantity > 1 )
 	{
-		RTKStruct_SetString( tooltipInfoModel, "titleText", Localize( "#EVENTS_EVENT_SHOP_RECURRING_TITLE" ) )
-		RTKStruct_SetString( tooltipInfoModel, "bodyText", Localize( "#EVENTS_EVENT_SHOP_RECURRING_BODY", file.ownedOffers, file.offers.len() - 1 ) )
-		RTKStruct_SetBool( tooltipInfoModel, "isRecurring", true )
-		RTKStruct_SetBool( tooltipInfoModel, "showActionText", false )
+		tooltipInfoModel.bodyText = Localize( "#EVENTS_EVENT_SHOP_GRID_BODY_SETS", purchaseLimit, titleText )
 	}
-	else
+
+	
+	EventShopOfferData offerData = EventShop_GetOfferData( expect ItemFlavor( file.activeEventShop ), index )
+	if ( offerData.isSweepstakesOffer )
 	{
-		int tierUnlockValue = file.tiers[index].unlockValue
-		string currencyName = ItemFlavor_GetShortName( EventShop_GetEventShopCurrency( expect ItemFlavor( file.activeEventShop ) ) )
-
-		
-		if ( index == 3 )
-		{
-			RTKStruct_SetString( tooltipInfoModel, "titleText", Localize( "#EVENTS_EVENT_SHOP_MILESTONE_TITLE_ALT" ) )
-			RTKStruct_SetString( tooltipInfoModel, "bodyText", Localize( "#EVENTS_EVENT_SHOP_MILESTONE_BODY_ALT", FormatAndLocalizeNumber( "1", float( tierUnlockValue ), true ), Localize( currencyName ) ) )
-		}
-		else
-		{
-			RTKStruct_SetString( tooltipInfoModel, "titleText", Localize( "#EVENTS_EVENT_SHOP_MILESTONE_TITLE" ) )
-			RTKStruct_SetString( tooltipInfoModel, "bodyText", Localize( "#EVENTS_EVENT_SHOP_MILESTONE_BODY", FormatAndLocalizeNumber( "1", float( tierUnlockValue ), true ), Localize( currencyName ) ) )
-		}
-
-		RTKStruct_SetBool( tooltipInfoModel, "showActionText", true )
-		RTKStruct_SetBool( tooltipInfoModel, "showIcon", TierProgress( file.accumulatedCurrency, tierUnlockValue) >= 1.0 )
-		RTKStruct_SetBool( tooltipInfoModel, "isRecurring", false )
+		tooltipInfoModel.subtitleText = Localize( "#EVENTS_EVENT_SHOP_GRID_SUBTITLE_DAILY_LIMIT" )
+		tooltipInfoModel.bodyText = Localize( "#EVENTS_EVENT_SHOP_GRID_BODY_SWEEPSTAKES", purchaseLimit )
+		tooltipInfoModel.additionalText = Localize( "#EVENTS_EVENT_SHOP_GRID_COUNTER_DAILY_LIMIT", (purchaseLimit - purchaseCount), purchaseLimit )
 	}
+
+	
+	if ( !GRX_CanAfford( file.offers[ index ].prices[0], 1 ) && !GRXOffer_IsFullyClaimed( file.offers[ index ] ) )
+	{
+		tooltipInfoModel.bodyText = Localize( "#EVENTS_EVENT_SHOP_GRID_BODY_INSUFFICIENT", Localize ( file.currencyLongName ), titleText )
+	}
+
+	RTKStruct_SetValue( tooltipInfo, tooltipInfoModel )
+}
+
+void function UpdateTierTooltipInfo( int index = 0 )
+{
+	rtk_struct tooltipInfo = RTKDataModel_GetStruct( RTKDataModelType_GetDataPath( RTK_MODELTYPE_MENUS, "tooltipInfo", true, ["eventShop"] ) )
+
+	RTKEventShopTooltipInfoModel tooltipInfoModel
+
+	tooltipInfoModel.titleText = ItemFlavor_GetLongName( file.tiers[ index ].badges[0] )
+	tooltipInfoModel.bodyText = Localize( "#EVENTS_EVENT_SHOP_MILESTONE_BODY_2", Localize( file.currencyLongName ) )
+
+	RTKStruct_SetValue( tooltipInfo, tooltipInfoModel )
 }
 
 void function UpdateItemPresentation( GRXScriptOffer offer )
@@ -368,6 +438,24 @@ void function UpdateItemPresentation( GRXScriptOffer offer )
 	{
 		expect ItemFlavor( offerCoreItem )
 		RunClientScript( "UIToClient_ItemPresentation", ItemFlavor_GetGUID( offerCoreItem ), -1, 1.19, false, null, false, "collection_event_ref", false, false, false, false )
+	}
+}
+
+void function EventShop_UpdatePreviewedOffer()
+{
+	if (file.offers.len() > 0)
+	{
+		foreach ( int index, GRXScriptOffer offer in file.offers )
+		{
+			EventShopOfferData offerData = EventShop_GetOfferData( expect ItemFlavor( file.activeEventShop ), index )
+			if ( offerData.isFeaturedOffer )
+			{
+				UpdateItemPresentation( file.offers[index] )
+				return
+			}
+		}
+
+		UpdateItemPresentation( file.offers[file.offers.len() - 1] )
 	}
 }
 
@@ -399,17 +487,39 @@ bool function IsOfferPartOfEventShop( GRXScriptOffer offer )
 {
 	
 	
-	if ( GetActiveEventShop( GetUnixTimestamp() ) == null || offer.isCraftingOffer )
+	if ( EventShop_GetCurrentActiveEventShop() == null || offer.isCraftingOffer )
 		return false
 
 	
 	ItemFlavor offerCoreItem = expect ItemFlavor( EventShop_GetCoreItemFlav( offer ) )
-	array<EventShopOfferData> eventOffers = EventShop_GetOffers( expect ItemFlavor( GetActiveEventShop( GetUnixTimestamp() ) ) )
+	array<EventShopOfferData> eventOffers = EventShop_GetOffers( expect ItemFlavor( EventShop_GetCurrentActiveEventShop() ) )
+
+	bool matchesEventShopItem = false
 
 	foreach ( EventShopOfferData eventOffer in eventOffers )
 	{
 		if ( ItemFlavor_GetGUID( offerCoreItem ) == ItemFlavor_GetGUID( eventOffer.offer ) )
-			return true
+		{
+			matchesEventShopItem = true
+			break
+		}
+	}
+
+	if ( !matchesEventShopItem )
+	{
+		return false
+	}
+
+	
+	foreach ( ItemFlavorBag bag in offer.prices )
+	{
+		foreach ( ItemFlavor& flavor in bag.flavors )
+		{
+			if ( flavor == GRX_CURRENCIES[GRX_CURRENCY_EVENT] )
+			{
+				return true
+			}
+		}
 	}
 
 	return false

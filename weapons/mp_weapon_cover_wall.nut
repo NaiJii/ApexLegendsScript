@@ -18,7 +18,17 @@ global function IsAmpedWallEnt
 
 
 
-const string COVER_WALL_WEAPON_NAME = "mp_weapon_cover_wall"
+
+
+
+
+
+
+
+
+
+
+global const string COVER_WALL_WEAPON_NAME = "mp_weapon_cover_wall"
 const asset COVER_WALL_MODEL = $"mdl/props/rampart_cover_wall/rampart_cover_wall.rmdl"
 const asset COLLISION_CYLINDER_MODEL = $"mdl/props/rampart_cover_wall_replacement/rampart_cover_wall_invisible_collision_120x10_phys.rmdl"
 
@@ -66,7 +76,7 @@ const string HEALTH_TICKS_SCRIPT_NAME = "health_ticks"
 const float AMPED_WALL_BUILD_DELAY = 3.0
 
 
-
+	const float AMPED_WALL_BUILD_DELAY_IMPROVED = 2.0
 
 
 
@@ -143,6 +153,25 @@ void function MpWeaponCoverWall_Init()
 		RegisterMinimapPackage( "prop_script", eMinimapObject_prop_script.RAMPART_WALL, MINIMAP_OBJECT_RUI, MinimapPackage_RampartWall, FULLMAP_OBJECT_RUI, MinimapPackage_RampartWall )
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 	file.ampedWallMaxHealth = GetRampartAmpedShieldHealth()
 
 	CoverWall_Precache()
@@ -170,12 +199,164 @@ float function GetRampartAmpedShieldHealth()
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 void function CoverWall_Precache()
 {
 	RegisterSignal( "CoverWall_PickedUp" )
 	RegisterSignal( "CoverWall_OnContinousUseStopped" )
 	PrecacheScriptString( BASE_WALL_SCRIPT_NAME )
 	PrecacheScriptString( AMPED_WALL_SCRIPT_NAME )
+	PrecacheScriptString( AMPED_WALL_MOVER_SCRIPTNAME )
 	PrecacheScriptString( HEALTH_TICKS_SCRIPT_NAME )
 
 	PrecacheModel( COVER_WALL_MODEL )
@@ -1356,15 +1537,17 @@ void function PlaceWallWithoutHolstering( entity player )
 
 
 
+
+
+
+
 bool function CoverWall_CanUse( entity player, entity ent, int useFlags )
 {
 	if ( ! IsValid( player ) )
 		return false
 
-
 	if( PlayerHasPassive( player, ePassives.PAS_LOCKDOWN ) )
 		return true
-
 
 	entity weapon = player.GetOffhandWeapon( OFFHAND_TACTICAL )
 	if ( !IsValid( weapon ) || weapon.GetWeaponClassName() != COVER_WALL_WEAPON_NAME )
@@ -1529,8 +1712,6 @@ void function CoverWall_OnLoseFocus( entity ent )
 
 
 
-void function CoverWall_GiveBuff( entity trigger, entity player )
-{
 
 
 
@@ -1546,10 +1727,6 @@ void function CoverWall_GiveBuff( entity trigger, entity player )
 
 
 
-}
-
-void function CoverWall_TakeBuff( entity trigger, entity player )
-{
 
 
 
@@ -1561,7 +1738,14 @@ void function CoverWall_TakeBuff( entity trigger, entity player )
 
 
 
-}
+
+
+
+
+
+
+
+
 
 
 void function MinimapPackage_RampartWall( entity ent, var rui )

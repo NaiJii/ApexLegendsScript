@@ -1073,8 +1073,9 @@ int function FRC_GetState()
 	return file.challengeState
 }
 
-void function ServerCallback_FRC_SetChallengeKey( string challengeKey )
+void function ServerCallback_FRC_SetChallengeKey( entity gun )
 {
+	string challengeKey = gun.GetScriptName()
 	file.challengeKey = challengeKey
 }
 

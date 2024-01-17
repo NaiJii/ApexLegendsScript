@@ -120,20 +120,6 @@ void function ShGas_Init()
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 	RegisterSignal( "StopPassiveGasProtectionOnHUD" )
 
 	file.lastDOFLerpTime = Time()
@@ -147,6 +133,12 @@ void function ShGas_Init()
 	AddCallback_OnPassiveChanged( ePassives.PAS_GAS_PROTECTION, ShowPassiveGasProtectionOnHUD )
 
 }
+
+
+
+
+
+
 
 
 
@@ -1273,6 +1265,20 @@ void function GasCloud_StartVisualEffect( entity ent, int statusEffect, bool act
 
 void function GasCloud_StopVisualEffect( entity ent, int statusEffect, bool actuallyChanged )
 {
+	thread GasCloud_StopVisualEffect_Thread( ent, statusEffect, actuallyChanged )
+}
+
+void function GasCloud_StopVisualEffect_Thread( entity ent, int statusEffect, bool actuallyChanged )
+{
+
+
+
+
+
+
+
+
+
 	ManageHighlightEntity( ent )
 
 	if ( !actuallyChanged && GetLocalViewPlayer() == GetLocalClientPlayer() )

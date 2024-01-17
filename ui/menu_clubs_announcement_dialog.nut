@@ -232,6 +232,13 @@ void function ConfigureFooters()
 		Hud_SetPos( file.footer, file.footerX, file.footerY )
 }
 
+#if PC_PROG_NX_UI
+void function ClubAnnouncementDialog_OnNxOperationModeChanged()
+{
+	ConfigureFooters()
+}
+#endif
+
 void function ClubAnnouncementDialog_OnOpen()
 {
 	ClearMenuFooterOptions( file.menu )
@@ -242,11 +249,19 @@ void function ClubAnnouncementDialog_OnOpen()
 
 	AddMenuFooterOption( file.menu, LEFT, BUTTON_Y, true, "#CLUB_ANNOUNCEMENT_DIALOG_SUBMIT_CONSOLE", "#CLUB_ANNOUNCEMENT_DIALOG_SUBMIT", ConfirmSubmitButton_OnActivate, IsInSubmitMode )
 	AddMenuFooterOption( file.menu, LEFT, BUTTON_B, true, "#CLUB_JOIN_REQUEST_CANCEL", "#CLUB_JOIN_REQUEST_CANCEL_PC", CancelSubmitButton_OnActivate, IsInSubmitMode )
+
+#if PC_PROG_NX_UI
+	AddUICallback_NXOperationModeChanged( ClubAnnouncementDialog_OnNxOperationModeChanged )
+#endif
 }
 
 void function ClubAnnouncementDialog_OnClose()
 {
 	SocialEventUpdate()
+
+#if PC_PROG_NX_UI
+	RemoveUICallback_NXOperationModeChanged( ClubAnnouncementDialog_OnNxOperationModeChanged )
+#endif
 }
 
 void function AnnouncementText_OnChanged( var button )

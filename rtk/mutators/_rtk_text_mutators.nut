@@ -86,6 +86,31 @@ string function RTKMutator_FormatTimeProperty( float input1 )
 	return timeRemaining
 }
 
+string function RTKMutator_FormatTimeLong( float input1 )
+{
+	string timeRemaining = ""
+	int inputAsInt = input1.tointeger()
+
+	if ( inputAsInt < 60 ) 
+	{
+		timeRemaining = Localize( "#TIME_REMAINING_SECONDS_LONG" , inputAsInt)
+	}
+	else if ( inputAsInt < 3600 )  
+	{
+		timeRemaining = Localize( "#TIME_REMAINING_MINUTES_SECONDS_LONG", inputAsInt / 60, inputAsInt % 60 )
+	}
+	else if ( inputAsInt < 86400 ) 
+	{
+		timeRemaining = Localize( "#TIME_REMAINING_HOURS_MINUTES_SECONDS_LONG", inputAsInt / 3600, ( inputAsInt % 3600 ) / 60, inputAsInt % 60 )
+	}
+	else 
+	{
+		timeRemaining = Localize( "#TIME_REMAINING_DAYS_HOURS_LONG", inputAsInt / 86400, ( inputAsInt % 86400 ) / 3600 )
+	}
+
+	return timeRemaining
+}
+
 string function RTKMutator_FormatAndLocalizeNumber( float input, string format, bool addThousandsSeparator )
 {
 	return FormatAndLocalizeNumber(format, input, addThousandsSeparator)

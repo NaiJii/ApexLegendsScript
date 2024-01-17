@@ -1,11 +1,11 @@
 
 
 global function Valentines_S15_Mode_Init
-global function Valentines_S15_Map_Init
 global function ShGameMode_Valentines_S15_RegisterNetworking
 
 global function IsValentinesS15
 global function Valentines_S15_ILoveYouEasterEggEnabled
+global function Valentines_S15_SpawnTicks
 
 global function ValentinesIsPlayerInRangeForProximityBuff
 global function ValentinesGetPartner
@@ -125,23 +125,6 @@ bool function Valentines_S15_SpawnTicks()
 bool function DebugAllValentinesTicks()
 {
 	return GetCurrentPlaylistVarBool( VALENTINES_SPAWN_ALL_TICKS_PLAYLIST_VAR, false )
-}
-
-void function Valentines_S15_Map_Init( bool precacheLootTicks = true )
-{
-
-
-
-
-
-
-
-
-
-
-
-
-
 }
 
 void function Valentines_S15_Mode_Init()
@@ -597,8 +580,6 @@ void function Valentines_Add1pVFX_Thread( float duration, int shieldHealAmount, 
 		}
 	}
 }
-
-
 
 
 

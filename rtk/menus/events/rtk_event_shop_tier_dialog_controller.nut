@@ -4,6 +4,7 @@ global struct RTKEventShopTierDialogPanel_Properties
 {
 	rtk_panel backButton
 	rtk_panel radioPlayButton
+	rtk_panel challengesButton
 }
 
 void function RTKEventShopTierDialogPanel_OnInitialize( rtk_behavior self )
@@ -20,6 +21,20 @@ void function RTKEventShopTierDialogPanel_OnInitialize( rtk_behavior self )
 		{
 			self.AutoSubscribe( button, "onPressed", function( rtk_behavior button, int keycode, int prevState ) : ( self ) {
 				UI_CloseEventShopTierDialog()
+			} )
+		}
+	}
+
+	
+	rtk_panel ornull challengesButtonPanel = self.PropGetPanel( "challengesButton" )
+	if ( challengesButtonPanel != null )
+	{
+		expect rtk_panel( challengesButtonPanel )
+		rtk_behavior ornull button = challengesButtonPanel.FindBehaviorByTypeName( "Button" )
+		if ( button != null )
+		{
+			self.AutoSubscribe( button, "onPressed", function( rtk_behavior button, int keycode, int prevState ) : ( self ) {
+				JumpToChallenges( "challengeseventshop" )
 			} )
 		}
 	}

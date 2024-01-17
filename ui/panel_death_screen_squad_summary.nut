@@ -114,6 +114,19 @@ void function InitDeathScreenSquadSummaryPanel( var panel )
 void function SquadSummaryOnOpenPanel( var panel )
 {
 	
+	UI_UpdateSquadSummaryInternal( panel )
+
+	if( !IsRegisteredButtonPressedCallback( KEY_F, HandleViewProfileSquadPlayer ) )
+		RegisterButtonPressedCallback( KEY_F, HandleViewProfileSquadPlayer )
+
+	if( !IsRegisteredButtonPressedCallback( BUTTON_Y, HandleViewProfileSquadPlayer ) )
+		RegisterButtonPressedCallback( BUTTON_Y, HandleViewProfileSquadPlayer )
+
+}
+
+void function UI_UpdateSquadSummaryInternal( var panel )
+{
+	
 
 	var menu = GetParentMenu( panel )
 	var headerElement = Hud_GetChild( menu, "Header" )
@@ -176,12 +189,13 @@ void function SquadSummaryOnOpenPanel( var panel )
 
 void function UI_UpdateSquadSummary()
 {
-	SquadSummaryOnOpenPanel( file.panel )
+	UI_UpdateSquadSummaryInternal( file.panel )
 }
 
 void function SquadSummaryOnClosePanel( var panel )
 {
 	RunClientScript( "UICallback_HideSquadSummary" )
+	RunClientScript( "SignalShowRoundEndSquadResults" )
 
 	foreach ( elem in file.panelData[ panel ].gCards )
 	{
@@ -191,6 +205,12 @@ void function SquadSummaryOnClosePanel( var panel )
 			file.panelData[panel].cardsInitialized[elem] = false
 		}
 	}
+	if( IsRegisteredButtonPressedCallback( KEY_F, HandleViewProfileSquadPlayer ) )
+		DeregisterButtonPressedCallback( KEY_F, HandleViewProfileSquadPlayer )
+
+	if( IsRegisteredButtonPressedCallback( BUTTON_Y, HandleViewProfileSquadPlayer ) )
+		DeregisterButtonPressedCallback( BUTTON_Y, HandleViewProfileSquadPlayer )
+
 }
 
 

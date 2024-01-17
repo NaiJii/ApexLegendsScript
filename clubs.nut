@@ -2,55 +2,55 @@ global function Clubs_Init
 
 
 
-global function Club_GetErrorStringForCode
-global function Club_SetKickedForCrossplayIncompat
-global function Clubs_CreateNewClub
-global function Clubs_EditClubSettings
-global function Clubs_FinalizeNewClub
-global function Clubs_CanLeaveClub
-global function Clubs_LeaveClub
-global function Clubs_FinalizeLeaveClub
-
-global function Clubs_GetDescStringForMinAccountLevel
-global function Clubs_GetDescStringForPrivacyLevel
-global function Clubs_GetDescStringForMinRank
-
-global function Clubs_GetMinLevelFromSetting
-
-global function Clubs_SetClubMemberRank
-
-global function Clubs_CanKickUsers
-global function Clubs_CanKickClubMember
-global function Clubs_KickMember
 
 
 
 
-global function Clubs_JoinClub
-global function Clubs_SwitchClubsThread
-global function Clubs_FinalizeClubSwitchThread
-global function Clubs_SetIsSwitchingClubs
-global function Clubs_IsSwitchingClubs
-global function Clubs_FinalizeJoinClub
-global function Clubs_GetJoinRequestsString
-global function Clubs_DoesMeetJoinRequirements
 
 
 
 
-global function ClubRequest_AcceptJoinRequest
 
 
 
 
-global function Clubs_Search
-global function Clubs_CompletedSearch
-global function Clubs_InitSearchResultButton
 
 
 
 
-global function Clubs_CompletedClubInviteQuery
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -71,7 +71,7 @@ global function ClubLogo_ConvertLogoToString
 global function ClubLogo_ConvertLogoStringToLogo
 
 
-global function ClubLogoUI_CreateNestedClubLogo
+
 
 
 
@@ -84,11 +84,11 @@ global function ClubSearchTag_GetTagType
 global function ClubSearchTag_GetSearchTagNamesFromBitmask
 
 
-global function ClubSearchTag_AddSearchTagToSelection
-global function ClubSearchTag_RemoveSearchTagFromSelection
-global function ClubSearchTag_GetSelectedSearchTags
-global function ClubSearchTag_ClearSelectedSearchTags
-global function ClubSearchTag_GetNamesOfSearchTagsFromArray
+
+
+
+
+
 
 
 
@@ -97,8 +97,6 @@ global function Clubs_AreObituaryTagsEnabledByPlaylist
 
 
 
-global function Clubs_IsValidClubTag
-global function ClubTag_CreateNestedClubTag
 
 
 
@@ -107,25 +105,27 @@ global function ClubTag_CreateNestedClubTag
 
 
 
-global function ServerToUI_AddPlayerDataForPlacementReport
-global function ServerToUI_Clubs_UpdateLastMatchTimes
-global function Clubs_ReportMatchPlacementToClub
-
-
-#if DEV
-global function DEV_ReportFakePlacementEvent
-#endif
 
 
 
-global function Clubs_Report
+
+
+
+
+
+
+
+
+
+
+
 
 
 
 global function ClubRegulation_GetReasonString
 
 
-global function ClubRegulation_GetComplaintsForMember
+
 
 
 
@@ -137,6 +137,10 @@ global function Clubs_AreDisabledByPlaylist
 
 
 
+global function Clubs_UpdateCrossplayVar
+global function Clubs_UIToClient_SetCrossplayVar
+global function Clubs_SetMyStoredClubName
+global function Clubs_GetMyStoredClubName
 
 
 
@@ -144,59 +148,55 @@ global function Clubs_AreDisabledByPlaylist
 
 
 
-global function ClubDataUpdateThread
-global function Clubs_UpdateMyData
-global function AddCallback_OnClubDataUpdated
-global function RemoveCallback_OnClubDataUpdated
-global function Clubs_CheckClubPersistenceThread
-global function Clubs_PopulateClubDetails
-global function Clubs_ConfigureRankTooltip
-global function Clubs_ConfigurePrivacyTooltip
-global function Clubs_ConfigureMinLevelAndRankTooltip
-
-global function Clubs_IsUserAClubmate
-global function Clubs_GetClubMemberNameFromNucleus
-global function Clubs_GetClubMemberRankString
-global function Clubs_GetPromotableRanks
-global function Clubs_TryCloseAllClubMenus
-global function Clubs_SetClubTabUserCount
-global function Clubs_DoIMeetMinimumLevelRequirement
-global function Clubs_MonitorCrossplayChangeThread
-
-global function Clubs_AttemptRequeryThread
-global function Clubs_SetClubQueryState
-global function Clubs_GetClubQueryState
-global function Clubs_IsClubQueryProcessing
-global function AddCallback_OnClubQuerySuccessful
 
 
 
 
-global function Clubs_OpenErrorStringDialog
-global function Clubs_OpenErrorDialog
-global function Clubs_OpenClubJoinedDialog
-global function Clubs_ShouldShowClubJoinedDialog
-global function Clubs_OpenClubKickedDialog
-global function Clubs_ShouldShowClubKickedDialog
-global function Clubs_OpenJoinRequestDeniedDialog
-global function Clubs_ShouldShowClubJoinRequestDeniedDialog
-global function Clubs_OpenJoinReqsConfirmDialog
-global function Clubs_OpenReportClubConfirmDialog
-global function Clubs_OpenClubCreateBlockedByJoinDialog
-global function Clubs_OpenClubCreateBlockedByMatchmakingDialog
-global function Clubs_OpenClubEditBlockedByMatchmakingDialog
-global function Clubs_OpenClubManagementBlockedByMatchmakingDialog
-global function Clubs_ShouldShowClubAnnouncementDialog
-global function Clubs_OpenClubAnnouncementCooldownDialog
-global function Clubs_OpenMemberManagementResetConfirmationDialog
-global function Clubs_OpenCrossplayChangeDialog
-global function Clubs_OpenCrossplayChangeConfirmationDialog
-global function Clubs_OpenAcceptInviteConfirmationDialog
-global function Clubs_OpenKickTargetIsNotAMemberDialog
-global function Clubs_OpenJoinReqsChangedDialog
-global function Clubs_OpenTooLowRankToInviteDialog
-global function Clubs_OpenJoinRegionConfirmationDialog
-global function Clubs_OpenSwitchClubsConfirmDialog
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 global const int CLUB_QUERY_RETRY_MAX = 5
@@ -400,7 +400,7 @@ struct
 	int clubQueryRetryCount = 0
 
 
-
+		string myClubName
 
 
 
@@ -409,24 +409,24 @@ struct
 
 
 
-		table<int, int> queryProcessingStateMap
-		table< int, array<void functionref()> > clubQuerySuccessCallbacks
-		table< int, string > errorCodeMap
 
-		array<void functionref()> myClubUpdatedCallbacks
-		array<void functionref()> newClubEventCallbacks
 
-		ClubHeader& newClubSettings
-		array<ItemFlavor> selectedSearchTags
 
-		ClubHeader ornull reportClubHeader
 
-		ClubHeader& selectedClubInvite
-		ClubHeader& selectedOutOfRegionClub
 
-		ClubHeader& clubToSwitchTo
-		bool isSwitchingClubs = false
-		bool isClubInitialized = false
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 } file
 
@@ -451,7 +451,7 @@ void function Clubs_Init()
 	
 
 
-
+		AddCallback_OnSettingsUpdated( OnSettingsUpdated )
 
 
 
@@ -459,48 +459,48 @@ void function Clubs_Init()
 
 
 
-		RegisterSignal( CLUB_REQUERY_SIGNAL )
-		RegisterSignal( CLUB_UPDATE_TAB_SIGNAL )
-
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
 
 
-		file.errorCodeMap[CLUB_ERROR_CODE_CROSSPLAY_INCOMPAT] <- "#CLUB_OP_FAIL_CROSSPLAY_INCOMPAT"
-		file.errorCodeMap[CLUB_ERROR_CODE_INSUFFICENT_PERMISSIONS] <- "#CLUB_OP_FAIL_INSUFFICIENT_PERMISSIONS"
-		file.errorCodeMap[CLUB_ERROR_CODE_VALIDATION] <- "#CLUB_OP_FAIL_VALIDATION"
-		file.errorCodeMap[CLUB_ERROR_CODE_NO_SUCH_GROUP] <- "#CLUB_OP_FAIL_NO_SUCH_CLUB"
-		file.errorCodeMap[CLUB_ERROR_CODE_INAPPROPRIATE] <- "#CLUB_OP_FAIL_CREATE_INAPPROPRIATE"
-		file.errorCodeMap[CLUB_ERROR_CODE_MEMBERSHIP_LIMIT] <- "#CLUB_OP_FAIL_MEMBERSHIP_LIMIT"
-		file.errorCodeMap[CLUB_ERROR_CODE_FULL] <- "#CLUB_OP_FAIL_JOIN_FULL"
-		file.errorCodeMap[CLUB_ERROR_CODE_KICK_COOL_OFF] <- "#CLUB_OP_FAIL_JOIN_KICK_COOL_OFF"
-		file.errorCodeMap[CLUB_ERROR_CODE_JOIN_COOL_OFF] <- "#CLUB_OP_FAIL_JOIN_COOL_OFF"
-		file.errorCodeMap[CLUB_ERROR_CODE_HOP_COOL_OFF] <- "#CLUB_OP_FAIL_JOIN_HOP_COOL_OFF"
-		file.errorCodeMap[CLUB_ERROR_CODE_DUPLICATE_NAME] <- "#CLUB_OP_FAIL_CREATE_NAME_EXISTS"
-		file.errorCodeMap[CLUB_ERROR_CODE_AUTH] <- "#CLUB_OP_FAIL_AUTHENTICATION"
 
-		thread Clubs_CheckClubPersistenceThread()
-		file.isClubInitialized = true
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 }
@@ -518,559 +518,19 @@ void function Clubs_Init()
 
 
 
-string function Club_GetErrorStringForCode( int errorCode )
-{
-	if ( errorCode in file.errorCodeMap )
-	{
-		return file.errorCodeMap[ errorCode ]
-	}
-
-	return "#CLUB_OP_FAIL_UNDEFINED"
-}
-
-void function Club_SetKickedForCrossplayIncompat()
-{
-	file.kickedForCrossplay = true
-}
-
-void function Clubs_CreateNewClub( ClubHeader clubHeader )
-{
-	if ( ClubIsValid() )
-		return
-
-	Clubs_SetClubQueryState( CLUB_OP_CREATE, eClubQueryState.PROCESSING )
-
-	file.newClubSettings = clubHeader
-	ClubCreate( clubHeader.name, clubHeader.tag, clubHeader.privacySetting )
-}
-
-
-void function Clubs_FinalizeNewClub()
-{
-	if ( file.newClubSettings.privacySetting == CLUB_PRIVACY_OPEN_WITH_REQ )
-	{
-		if ( file.newClubSettings.minLevel == 0 && file.newClubSettings.minRating == 0 )
-			file.newClubSettings.privacySetting = CLUB_PRIVACY_OPEN
-		ClubSetJoinRequirements( file.newClubSettings.minLevel, file.newClubSettings.minRating )
-	}
-	else
-	{
-		ClubSetJoinRequirements( 0, 0 )
-		file.newClubSettings.minLevel = 0
-		file.newClubSettings.minRating = 0
-	}
-	ClubSetPrivacySetting( file.newClubSettings.privacySetting )
-
-	ClubSetSearchTags( file.newClubSettings.searchTags )
-	ClubSetLogoString( file.newClubSettings.logoString )
-
-	PIN_Club_Create( file.newClubSettings )
-	Clubs_UpdateMyData()
-	thread CloseClubCreationMenu()
-	thread Clubs_MonitorCrossplayChangeThread()
-}
-
-void function Clubs_EditClubSettings( ClubHeader clubHeader )
-{
-	if ( !ClubIsValid() )
-		return
-
-	
-	Clubs_SetClubQueryState( CLUB_OP_SET_JOIN_REQUIREMENTS, eClubQueryState.PROCESSING )
-	Clubs_SetClubQueryState( CLUB_OP_SET_PRIVACY_SETTING, eClubQueryState.PROCESSING )
-	Clubs_SetClubQueryState( CLUB_OP_SET_SEARCHTAGS, eClubQueryState.PROCESSING )
-	Clubs_SetClubQueryState( CLUB_OP_SET_LOGO, eClubQueryState.PROCESSING )
-
-
-	ClubSetPrivacySetting( clubHeader.privacySetting )
-	if ( clubHeader.privacySetting == CLUB_PRIVACY_OPEN_WITH_REQ )
-		ClubSetJoinRequirements( clubHeader.minLevel, clubHeader.minRating )
-	else
-		ClubSetJoinRequirements( 0, 0 )
-
-	ClubSetSearchTags( clubHeader.searchTags )
-	ClubSetLogoString( clubHeader.logoString )
-
-	
-	
-	
-	
-	
-	
-	
-
-	
-	
-
-	PIN_Club_Setting( clubHeader )
-	thread ClubDataUpdateThread()
-	thread CloseClubCreationMenu()
-}
-
-bool function Clubs_CanLeaveClub()
-{
-	if ( !IsClubLandingPanelCurrentlyTopLevel() )
-		return false
-
-	if ( !ClubIsValid() )
-		return false
-
-	return true
-}
-
-void function Clubs_LeaveClub()
-{
-	if ( !ClubIsValid() )
-		return
-
-	PIN_Club_Leave( ClubGetHeader() ) 
-	ClubLeave()
-
-	var clubPanel = GetPanel( "ClubLandingPanel" )
-	SetPanelTabNew( clubPanel, false )
-}
-
-void function Clubs_FinalizeLeaveClub( bool wasKicked = false )
-{
-	if ( !IsConnected() )
-		WaitFrame()
-
-	int lastQueryError = ClubGetLastQueryError()
-	if ( lastQueryError > 0 )
-	{
-		ClubLeave()
-		return
-	}
-
-	var clubPanel = GetPanel( "ClubLandingPanel" )
-	SetPanelTabNew( clubPanel, false )
-	Clubs_TryCloseAllClubMenus()
-	Remote_ServerCallFunction( "ClientCallback_SetClubIsMember" , false)
-	Remote_ServerCallFunction( "ClientCallback_SetClubChatViewedTime", -1 )
-	Remote_ServerCallFunction( "ClientCallback_SetClubTimelineViewedTime", -1 )
-	SetLastViewedAnnouncementTimeToNever()
-	ClubSearchTag_ClearSelectedSearchTags()
-	Clubs_UpdateMyData()
-	ClubLanding_ClearMemberLists()
-	ClubLanding_UpdateUIPresentation()
-
-	if ( wasKicked )
-		Clubs_OpenClubKickedDialog()
-
-	if ( Clubs_IsSwitchingClubs() )
-		thread Clubs_FinalizeClubSwitchThread()
-}
-
-string function Clubs_GetDescStringForPrivacyLevel( int privacyLevel )
-{
-	
-	switch ( privacyLevel )
-	{
-		case CLUB_PRIVACY_OPEN:
-			return "#CLUB_CREATION_PRIVACY_OPEN"
-		case CLUB_PRIVACY_OPEN_WITH_REQ:
-			return "#CLUB_CREATION_PRIVACY_OPEN_RESTRICTIONS"
-		case CLUB_PRIVACY_BY_REQUEST:
-			return "#CLUB_CREATION_PRIVACY_BYREQUEST"
-		case CLUB_PRIVACY_INVITE_ONLY:
-			return "#CLUB_CREATION_PRIVACY_INVITEONLY"
-		case null:
-			return "null"
-		default:
-			return ""
-	}
-
-	unreachable
-}
-
-string function Clubs_GetDescStringForMinAccountLevel( int accountLevel )
-{
-	
-	switch ( accountLevel )
-	{
-		case eClubMinAccountLevel.MINLVL_10:
-			return "#CLUB_CREATION_LVLREQ_10"
-		case eClubMinAccountLevel.MINLVL_50:
-			return "#CLUB_CREATION_LVLREQ_50"
-		case eClubMinAccountLevel.MINLVL_100:
-			return "#CLUB_CREATION_LVLREQ_100"
-		case eClubMinAccountLevel.MINLVL_200:
-			return "#CLUB_CREATION_LVLREQ_200"
-		case eClubMinAccountLevel.MINLVL_300:
-			return "#CLUB_CREATION_LVLREQ_300"
-		case eClubMinAccountLevel.MINLVL_400:
-			return "#CLUB_CREATION_LVLREQ_400"
-		case eClubMinAccountLevel.MINLVL_500:
-			return "#CLUB_CREATION_LVLREQ_500"
-		case null:
-			return "null"
-		default:
-			return ""
-	}
-
-	unreachable
-}
-
-string function Clubs_GetDescStringForMinRank( int minRank )
-{
-	
-	switch ( minRank )
-	{
-		case eClubMinRank.MINRANK_BRONZE:
-			return "#CLUB_CREATION_RANKREQ_BRONZE"
-		case eClubMinRank.MINRANK_SILVER:
-			return "#CLUB_CREATION_RANKREQ_SILVER"
-		case eClubMinRank.MINRANK_GOLD:
-			return "#CLUB_CREATION_RANKREQ_GOLD"
-		case eClubMinRank.MINRANK_PLATINUM:
-			return "#CLUB_CREATION_RANKREQ_PLATINUM"
-		case eClubMinRank.MINRANK_DIAMOND:
-			return "#CLUB_CREATION_RANKREQ_DIAMOND"
-		case eClubMinRank.MINRANK_MASTER:
-			return "#CLUB_CREATION_RANKREQ_MASTER"
-		case eClubMinRank.MINRANK_APEXPREDATOR:
-			return "#CLUB_CREATION_RANKREQ_APEXPRED"
-		case null:
-			return "null"
-		default:
-			return ""
-	}
-
-	unreachable
-}
-
-int function Clubs_GetMinLevelFromSetting( int accountLevel )
-{
-	switch ( accountLevel )
-	{
-		case eClubMinAccountLevel.MINLVL_10:
-			return 9
-		case eClubMinAccountLevel.MINLVL_50:
-			return 49
-		case eClubMinAccountLevel.MINLVL_100:
-			return 99
-		case eClubMinAccountLevel.MINLVL_200:
-			return 199
-		case eClubMinAccountLevel.MINLVL_300:
-			return 299
-		case eClubMinAccountLevel.MINLVL_400:
-			return 399
-		case eClubMinAccountLevel.MINLVL_500:
-			return 499
-		default:
-			return CLUB_JOIN_MIN_ACCOUNT_LEVEL
-	}
-
-	unreachable
-}
-
-int function Clubs_GetMinHighestRankScoreFromSetting( int minRank )
-{
-	switch ( minRank )
-	{
-		case eClubMinRank.MINRANK_BRONZE:
-			return 0
-		case eClubMinRank.MINRANK_SILVER:
-			return 2
-		case eClubMinRank.MINRANK_GOLD:
-			return 3
-		case eClubMinRank.MINRANK_PLATINUM:
-			return 4
-		case eClubMinRank.MINRANK_DIAMOND:
-			return 5
-		case eClubMinRank.MINRANK_MASTER:
-		case eClubMinRank.MINRANK_APEXPREDATOR:
-			return 6
-		default:
-			return 0
-	}
-
-	unreachable
-}
-
-void function Clubs_SetClubMemberRank( ClubMember clubMember, int rank )
-{
-	ClubSetMemberRank( clubMember.memberID, rank )
-}
-
-bool function Clubs_CanKickUsers()
-{
-	if ( !ClubIsValid() )
-		return false
-
-	return ClubGetMyMemberRank() >= CLUB_RANK_ADMIN
-}
-
-bool function Clubs_CanKickClubMember( ClubMember clubMember )
-{
-	if ( !Clubs_CanKickUsers() )
-		return false
-
-	int myRank = ClubGetMyMemberRank()
-	return myRank > clubMember.rank
-}
-
-void function Clubs_KickMember( ClubMember clubMember )
-{
-	int myRank = ClubGetMyMemberRank()
-	if ( myRank < CLUB_RANK_ADMIN )
-		return
-
-	if ( myRank <= clubMember.rank )
-		return
-
-	PIN_Club_Remove( ClubGetHeader(), clubMember.memberID )
-	ClubKick( clubMember.memberID )
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-void function Clubs_JoinClub( string clubID )
-{
-	if ( clubID == "" )
-		return
-
-	Clubs_SetClubQueryState( CLUB_OP_JOIN, eClubQueryState.PROCESSING )
-	ClubJoin( clubID )
-}
-
-
-void function Clubs_FinalizeJoinClub()
-{
-	if ( !ClubIsValid() )
-		return
-
-	SetDialogFlowPersistenceTables( "clubIsPendingApproval", false  )
-	Remote_ServerCallFunction( "ClientCallback_SetClubIsPendingApproval", false )
-
-	ClubHeader clubHeader = ClubGetHeader()
-	ClubInvite_ProcessAcceptedClubInvite( clubHeader )
-	Clubs_SetIsSwitchingClubs( false )
-	Clubs_UpdateMyData()
-	ClubLanding_InitializeClubTabs()
-	Clubs_OpenClubJoinedDialog( clubHeader.name )
-	thread Clubs_MonitorCrossplayChangeThread()
-}
-
-
-void function Clubs_SwitchClubsThread( ClubHeader clubHeader )
-{
-	printf( "ClubSwitchDebug: %s()", FUNC_NAME() )
-
-	if ( clubHeader.clubID == "" )
-		return
-
-	printf( "ClubSwitchDebug: %s(): Leaving current club.", FUNC_NAME() )
-	file.clubToSwitchTo = clubHeader
-	Clubs_SetIsSwitchingClubs( true )
-	ClubLeave()
-}
-
-
-void function Clubs_FinalizeClubSwitchThread()
-{
-	if ( !Clubs_IsSwitchingClubs() )
-		return
-
-	if ( file.clubToSwitchTo.clubID == "" )
-		return
-
-	printf( "ClubSwitchDebug: %s(): Waiting one second before joining %s", FUNC_NAME(), file.clubToSwitchTo.name )
-	Wait( 1.0 )
-
-	Clubs_JoinClub( file.clubToSwitchTo.clubID )
-}
-
-
-void function Clubs_SetIsSwitchingClubs( bool isSwitching )
-{
-	file.isSwitchingClubs = isSwitching
-}
-
-
-bool function Clubs_IsSwitchingClubs()
-{
-	return file.isSwitchingClubs
-}
-
-
-string function Clubs_GetJoinRequestsString()
-{
-	int pendingRequests = ClubJoinRequestsCount()
-	if ( pendingRequests == 0 )
-		return ""
-
-	if ( ClubGetMyMemberRank() < CLUB_RANK_CAPTAIN )
-		return ""
-
-	switch ( pendingRequests )
-	{
-		case 1:
-			return Localize( "#CLUB_JOIN_REQUEST_VIEW_DESC_SOLO" )
-		default:
-			return Localize( "#CLUB_JOIN_REQUEST_VIEW_DESC", pendingRequests )
-	}
-
-	unreachable
-}
-
-
-bool function Clubs_DoesMeetJoinRequirements( ClubHeader clubHeader )
-{
-	entity player = GetLocalClientPlayer()
-	int currentXP    = GetPlayerAccountXPProgress( ToEHI( player ) )
-	int currentLevel = GetAccountLevelForXP( currentXP )
-
-	if ( currentLevel < CLUB_JOIN_MIN_ACCOUNT_LEVEL )
-		return false
-
-	int levelReq = Clubs_GetMinLevelFromSetting( clubHeader.minLevel )
-	if ( currentLevel < levelReq )
-	{
-		
-		return false
-	}
-
-	int rankReq                            = Clubs_GetMinHighestRankScoreFromSetting( clubHeader.minRating )
-
-	
-
-	
-	
-	
-	
-	
-	
-	
-	
-
-	SharedRankedTierData highestRankedTier = Ranked_GetHighestHistoricalRankedTierData( GetLocalClientPlayer() )
-
-	if ( highestRankedTier.index < rankReq )
-	{		
-	
-		return false
-	}
-
-	
-	return true
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-void function Clubs_Search( string clubName, string clubTag, int privacySetting, int minAccountLevel, int minRank, array<ItemFlavor> searchTags, int maxResults, bool anyDataCenter )
-{
-	
-	if ( !Clubs_IsEnabled() )
-		return
 
-	if ( Clubs_IsClubQueryProcessing( CLUB_OP_SEARCH ) )
-		return
 
-	Clubs_SetClubQueryState( CLUB_OP_SEARCH, eClubQueryState.PROCESSING )
 
-	int searchTagBitmask = ClubSearchTag_CreateSearchTagBitMask( searchTags )
 
-	
-	ClubSearch( clubName, clubTag, 0, maxResults, true, anyDataCenter, searchTagBitmask, privacySetting, minAccountLevel, minRank )
-}
 
-void function Clubs_CompletedSearch()
-{
-	
-	ClubDiscovery_ProcessSearchResults()
-	ClubSearch_ProcessSearchResults()
-}
-
-void function Clubs_InitSearchResultButton( var button, ClubHeader clubHeader, bool isInvite = false )
-{
-	bool isLocked = !Clubs_DoIMeetMinimumLevelRequirement()
-	bool isEnabled = !isLocked
-	Hud_SetLocked( button, isLocked )
-	Hud_SetEnabled( button, isEnabled )
-
-	var buttonRui = Hud_GetRui( button )
-
-	ClubLogo clubLogo
-	if ( clubHeader.logoString.len() == 0 )
-		clubLogo = GenerateRandomClubLogo( clubHeader.clubID )
-	else
-		clubLogo = ClubLogo_ConvertLogoStringToLogo( clubHeader.logoString )
-
-	clubLogo.isInvite = isInvite
-	var logo = ClubLogoUI_CreateNestedClubLogo( buttonRui, "clubLogo", clubLogo )
-	RuiSetBool( buttonRui, "isInvite", isInvite )
-	RuiSetString( buttonRui, "clubName", clubHeader.name )
-	RuiSetInt( buttonRui, "memberCount", clubHeader.memberCount )
-
-	array<string> searchTagStrings = ClubSearchTag_GetSearchTagNamesFromBitmask( clubHeader.searchTags )
-	string searchTags
-	foreach( string tagString in searchTagStrings )
-	{
-		string seperator = searchTags.len() == 0 ? "" : ", "
-		searchTags = searchTags + seperator + Localize( tagString )
-	}
-	RuiSetString( buttonRui, "searchTags", searchTags )
-	Hud_Show( button )
 
-	if ( !isLocked )
-	{
-		CreateSearchResultButtonToolTip( button, clubHeader, isInvite )
-	}
 
-	
-}
 
-void function CreateSearchResultButtonToolTip( var button, ClubHeader clubHeader, bool isInvite = false )
-{
-	ToolTipData toolTipData
 
-	string privacyLevel = Localize( Clubs_GetDescStringForPrivacyLevel( clubHeader.privacySetting ) )
-	string minLevel = Localize( Clubs_GetDescStringForMinAccountLevel( clubHeader.minLevel ) )
-	string minRank = Localize( Clubs_GetDescStringForMinRank( clubHeader.minRating ) )
-	string memberCount = clubHeader.memberCount > 1 ? Localize( "#CLUB_JOIN_TOOLTIP_USERCOUNT", clubHeader.memberCount ) : Localize( "#CLUB_JOIN_TOOLTIP_USERCOUNT_SINGLE" )
-	string summary = Localize( "#CLUB_JOIN_TOOLTIP_SUMMARY", privacyLevel, minLevel, minRank, memberCount )
 
-	
-	if ( isInvite )
-		toolTipData.descText = clubHeader.name.toupper()
-	else
-		toolTipData.descText = summary
 
-	string joinHint = "#CLUB_JOIN_TOOLTIP_CLICK_JOIN"
-	if ( isInvite )
-		joinHint = "#CLUB_JOIN_TOOLTIP_CLICK_ACCEPT"
-	else if ( clubHeader.privacySetting == CLUB_PRIVACY_BY_REQUEST )
-		joinHint = "#CLUB_JOIN_TOOLTIP_CLICK_REQUEST"
-	toolTipData.actionHint2 = joinHint
 
-	toolTipData.actionHint1 = isInvite ? "#CLUB_JOIN_TOOLTIP_CLICKRIGHT_INVITE" : "#CLUB_JOIN_TOOLTIP_CLICKRIGHT"
 
-	Hud_SetToolTipData( button, toolTipData )
-}
 
 
 
@@ -1085,49 +545,10 @@ void function CreateSearchResultButtonToolTip( var button, ClubHeader clubHeader
 
 
 
-void function ClubRequest_AcceptJoinRequest( ClubJoinRequest joinRequest, bool isAccepted )
-{
-	printf( "ClubRequestDebug: %s(): Attempting to accept or deny %s (%s)", FUNC_NAME(), joinRequest.userName, joinRequest.userID )
-	ClubJoinRequests_RefreshJoinRequests()
 
-	array<ClubJoinRequest> joinRequests = ClubGetJoinRequests()
-	bool validRequest
-	for ( int i = 0; i < joinRequests.len(); i++ )
-	{
-		printf( "ClubRequestDebug: %s(): Request %i: %s (%s)", FUNC_NAME(), i, joinRequests[i].userName, joinRequests[i].userID )
-		if ( joinRequests[i].userID == joinRequest.userID )
-		{
-			printf( "ClubRequestDebug: %s(): Request found!", FUNC_NAME() )
-			validRequest = true
-			break
-		}
-	}
 
-	if ( !validRequest )
-	{
-		printf( "ClubRequestDebug: %s(): User Join Request no longer valid (ID = %s)", FUNC_NAME(), joinRequest.userID )
-		Clubs_OpenUserAlreadyDeniedDialog( joinRequest )
-		return
-	}
 
-	if( Clubs_IsUserAClubmate( joinRequest.userID ) )
-	{
-		printf( "ClubRequestDebug: %s(): User is already a club member (ID = %s)", FUNC_NAME(), joinRequest.userID )
-		Clubs_OpenUserAlreadyAcceptedDialog( joinRequest )
-		return
-	}
 
-	if ( isAccepted )
-	{
-		printf( "ClubRequestDebug: %s(): Accepting User Request to Join", FUNC_NAME() )
-		ClubPetitionApprove( joinRequest.userID )
-	}
-	else
-	{
-		printf( "ClubRequestDebug: %s(): Rejecting User Request to Join", FUNC_NAME() )
-		ClubPetitionDeny( joinRequest.userID )
-	}
-}
 
 
 
@@ -1142,15 +563,594 @@ void function ClubRequest_AcceptJoinRequest( ClubJoinRequest joinRequest, bool i
 
 
 
-void function Clubs_CompletedClubInviteQuery()
-{
-	thread ClubDiscovery_ProcessInvitesAndRefreshDisplay()
-}
 
-void function ClubInvite_ProcessAcceptedClubInvite( ClubHeader clubHeader )
-{
-	PIN_Club_AcceptInvite( clubHeader )
-}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1686,53 +1686,53 @@ ClubLogo function ClubLogo_ConvertLogoStringToLogo( string logoString )
 }
 
 
-var function ClubLogoUI_CreateNestedClubLogo( var parentRui, string arg, ClubLogo logo )
-{
-	RuiDestroyNestedIfAlive( parentRui, arg )
 
-	var nestedClubLogoRui = RuiCreateNested( parentRui, arg, $"ui/club_logo.rpak" )
-	asset ornull frameMask
-	float verticalOffset
 
-	int layerCount = minint( logo.logoLayers.len(), CLUB_LOGO_LAYER_MAX )
-	if ( layerCount > 0 )
-	{
-		frameMask = ClubLogo_GetLogoFrameMask( logo.logoLayers[0].elementFlav )
-		verticalOffset = ClubLogo_GetLogoVerticalOffset( logo.logoLayers[0].elementFlav )
-	}
 
-	RuiSetBool( nestedClubLogoRui, "isInvite", logo.isInvite )
 
-	for( int i = 0; i < layerCount; i++ )
-	{
-		string logoLayerString = format( "layer0%d", i )
-		RuiSetImage( nestedClubLogoRui, logoLayerString + "Image", ClubLogo_GetLogoElementImage( logo.logoLayers[i].elementFlav ) )
-		
-		RuiSetFloat3( nestedClubLogoRui, logoLayerString + "Color01", logo.logoLayers[i].primaryColorOverride )
 
-		
-		asset ornull secondaryColorMask = ClubLogo_GetLogoSecondaryColorMask( logo.logoLayers[i].elementFlav )
-		if ( secondaryColorMask != null )
-		{
-			expect asset( secondaryColorMask )
-			RuiSetImage( nestedClubLogoRui, logoLayerString + "ColorMask", secondaryColorMask )
-			RuiSetFloat3( nestedClubLogoRui, logoLayerString + "Color02", logo.logoLayers[i].secondaryColorOverride )
-			
-		}
 
-		int elementType = ClubLogo_GetLogoElementType( logo.logoLayers[i].elementFlav )
-		if ( elementType != eClubLogoElementType.CLUBLOGOTYPE_FRAME )
-		{
-			if ( frameMask != null )
-				RuiSetImage( nestedClubLogoRui, "frameMask", expect asset( frameMask ) )
 
-			if ( elementType == eClubLogoElementType.CLUBLOGOTYPE_EMBLEM )
-				RuiSetFloat( nestedClubLogoRui, "verticalOffset", verticalOffset )
-		}
-	}
 
-	return nestedClubLogoRui
-}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1876,84 +1876,84 @@ array<ItemFlavor> function ClubSearchTag_GetTagsByType( int tagType )
 }
 
 
-void function ClubSearchTag_AddSearchTagToSelection( ItemFlavor searchTag )
-{
-	
-	Assert( ItemFlavor_GetType( searchTag ) == eItemType.club_search_tag )
-	Assert( !file.selectedSearchTags.contains( searchTag ), "Search Tag Selection: Tried to add duplicate item flavor selection" )
 
-	file.selectedSearchTags.append( searchTag )
-}
 
-void function ClubSearchTag_RemoveSearchTagFromSelection( ItemFlavor searchTag )
-{
-	
-	Assert( ItemFlavor_GetType( searchTag ) == eItemType.club_search_tag )
-	Assert( file.selectedSearchTags.contains( searchTag ), "Search Tag Selection: Tried to remove search tag from selection that was not present" )
 
-	file.selectedSearchTags.removebyvalue( searchTag )
-}
 
-array<ItemFlavor> function ClubSearchTag_GetSelectedSearchTags()
-{
-	
-	return file.selectedSearchTags
-}
 
-void function ClubSearchTag_ClearSelectedSearchTags()
-{
-	
-	file.selectedSearchTags.clear()
-}
 
-const int CLUB_DETAILS_SEARCH_TAG_LINE_LENGTH = 100
-array<string> function CreateSearchTagDetailsStrings( array<ItemFlavor> searchTags )
-{
-	array<string> searchTagStrings
-	if ( searchTags.len() == 0 )
-		return searchTagStrings
 
-	string line00
-	string line01
-	int maxTags = minint( searchTags.len(), 3 )
-	bool isPopulatingLine01 = false
-	for ( int i = 0; i < searchTags.len(); i++ )
-	{
-		string tagString = Localize( ClubSearchTag_GetTagString( searchTags[i] ) )
-		string inbetween = line00.len() > 0 ? ", " : ""
 
-		string testString = line00 + inbetween + tagString
-		if ( testString.len() < CLUB_DETAILS_SEARCH_TAG_LINE_LENGTH && !isPopulatingLine01 )
-		{
-			line00 = line00 + inbetween + tagString
-		}
-		else
-		{
-			inbetween = line01.len() > 0 ? ", " : ""
-			line01 = line01 + inbetween + tagString
-			isPopulatingLine01 = true
-		}
-	}
 
-	
-	
-	searchTagStrings.append( line00 )
-	searchTagStrings.append( line01 )
 
-	return searchTagStrings
-}
 
-string function ClubSearchTag_GetNamesOfSearchTagsFromArray( array<string> searchTags )
-{
-	string tagListString
-	foreach ( name in searchTags )
-	{
-		string delimiter = searchTags.find( name ) == searchTags.len() - 1 ? "" : ", "
-		tagListString = tagListString + Localize( name ) + delimiter
-	}
 
-	return tagListString
-}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1975,28 +1975,28 @@ bool function Clubs_AreObituaryTagsEnabledByPlaylist()
 
 
 
-var function ClubTag_CreateNestedClubTag( var parentRui, string arg, string clubTag )
-{
-	RuiDestroyNestedIfAlive( parentRui, arg )
-
-	var nestedClubTagRui = RuiCreateNested( parentRui, arg, $"ui/club_tag.rpak" )
-	RuiSetString( nestedClubTagRui, "clubTagString", clubTag )
-
-	return nestedClubTagRui
-}
 
 
 
-bool function Clubs_IsValidClubTag( string clubTag )
-{
-	if ( clubTag.len() < 3 )
-		return false
 
-	if ( clubTag.find( " " ) > -1 )
-		return false
 
-	return true
-}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -2052,254 +2052,24 @@ const int MAX_PLACEMENT_FOR_FREEDM_CLUB_EVENT = 1
 
 
 
-void function ServerToUI_AddPlayerDataForPlacementReport( int placement )
-{
-	
-	array< ClubSquadSummaryPlayerData > squadSummaryData
-	int maxTrackedSquadMembers = PersistenceGetArrayCount( "lastGameSquadStats" )
-
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-
-	for ( int i = 0; i < maxTrackedSquadMembers; i++ )
-	{
-		ClubSquadSummaryPlayerData playerData
-		playerData.nucleusID = expect string( GetPersistentVar( "lastGameSquadStats[" + i + "].nucleusId" ) )
-		if ( !Clubs_IsUserAClubmate( playerData.nucleusID ) )
-		{
-			
-			continue
-		}
-
-		playerData.kills = GetPersistentVarAsInt( "lastGameSquadStats[" + i + "].kills" )
-		playerData.damageDealt = GetPersistentVarAsInt( "lastGameSquadStats[" + i + "].damageDealt" )
-
-		if ( squadSummaryData.contains( playerData ) == false )
-		{
-			squadSummaryData.append( playerData )
-		}
-	}
-
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-
-	Clubs_ReportMatchPlacementToClub( squadSummaryData, placement )
-}
-
-
-
-void function ServerToUI_Clubs_UpdateLastMatchTimes()
-{
-	int maxTrackedSquadMembers = PersistenceGetArrayCount( "lastGameSquadStats" )
-	bool playedWithClubMembers = false
-	string eaid = GetLocalClientPlayer().GetPINNucleusId()
-
-	for ( int i = 0; i < maxTrackedSquadMembers; i++ )
-	{
-		ClubSquadSummaryPlayerData playerData
-		playerData.nucleusID = expect string( GetPersistentVar( "lastGameSquadStats[" + i + "].nucleusId" ) )
-		if ( Clubs_IsUserAClubmate( playerData.nucleusID ) && playerData.nucleusID != eaid )
-			playedWithClubMembers = true
-	}
-
-	ClubUpdateLastMatchTime( playedWithClubMembers )
-}
-
-
-
-void function Clubs_ReportMatchPlacementToClub( array<ClubSquadSummaryPlayerData> squadSummaryData, int placement )
-{
-	printf( "ClubEventDebug: %s()", FUNC_NAME() )
-	if ( placement > MAX_PLACEMENT_FOR_CLUB_EVENT )
-		return
-
-	if ( !Clubs_IsEnabled() )
-		return
-
-	if ( !ClubIsValid() )
-		return
-
-	foreach ( ClubSquadSummaryPlayerData summaryData in squadSummaryData )
-	{
-		if ( !Clubs_IsUserAClubmate( summaryData.nucleusID ) )
-		{
-			squadSummaryData.removebyvalue( summaryData )
-		}
-	}
-	if ( squadSummaryData.len() == 0 )
-		return
-
-	squadSummaryData.sort( SortClubMembersByPerformance )
-
-
-	if (squadSummaryData[0].nucleusID != GetLocalClientPlayer().GetPINNucleusId() )
-	{
-		return
-	}
-
-	int playlistIndex = GetPlaylistIndexForName( GetCurrentPlaylistName() )
-	if ( playlistIndex == -1 )
-		return
-
-	array<string> playerIDs
-	for ( int i = 0; i < squadSummaryData.len(); i++ )
-	{
-		playerIDs.append( squadSummaryData[i].nucleusID )
-	}
-	string compiledPlayerNames = CompilePlacementNamesIntoOneString( playerIDs )
-	string playlistName = GetCurrentPlaylistVarInt( "maskPlaylistNameForClubReport", 0 ) == 0 ? GetCurrentPlaylistVarString( "name", "#PL_TRIO" ) : "#PL_TRIO"
-
-#if DEV
-		int maxTeams = GetCurrentPlaylistVarInt( "max_teams", 20 )
-		int maxPlayers = GetCurrentPlaylistVarInt( "max_players", 60 )
-		int maxSquadSize = maxPlayers / maxTeams
-
-		if ( squadSummaryData.len() > maxSquadSize )
-		{
-			printf( "ClubEventDebug: %s(): DEBUG: Playlist Data: Name: %s, Display Name: %s", FUNC_NAME(), GetCurrentPlaylistName(), GetCurrentPlaylistVarString( "name", "#PL_TRIO" ) )
-
-			printf( "ClubEventDebug: %s(): PLACEMENT EVENT ERRROR - Begin Squad Data Dump", FUNC_NAME() )
-			foreach ( ClubSquadSummaryPlayerData playerData in squadSummaryData )
-			{
-				string nucleusID = playerData.nucleusID
-				int playerKills = playerData.kills
-				int playerDmg = playerData.damageDealt
-
-				printf( "ClubEventDebug: %s(): PLACEMENT EVENT ERRROR - nucleus ID: %s, kills: %i, playerDmg: %i", FUNC_NAME(), nucleusID, playerKills, playerDmg )
-			}
-			printf( "ClubEventDebug: %s(): PLACEMENT EVENT ERRROR - End Squad Data Dump", FUNC_NAME() )
-
-			Assert( false, "CLUB ERROR: Attempted to report too many player names to Event Timeline. EXPECTED " + maxSquadSize + ", GOT " + squadSummaryData.len() )
-		}
-#endif
-
-	compiledPlayerNames = replace( compiledPlayerNames, "%", "□" )
-
-	string eventText = compiledPlayerNames + CLUB_EVENT_DELIMITER + playlistName
-
-	ClubPublishEvent( CLUB_EVENT_PROGRESS, placement, eventText )
-}
-
-
-
-int function SortClubMembersByPerformance( ClubSquadSummaryPlayerData a, ClubSquadSummaryPlayerData b )
-{
-	if ( a.kills > b.kills )
-		return -1
-	if ( a.kills < b.kills )
-		return 1
-	if ( a.damageDealt > b.damageDealt )
-		return -1
-	if ( a.damageDealt < b.damageDealt )
-		return 1
 
-	return 0
-}
 
 
 
-string function CompilePlacementNamesIntoOneString( array<string> playerIDs )
-{
-	
-	
-	if ( playerIDs.len() > 1 )
-	{
-		for ( int i = 0; i < playerIDs.len(); i++ )
-		{
-			if ( i >= playerIDs.len() )
-				break
 
-			for( int y = 0; y < playerIDs.len(); y++ )
-			{
-				if ( i != y && playerIDs[i] == playerIDs[y] )
-					playerIDs.fastremove( y )
-			}
-		}
-	}
 
-	array<string> uncompiledNames
-	foreach( playerID in playerIDs )
-	{
-		string memberName = Clubs_GetClubMemberNameFromNucleus( playerID )
 
-		if ( memberName != "" )
-			uncompiledNames.append( Clubs_GetClubMemberNameFromNucleus( playerID ) )
-	}
-	
 
-	string compiledNames
-	for ( int i = 0; i < uncompiledNames.len(); i++ )
-	{
-		string delimiter
-		int namesLeft = (uncompiledNames.len() - 1) - i
-		if ( namesLeft > 1 )
-			delimiter = Localize( "#CLUB_EVENT_PROGRESS_NAME_BREAK" )
-		if ( namesLeft == 1 )
-			delimiter = Localize( "#CLUB_EVENT_PROGRESS_NAME_LAST" )
 
-		compiledNames = compiledNames + uncompiledNames[i] + delimiter
-		
-	}
 
-	
-	return compiledNames
-}
 
 
-#if DEV
-void function DEV_ReportFakePlacementEvent( int forceSquadSize = -1, bool testDupes = false )
-{
-	if ( !ClubIsValid() )
-		return
 
-	array<ClubMember> clubMembers = ClubGetMembers()
-	int squadSize = minint( clubMembers.len(), RandomIntRange( 1, 3 ) )
-	if ( forceSquadSize > 0 )
-		squadSize = minint( clubMembers.len(), forceSquadSize )
 
-	clubMembers.randomize()
-	clubMembers.resize( squadSize )
 
-	if ( testDupes )
-	{
-		for ( int i = 0; i < squadSize * 2; i++ )
-		{
-			
-			clubMembers.append( clubMembers[i] )
-		}
-		clubMembers.randomize()
-	}
 
-	array<string> playerIDs
-	foreach ( ClubMember member in clubMembers )
-	{
-		playerIDs.append( member.memberID )
-	}
-	string squadNames = CompilePlacementNamesIntoOneString( playerIDs )
 
-	squadNames = replace( squadNames, "%", "□" )
 
-	
-	ClubPublishEvent( CLUB_EVENT_PROGRESS, RandomIntRange( 1, 5 ), (squadNames+CLUB_EVENT_DELIMITER+"Pretend Playlist") )
-}
-#endif
 
 
 
@@ -2314,10 +2084,240 @@ void function DEV_ReportFakePlacementEvent( int forceSquadSize = -1, bool testDu
 
 
 
-void function Clubs_Report( ClubHeader clubHeader )
-{
-	ReportClub(  clubHeader.clubID, clubHeader.creatorID, clubHeader.tag, clubHeader.name , GetNameFromHardware(clubHeader.hardware)) 
-}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -2375,19 +2375,19 @@ string function ClubRegulation_GetReasonString( int reasonInt )
 }
 
 
-array<ClubEvent> function ClubRegulation_GetComplaintsForMember( ClubMember member )
-{
-	array<ClubEvent> memberReports
-	array<ClubEvent> allReports = ClubGetEventLogReports()
 
-	foreach( ClubEvent report in allReports )
-	{
-		if ( report.eventText == member.memberID )
-			memberReports.append( report )
-	}
 
-	return memberReports
-}
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -2405,12 +2405,12 @@ array<ClubEvent> function ClubRegulation_GetComplaintsForMember( ClubMember memb
 bool function Clubs_IsEnabled()
 {
 
-	if ( IsConnected() && Clubs_AreDisabledByPlaylist() )
-		return false
-
-	return ( ClubEnabled() && !PSNGetCommRestricted() )
 
 
+
+
+
+	return false
 
 }
 
@@ -2460,589 +2460,41 @@ bool function Clubs_AreDisabledByPlaylist()
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-void function ClubDataUpdateThread()
+void function OnSettingsUpdated()
 {
-	printf( "ClubDataUpdateThread()" )
-	wait 0.1
-	
-	bool finishedEditing = false
-	while( !finishedEditing )
+	bool crossplayEnabled = GetConVarBool( "CrossPlay_user_optin" )
+	if ( crossplayEnabled != file.crossplayEnabled )
 	{
-		wait 0.1
-
-		if ( Clubs_GetClubQueryState( CLUB_OP_SET_JOIN_REQUIREMENTS ) == eClubQueryState.PROCESSING )
-			continue
-
-		if ( Clubs_GetClubQueryState( CLUB_OP_SET_PRIVACY_SETTING ) == eClubQueryState.PROCESSING )
-			continue
-
-		if ( Clubs_GetClubQueryState( CLUB_OP_SET_SEARCHTAGS ) == eClubQueryState.PROCESSING )
-			continue
-
-		if ( Clubs_GetClubQueryState( CLUB_OP_SET_LOGO ) == eClubQueryState.PROCESSING )
-			continue
-
-		finishedEditing = true
+		RunUIScript( "Clubs_OpenCrossplayChangeDialog" )
 	}
 
-	UpdateClubLobbyDetails()
-	ClubPublishEvent( CLUB_EVENT_EDIT, 0, "" )
-	Clubs_UpdateMyData()
+	int localBool = crossplayEnabled ? 1 : 0
+	int fileBool = file.crossplayEnabled ? 1 : 0
+	int convarBool = GetConVarBool( "CrossPlay_user_optin" ) ? 1 : 0
+	printf( "ClubsCrossplayDebug: crossplayEnabled: %i, file.crossplayEnabled: %i, convar: %i", localBool, fileBool, convarBool )
 }
 
-void function Clubs_UpdateMyData()
+void function Clubs_UpdateCrossplayVar()
 {
-	printf( "Clubs_UpdateMyData()" )
-
-	int lastQueryError = ClubGetLastQueryError()
-	if ( lastQueryError <= 0 )
-	{
-		thread Clubs_SetClubTabUserCount()
-
-		foreach ( callbackFunc in file.myClubUpdatedCallbacks )
-			callbackFunc()
-	}
-	else
-	{
-		Warning( "ClubsError: UpdateMyData called when previous query failed. Attempting requery." )
-		printf( "ClubQueryDebug: %s(): Forced to attempt requery due to error %i", FUNC_NAME(), lastQueryError )
-		thread Clubs_AttemptRequeryThread()
-	}
+	file.crossplayEnabled = GetConVarBool( "CrossPlay_user_optin" )
 }
 
-void function AddCallback_OnClubDataUpdated( void functionref() callbackFunc )
+void function Clubs_UIToClient_SetCrossplayVar( bool isEnabled )
 {
-	Assert( !file.myClubUpdatedCallbacks.contains( callbackFunc ), "Already added " + string( callbackFunc ) + " with AddCallback_OnClubDataUpdated" )
-	file.myClubUpdatedCallbacks.append( callbackFunc )
+	SetConVarBool( "CrossPlay_user_optin", isEnabled )
+	Clubs_UpdateCrossplayVar()
 }
 
 
-void function RemoveCallback_OnClubDataUpdated( void functionref() callbackFunc )
+void function Clubs_SetMyStoredClubName( string clubName )
 {
-	Assert( file.myClubUpdatedCallbacks.contains( callbackFunc ), "Callback " + string( callbackFunc ) + " doesn't exist" )
-	file.myClubUpdatedCallbacks.fastremovebyvalue( callbackFunc )
+	file.myClubName = clubName
 }
 
 
-void function Clubs_CheckClubPersistenceThread()
+string function Clubs_GetMyStoredClubName()
 {
-	while ( !IsFullyConnected() )
-	{
-		WaitFrame()
-	}
-
-	if ( ClubEnabled() && IsLobby() && Remote_ServerCallFunctionAllowed() )
-	{
-		ClubHeader myClubHeader = ClubGetHeader()
-
-		bool isClubMember = myClubHeader.clubID != "" 
-		bool wasClubMember = bool( GetPersistentVar( "clubIsMember" ) )
-
-		if ( isClubMember != wasClubMember )
-		{
-			Remote_ServerCallFunction( "ClientCallback_SetClubIsMember" , isClubMember )
-		}
-	}
-}
-
-
-void function Clubs_PopulateClubDetails( ClubHeader clubHeader, var detailsPanel, bool isMyClub = true, bool hideFrame = false )
-{
-	
-	var logoAnchor    = Hud_GetChild( detailsPanel, "ClubLogoDisplay" )
-	var logoAnchorRui = Hud_GetRui( logoAnchor )
-	ClubLogo clubLogo
-	if ( clubHeader.logoString.len() == 0 )
-		clubLogo = GenerateRandomClubLogo( clubHeader.clubID )
-	else
-		clubLogo = ClubLogo_ConvertLogoStringToLogo( clubHeader.logoString )
-
-	var logo = ClubLogoUI_CreateNestedClubLogo( logoAnchorRui, "clubLogo", clubLogo )
-	var detailsDisplay      = Hud_GetChild( detailsPanel, "ClubDetailsDisplay" )
-	var detailsRui          = Hud_GetRui( detailsDisplay )
-
-	var nestedClubTag = ClubTag_CreateNestedClubTag( detailsRui, "clubTag", clubHeader.tag )
-
-	printf( "ClubJoinDialogDebug: Clubs_PopulateClubDetails() - name: %s, tag: %s, privacy: %i, minLevel: %i, minRank: %i", clubHeader.name, clubHeader.tag, clubHeader.privacySetting, clubHeader.minLevel, clubHeader.minRating )
-
-	int rank
-	if ( isMyClub )
-	{
-		if ( ClubIsValid() )
-			rank = ClubGetMyMemberRank()
-		else
-			rank = CLUB_RANK_CREATOR
-	}
-	else
-	{
-		rank = -1
-	}
-	RuiSetInt( detailsRui, "myRank", rank )
-	
-	
-	
-	
-
-	RuiSetBool( detailsRui, "hideFrame", hideFrame )
-	RuiSetString( detailsRui, "clubName", clubHeader.name )
-	RuiSetInt( detailsRui, "privacySetting", clubHeader.privacySetting )
-	RuiSetString( detailsRui, "minLvlSettingString", Clubs_GetDescStringForMinAccountLevel( clubHeader.minLevel ) )
-	RuiSetString( detailsRui, "minRankSettingString", Clubs_GetDescStringForMinRank( clubHeader.minRating ) )
-	RuiSetInt( detailsRui, "memberCount", clubHeader.memberCount )
-
-	int searchTagBitFlags = clubHeader.searchTags
-	array<ItemFlavor> searchTags = ClubSearchTag_GetItemFlavorsFromBitMask( searchTagBitFlags )
-	array<string> tagStrings = CreateSearchTagDetailsStrings( searchTags )
-	if (tagStrings.len() == 0 )
-	{
-		RuiSetString( detailsRui, "searchTagsRow00", "" )
-		RuiSetString( detailsRui, "searchTagsRow01", "" )
-		return
-	}
-
-	for( int i = 0; i < tagStrings.len(); i++ )
-	{
-		string searchTagRow = format( "searchTagsRow0%d", i )
-		RuiSetString( detailsRui, searchTagRow, tagStrings[i] )
-	}
-}
-
-
-void function Clubs_ConfigureRankTooltip( var element, int memberRank )
-{
-	printf( "DetailsTooltip: %s()", FUNC_NAME() )
-	string rankName = Clubs_GetClubMemberRankString( memberRank )
-	string desc = Clubs_GetClubMemberRankDescriptionStringForTooltip( memberRank )
-
-	printf( "DetailsTooltip: %s(): title: %s, desc: %s", FUNC_NAME(), rankName, desc )
-	ToolTipData toolTipData
-	toolTipData.titleText = rankName
-	toolTipData.descText = desc
-
-	Hud_SetToolTipData( element, toolTipData )
-}
-
-
-string function Clubs_GetClubMemberRankString( int memberRank )
-{
-	switch( memberRank )
-	{
-		case CLUB_RANK_GRUNT:
-			return Localize( "#LOBBY_CLUBS_RANK_GRUNT" )
-		case CLUB_RANK_CAPTAIN:
-			return Localize( "#LOBBY_CLUBS_RANK_CAPTAIN" )
-		case CLUB_RANK_ADMIN:
-			return Localize( "#LOBBY_CLUBS_RANK_ADMIN" )
-		case CLUB_RANK_CREATOR:
-			return Localize( "#LOBBY_CLUBS_RANK_CREATOR" )
-		default:
-			return "null"
-	}
-
-	unreachable
-}
-
-
-string function Clubs_GetClubMemberRankDescriptionStringForTooltip( int memberRank )
-{
-	switch( memberRank )
-	{
-		case CLUB_RANK_GRUNT:
-			return Localize( "#CLUB_DETAILS_TOOLTIP_RANK_GRUNT" )
-		case CLUB_RANK_CAPTAIN:
-			return Localize( "#CLUB_DETAILS_TOOLTIP_RANK_CAPTAIN" )
-		case CLUB_RANK_ADMIN:
-			return Localize( "#CLUB_DETAILS_TOOLTIP_RANK_ADMIN" )
-		case CLUB_RANK_CREATOR:
-			return Localize( "#CLUB_DETAILS_TOOLTIP_RANK_CREATOR" )
-		default:
-			return "null"
-	}
-
-	unreachable
-}
-
-
-void function Clubs_ConfigurePrivacyTooltip ( var element, int privacyLevel )
-{
-	string privacyName = Clubs_GetDescStringForPrivacyLevel( privacyLevel )
-	string desc = Clubs_GetPrivacyDescriptionStringForTooltip( privacyLevel )
-
-	ToolTipData toolTipData
-	toolTipData.titleText = privacyName
-	toolTipData.descText = desc
-
-	Hud_SetToolTipData( element, toolTipData )
-}
-
-
-string function Clubs_GetPrivacyDescriptionStringForTooltip( int privacyLevel )
-{
-	switch ( privacyLevel )
-	{
-		case CLUB_PRIVACY_OPEN:
-			return Localize( "#CLUB_DETAILS_TOOLTIP_PRIVACY_OPEN" )
-		case CLUB_PRIVACY_OPEN_WITH_REQ:
-			return Localize( "#CLUB_DETAILS_TOOLTIP_PRIVACY_RESTRICTED" )
-		case CLUB_PRIVACY_BY_REQUEST:
-			return Localize( "#CLUB_DETAILS_TOOLTIP_PRIVACY_REQUEST" )
-		case CLUB_PRIVACY_INVITE_ONLY:
-			return Localize( "#CLUB_DETAILS_TOOLTIP_PRIVACY_INVITEONLY" )
-		default:
-			return ""
-	}
-
-	unreachable
-}
-
-
-void function Clubs_ConfigureMinLevelAndRankTooltip( var element, int privacyLevel, int minLvl, int minRank )
-{
-	string desc
-	if ( privacyLevel != CLUB_PRIVACY_OPEN_WITH_REQ )
-		desc = Localize( "#CLUB_DETAILS_TOOLTIP_REQUIREMENTS_ANY" )
-	else
-		desc = Localize( "#CLUB_DETAILS_TOOLTIP_REQUIREMENTS_SET", Localize(Clubs_GetDescStringForMinAccountLevel( minLvl )), Localize(Clubs_GetDescStringForMinRank( minRank )) )
-
-	ToolTipData toolTipData
-	toolTipData.descText = desc
-
-	Hud_SetToolTipData( element, toolTipData )
-}
-
-
-array<int> function Clubs_GetPromotableRanks()
-{
-	array<int> promotableRanks
-
-	for( int i=0; i <= CLUB_RANK_CREATOR; i++ )
-	{
-		promotableRanks.append(i)
-	}
-
-	return promotableRanks
-}
-
-
-string function Clubs_GetClubMemberNameFromNucleus( string memberID )
-{
-	if ( !ClubIsValid() )
-		return ""
-
-	array<ClubMember> clubMembers = ClubGetMembers()
-
-	string memberName
-	foreach ( ClubMember clubMember in clubMembers )
-	{
-		if ( clubMember.memberID == memberID )
-		{
-			memberName = clubMember.memberName
-			break
-		}
-	}
-
-	return memberName
-}
-
-
-bool function Clubs_IsUserAClubmate( string nucleusID )
-{
-	if ( !ClubIsValid() )
-		return false
-
-	array<ClubMember> clubMembers = ClubGetMembers()
-
-	bool isClubmate
-	foreach ( clubMember in clubMembers )
-	{
-		if ( clubMember.memberID == nucleusID )
-		{
-			isClubmate = true
-			break
-		}
-	}
-
-	return isClubmate
-}
-
-void function Clubs_TryCloseAllClubMenus()
-{
-	CloseClubsSearchMenu()
-	ClubsLogoEditor_CloseLogoEditor()
-	thread CloseClubCreationMenu()
-	CloseFindClubMemberDialog()
-	CloseClubMemberManagementMenu()
-}
-
-void function Clubs_SetClubTabUserCount()
-{
-	while ( !IsConnected() )
-		WaitFrame()
-
-	if ( !Clubs_IsEnabled() )
-		return
-
-	if ( !IsLobby() )
-		return
-
-	var lobbyMenu = GetMenu( "LobbyMenu" )
-	TabData lobbyTabData = GetTabDataForPanel( lobbyMenu )
-
-	array<var> panels = GetAllMenuPanels( lobbyMenu )
-	int clubPanelIndex
-	foreach ( panel in panels )
-	{
-		if ( GetPanelTabTitle( panel ) == "#LOBBY_CLUBS" )
-		{
-			clubPanelIndex = panels.find( panel )
-		}
-	}
-	if ( clubPanelIndex == -1 )
-		return
-
-	var clubTabButton = lobbyTabData.tabButtons[ clubPanelIndex ]
-	var clubTabRui = Hud_GetRui( clubTabButton )
-
-	string popString = GetUserCountStringForClubTab()
-	if ( !ClubIsValid() )
-		popString = ""
-
-	RuiSetString( clubTabRui, "subtitleText", popString )
-}
-
-string function GetUserCountStringForClubTab()
-{
-	if ( !Clubs_IsEnabled() )
-		return ""
-
-	if ( !ClubIsValid() )
-		return ""
-
-	return Localize( "#LOBBY_CLUBS_USERCOUNT", ClubLobby_GetOnlineMemberCount() )
-}
-
-bool function Clubs_DoIMeetMinimumLevelRequirement()
-{
-	if ( !IsConnected() )
-		return false
-
-	if ( !IsLocalClientEHIValid() )
-		return false
-
-	int currentXP    = GetPersistentVarAsInt( "xp" )
-	int currentLevel = GetAccountLevelForXP( currentXP )
-
-	if ( currentLevel < CLUB_JOIN_MIN_ACCOUNT_LEVEL )
-		return false
-
-	return true
-}
-
-void function Clubs_MonitorCrossplayChangeThread()
-{
-	while ( !IsConnected() )
-	{
-		WaitFrame()
-	}
-
-	if ( !Clubs_IsEnabled() )
-	{
-		return
-	}
-
-	if ( !ClubIsValid() )
-	{
-		return
-	}
-
-	bool userCrossplayEnabled = GetConVarBool( "CrossPlay_user_optin" )
-	bool clubCrossplayEnabled = ClubGetHeader().allowCrossplay
-
-	while ( Clubs_IsEnabled() && ClubIsValid() && userCrossplayEnabled == clubCrossplayEnabled )
-	{
-		if ( IsUserHudOptionsDisplayed() )
-		{
-			WaitFrame()
-			continue
-		}
-
-		if ( IsDialog( GetActiveMenu() ) )
-		{
-			WaitFrame()
-			continue
-		}
-
-		WaitFrame()
-
-		userCrossplayEnabled = GetConVarBool( "CrossPlay_user_optin" )
-		clubCrossplayEnabled =  ClubGetHeader().allowCrossplay
-
-	}
-
-	if( Clubs_IsEnabled() && ClubIsValid() )
-	{
-
-		if ( userCrossplayEnabled != clubCrossplayEnabled )
-		{
-			ClubLeave()
-			Clubs_OpenErrorStringDialog( "#CLUB_DIALOG_CROSSPLAY_SYSTEMCHANGE" )
-	    }
-	}
-}
-
-
-void function Clubs_SetClubQueryState( int operation, int queryState )
-{
-	printf( "ClubQueryDebug: %s(): Setting query state for operation %i to %i", FUNC_NAME(), operation, queryState )
-
-	file.queryProcessingStateMap[operation] <- queryState
-
-	bool doesOpHaveSuccessCallbacks = operation in file.clubQuerySuccessCallbacks
-	if ( !doesOpHaveSuccessCallbacks )
-	{
-		printf( "ClubQueryDebug: %s(): Initializing Op success callback array for operation %i", FUNC_NAME(), operation )
-		array<void functionref()> funcArray = []
-		file.clubQuerySuccessCallbacks[operation] <- funcArray
-	}
-
-	if ( doesOpHaveSuccessCallbacks && queryState == eClubQueryState.SUCCESSFUL )
-	{
-		foreach ( callbackFunc in file.clubQuerySuccessCallbacks[operation] )
-			callbackFunc()
-	}
-}
-
-
-int function Clubs_GetClubQueryState( int operation )
-{
-	if ( !Clubs_IsClubQueryOperationStateInitialized( operation ) )
-	{
-		printf( "ClubQueryDebug: Operation %i not yet found in Query State table. Adding.", operation )
-		file.queryProcessingStateMap[ operation ] <- eClubQueryState.INACTIVE
-	}
-
-	int queryState = file.queryProcessingStateMap[operation]
-	printf( "ClubQueryDebug: %s(): Query State for operation %i is %i", FUNC_NAME(), operation, queryState )
-
-	return file.queryProcessingStateMap[operation]
-}
-
-
-bool function Clubs_IsClubQueryProcessing( int operation )
-{
-	if ( !Clubs_IsClubQueryOperationStateInitialized( operation ) )
-		return false
-
-	return file.queryProcessingStateMap[operation] == eClubQueryState.PROCESSING
-}
-
-
-bool function Clubs_IsClubQueryOperationStateInitialized( int operation )
-{
-	return operation in file.queryProcessingStateMap
-}
-
-
-void function AddCallback_OnClubQuerySuccessful( int operation, void functionref() callbackFunc )
-{
-	bool operationIsInTable = operation in file.clubQuerySuccessCallbacks
-	if ( !operationIsInTable )
-	{
-		printf( "ClubQueryDebug: %s(): Initializing Op Completed callback array for operation %i", FUNC_NAME(), operation )
-		array<void functionref()> funcArray = []
-		file.clubQuerySuccessCallbacks[operation] <- funcArray
-	}
-
-	Assert( !file.clubQuerySuccessCallbacks[operation].contains( callbackFunc ), "Already added " + string( callbackFunc ) + " with AddCallback_OnClubQueryCompleted" )
-	file.clubQuerySuccessCallbacks[operation].append( callbackFunc )
-}
-
-
-void function RemoveCallback_OnClubQuerySuccessful( int operation, void functionref() callbackFunc )
-{
-	bool operationIsInTable = operation in file.clubQuerySuccessCallbacks
-	Assert( !operationIsInTable, "Attempted to remove callback " + string( callbackFunc ) + " for operation + " + string( operation ) + " which has no callbacks" )
-
-	Assert( file.clubQuerySuccessCallbacks[operation].contains( callbackFunc ), "Callback " + string( callbackFunc ) + " doesn't exist" )
-	file.clubQuerySuccessCallbacks[operation].fastremovebyvalue( callbackFunc )
-}
-
-
-void function Clubs_AttemptRequeryThread()
-{
-	printf( "ClubQueryDebug: %s()", FUNC_NAME() )
-
-	while( !IsFullyConnected() )
-		WaitFrame()
-
-	while( !file.isClubInitialized )
-		WaitFrame()
-
-	Signal( uiGlobal.signalDummy, CLUB_REQUERY_SIGNAL )
-	EndSignal( uiGlobal.signalDummy, CLUB_REQUERY_SIGNAL )
-
-	printf( "ClubQueryDebug: %s(): User connected. Checking Clubs_IsEnabled()", FUNC_NAME() )
-
-	if ( !Clubs_IsEnabled() )
-		return
-
-	printf( "ClubQueryDebug: %s(): User connected. Checking CLUB_OP_GET_CURRENT query state", FUNC_NAME() )
-
-	if ( Clubs_GetClubQueryState( CLUB_OP_GET_CURRENT ) == eClubQueryState.SUCCESSFUL )
-		return
-
-	printf( "ClubQueryDebug: %s(): User connected. CLUB_OP_GET_CURRENT query state is SUCCESSFUL, counting requery attempts (%i/%i)", FUNC_NAME(), file.clubQueryRetryCount, CLUB_QUERY_RETRY_MAX )
-
-	if ( file.clubQueryRetryCount >= CLUB_QUERY_RETRY_MAX )
-		return
-
-	ClubGetCurrent()
-	file.clubQueryRetryCount++
-}
-
-
-void function Clubs_AttemptLeaveRequestThread()
-{
-
+	return file.myClubName
 }
 
 
@@ -3058,503 +2510,1051 @@ void function Clubs_AttemptLeaveRequestThread()
 
 
 
-void function Clubs_OpenErrorDialog( int operation, int errorCode, string errorMsg, string errorCodeString )
-{
-	if ( IsDialog( GetActiveMenu() ) )
-		return
-
-	string errorString = Localize( errorCodeString, operation, errorCode, errorMsg )
-	printf( "ClubErrorDebug: Error Dialog String = %s", errorString )
-
-	ConfirmDialogData dialogData
-	dialogData.headerText = "#ERROR"
-	dialogData.messageText = errorString
-	OpenOKDialogFromData( dialogData )
-}
-
-void function Clubs_OpenErrorStringDialog( string errorCodeString )
-{
-	if ( !Clubs_IsEnabled() )
-		return
-
-	if ( !IsLobby() || IsPrivateMatchLobby() )
-		return
-
-	EmitUISound( "UI_Menu_Deny" )
-	Clubs_OpenErrorDialog( -1, CLUB_ERROR_CODE_UNDEFINED, "", errorCodeString )
-}
-
-void function Clubs_OpenClubJoinedDialog( string clubName, bool dialogFlow = false )
-{
-	if ( IsDialog( GetActiveMenu() ) )
-		CloseActiveMenu()
-
-	EmitUISound( "UI_Menu_Clubs_JoinedClub" )
-
-	ConfirmDialogData dialogData
-	dialogData.headerText = "CLUB_DIALOG_JOINED_NAME"
-	dialogData.messageText = Localize( "#CLUB_DIALOG_JOINED_DESC", clubName )
-	if ( dialogFlow )
-	{
-		dialogData.resultCallback = void function ( int result )
-		{
-			DialogFlow()
-		}
-	}
-
-	string clubID = ClubGetHeader().clubID
-	SetDialogFlowPersistenceTables( "clubIsMember", clubID != "" ) 
-	Remote_ServerCallFunction( "ClientCallback_SetClubIsMember", clubID != "" )
-
-	OpenOKDialogFromData( dialogData )
-}
-
-bool function Clubs_ShouldShowClubJoinedDialog()
-{
-	if ( !IsPersistenceAvailable()  )
-		return false
-
-	if ( Clubs_GetClubQueryState( CLUB_OP_GET_CURRENT ) != eClubQueryState.SUCCESSFUL )
-		return false
-
-	if ( !Clubs_IsEnabled() )
-		return false
-
-	bool isClubMember = ClubGetHeader().clubID != "" 
-	bool wasClubMember = bool( GetPersistentVar( "clubIsMember" ) )
-
-	if ( GetDialogFlowTablesValueOrPersistence( "clubIsMember"  ) == isClubMember  )  
-		return false
-
-	if ( !ClubIsValid() )
-		return false
-
-	return true
-}
-
-void function Clubs_OpenClubKickedDialog( bool dialogFlow = false )
-{
-	if ( IsDialog( GetActiveMenu() ) )
-	{
-		return
-	}
-
-	if ( !IsLobby() )
-	{
-		return
-	}
-
-	ConfirmDialogData dialogData
-	dialogData.headerText = "CLUB_DIALOG_KICKED_NAME"
-	if ( file.kickedForCrossplay )
-	{
-		dialogData.messageText = "#CLUB_OP_FAIL_CROSSPLAY_INCOMPAT"
-		file.kickedForCrossplay = false
-	}
-	else
-	{
-		dialogData.messageText = "#CLUB_DIALOG_KICKED_DESC"
-	}
-
-	if ( dialogFlow )
-	{
-		dialogData.resultCallback = void function ( int result )
-		{
-			DialogFlow()
-		}
-	}
-
-
-	SetDialogFlowPersistenceTables( "clubIsMember", false )
-	Remote_ServerCallFunction( "ClientCallback_SetClubIsMember" , false)
-
-	OpenOKDialogFromData( dialogData )
-}
 
-bool function Clubs_ShouldShowClubKickedDialog()
-{
-	if ( !IsPersistenceAvailable()  )
-		return false
-
-
-	if ( !IsConnected() )
-		return false
-
-	if ( !Clubs_IsEnabled() )
-		return false
-
-	if ( ClubIsValid() )
-		return false
-
-	bool isClubMember =  ClubGetHeader().clubID != "" 
-	bool wasClubMember = bool( GetPersistentVar( "clubIsMember" ) )
-
-	if( isClubMember )
-		return false;
-
-	if( !wasClubMember )
-		return false;
-
-
-	return ( true )
-}
-
-void function Clubs_OpenJoinRequestDeniedDialog( bool dialogFlow = false )
-{
-	ConfirmDialogData dialogData
-	dialogData.headerText = "#CLUB_DIALOG_PETITION_DECLINED_NAME"
-	dialogData.messageText = "#CLUB_DIALOG_PETITION_DECLINED_DESC"
-	if ( dialogFlow )
-	{
-		dialogData.resultCallback = void function ( int result )
-		{
-			DialogFlow()
-		}
-	}
-
-	SetDialogFlowPersistenceTables( "clubIsPendingApproval", false  )
-	Remote_ServerCallFunction( "ClientCallback_SetClubIsPendingApproval", false )
-
-	OpenOKDialogFromData( dialogData )
-}
-
-bool function Clubs_ShouldShowClubJoinRequestDeniedDialog()
-{
-	if ( !IsPersistenceAvailable()  )
-		return false
-
-	if ( Clubs_GetClubQueryState( CLUB_OP_GET_CURRENT ) != eClubQueryState.SUCCESSFUL )
-		return false
-
-	if ( !Clubs_IsEnabled() )
-		return false
-
-	if ( ClubIsValid() )
-		return false
-
-	bool isPendingApproval = bool(GetPersistentVar( "clubIsPendingApproval" )) || ( GetDialogFlowTablesValueOrPersistence( "clubIsPendingApproval" ) == true )
-	return ( isPendingApproval == true && isPendingApproval != ClubIsPendingApproval() )
-}
-
-void function Clubs_OpenJoinReqsConfirmDialog( ClubHeader clubHeader )
-{
-	Clubs_SetJoinClubHeader( clubHeader );
-
-	ConfirmDialogData dialogData
-	dialogData.headerText = "#CLUB_DIALOG_PETITION_DECLINED_NAME"
-	dialogData.messageText = "#CLUB_DIALOG_WARNING_JOIN_REQS"
-	dialogData.resultCallback = OnJoinClubDespiteReqsDialogResult
-
-	OpenConfirmDialogFromData( dialogData )
-}
-
-void function OnJoinClubDespiteReqsDialogResult( int result )
-{
-	if ( result == eDialogResult.YES )
-	{
-		ClubHeader clubHeader = expect ClubHeader( Clubs_GetJoinClubHeader() )
-
-		Assert( clubHeader.clubID != "" )
-		if ( clubHeader.clubID != "" )
-		{
-			Clubs_JoinClub( clubHeader.clubID )
-			
-			if ( clubHeader.privacySetting == CLUB_PRIVACY_BY_REQUEST )
-				Remote_ServerCallFunction( "ClientCallback_SetClubIsMember" , true )
-		}
-	}
-}
-
-void function Clubs_OpenSwitchClubsConfirmDialog( ClubHeader clubHeader )
-{
-	Clubs_SetJoinClubHeader( clubHeader )
-
-	ConfirmDialogData dialogData
-	dialogData.headerText = "#CLUB_DIALOG_JOIN_NAME"
-	dialogData.messageText = "#CLUB_DIALOG_CONFIRM_CLUB_CHANGE"
-	dialogData.resultCallback = OnSwitchClubsResult
-
-	OpenConfirmDialogFromData( dialogData )
-}
-
-void function OnSwitchClubsResult( int result )
-{
-	if ( result == eDialogResult.YES )
-	{
-		ClubHeader clubHeader = expect ClubHeader( Clubs_GetJoinClubHeader() )
-		Assert( clubHeader.clubID != "" )
-		if ( clubHeader.clubID != "" )
-		{
-			thread Clubs_SwitchClubsThread( clubHeader )
-		}
-	}
-}
-
-void function Clubs_OpenReportClubConfirmDialog( ClubHeader clubHeader )
-{
-	if ( HasActiveLobbyPopup() )
-		return
-
-	file.reportClubHeader = clubHeader
-	ConfirmDialogData dialogData
-	dialogData.headerText = "#REPORT_CLUB_HEADER"
-	dialogData.messageText = Localize( "#REPORT_CLUB_DESC", clubHeader.name )
-	dialogData.resultCallback = OnReportClubDialogResult
-
-	OpenConfirmDialogFromData( dialogData )
-}
-
-void function OnReportClubDialogResult( int result )
-{
-	if ( result == eDialogResult.YES )
-	{
-		Clubs_Report( expect ClubHeader( file.reportClubHeader ) )
-
-		file.reportClubHeader = null
-		Clubs_OpenClubReportedDialog()
-	}
-}
-
-void function Clubs_OpenClubReportedDialog()
-{
-	ConfirmDialogData dialogData
-	dialogData.headerText = "#REPORT_CLUB_HEADER"
-	dialogData.messageText = "#REPORT_CLUB_SENT"
-
-	OpenOKDialogFromData( dialogData )
-}
-
-void function Clubs_OpenClubCreateBlockedByMatchmakingDialog()
-{
-	ConfirmDialogData dialogData
-	dialogData.headerText = "#LOBBY_CLUBS_CREATE"
-	dialogData.messageText = "#CLUB_DIALOG_CREATE_MATCHMAKING"
-
-	OpenOKDialogFromData( dialogData )
-}
-
-void function Clubs_OpenClubCreateBlockedByJoinDialog()
-{
-	ConfirmDialogData dialogData
-	dialogData.headerText = "#LOBBY_CLUBS_CREATE"
-	dialogData.messageText = "#CLUB_DIALOG_CREATE_ALREADY"
-
-	OpenOKDialogFromData( dialogData )
-}
-
-
-void function Clubs_OpenClubEditBlockedByMatchmakingDialog()
-{
-	ConfirmDialogData dialogData
-	dialogData.headerText = "#LOBBY_CLUBS_EDIT_SUBMIT"
-	dialogData.messageText = "#CLUB_DIALOG_EDIT_MATCHMAKING"
-
-	OpenOKDialogFromData( dialogData )
-}
-
-void function Clubs_OpenClubManagementBlockedByMatchmakingDialog()
-{
-	ConfirmDialogData dialogData
-	dialogData.headerText = "#CLUB_MEMBERS_EDIT_NAME"
-	dialogData.messageText = "#CLUB_DIALOG_MANAGE_MATCHMAKING"
-
-	OpenOKDialogFromData( dialogData )
-}
-
-bool function Clubs_ShouldShowClubAnnouncementDialog()
-{
-	if ( !IsConnected() )
-		return false
-
-	if ( !IsPersistenceAvailable() )
-		return false
-
-	if ( Clubs_GetClubQueryState( CLUB_OP_GET_CURRENT ) != eClubQueryState.SUCCESSFUL )
-		return false
-
-	if ( !IsLobby() )
-		return false
-
-	if ( !Clubs_IsEnabled() )
-		return false
-
-	if ( !ClubIsValid() )
-		return false
-
-	ClubEvent announcement = ClubGetStickyNote()
-	if ( announcement.eventText == "" )
-		return false
-
-	int announceTime = announcement.eventTime
-	if ( announceTime == 0 )
-		return false
-
-	int savedTime = GetLastViewedAnnouncementTime()
-
-	return announceTime >= savedTime
-}
-
-void function Clubs_OpenClubAnnouncementCooldownDialog()
-{
-	CloseClubAnnouncementDialog()
-
-	ConfirmDialogData dialogData
-	dialogData.headerText = "#CLUB_DIALOG_ANNOUNCE_COOLDOWN_NAME"
-	dialogData.messageText = Localize( "#CLUB_DIALOG_ANNOUNCE_COOLDOWN_DESC", CLUB_ANNOUNCE_COOLDOWN_MINUTES )
-
-	OpenOKDialogFromData( dialogData )
-}
-
-void function Clubs_OpenMemberManagementResetConfirmationDialog()
-{
-	ConfirmDialogData dialogData
-	dialogData.headerText = "#CLUB_MEMBERS_EDIT_NAME"
-	dialogData.messageText = "#CLUB_DIALOG_MEMBER_RANK_RESET"
-	dialogData.resultCallback = ClubMemberManagement_RefreshMemberSettingsFromDialog
-
-	OpenConfirmDialogFromData( dialogData )
-}
-
-void function Clubs_OpenCrossplayChangeDialog()
-{
-	if ( !ClubIsValid() )
-		return
-
-	thread OpenCrossplayChangeDialogThread()
-}
-
-void function OpenCrossplayChangeDialogThread()
-{
-	CloseAllDialogs()
-
-	WaitFrame()
-
-	Clubs_OpenCrossplayChangeConfirmationDialog()
-}
-
-void function Clubs_OpenCrossplayChangeConfirmationDialog()
-{
-	ConfirmDialogData dialogData
-	dialogData.headerText = "#CLUB_DIALOG_CROSSPLAY_CHANGE_NAME"
-	dialogData.messageText = "#CLUB_DIALOG_CROSSPLAY_CHANGE_DESC"
-	dialogData.resultCallback = CrossplayLeaveClubOrResultConvar
-
-	OpenConfirmDialogFromData( dialogData )
-}
-
-void function CrossplayLeaveClubOrResultConvar( int result )
-{
-	bool isCrossplayEnabled = GetConVarBool( "CrossPlay_user_optin" )
-	if ( result == eDialogResult.YES )
-	{
-		Clubs_LeaveClub()
-	}
-	else
-	{
-		thread ToggleCrossplaySettingThread()
-	}
-}
-
-void function Clubs_OpenAcceptInviteConfirmationDialog( ClubHeader inviteHeader )
-{
-	ConfirmDialogData dialogData
-	file.selectedClubInvite = inviteHeader
-
-	dialogData.headerText = inviteHeader.name.toupper()
-	dialogData.messageText = IsUserOptedInToCrossPlay() ? "#CLUB_DIALOG_INVITE_ACCEPT_DESC" : "#CLUB_DIALOG_INVITE_ACCEPT_DESC_CROSSPLAY"
-	dialogData.resultCallback = AcceptClubInviteResult
-
-	OpenConfirmDialogFromData( dialogData )
-}
-
-void function AcceptClubInviteResult( int result )
-{
-	if ( result == eDialogResult.YES )
-	{
-		CloseAllDialogs()
-
-		if ( ClubIsValid() )
-		{
-			Clubs_OpenErrorStringDialog( "#CLUB_DIALOG_NUCLEUS_ALREADY_IN_CLUB" )
-			return
-		}
-
-		SocialEventUpdate()
-		Clubs_JoinClub( file.selectedClubInvite.clubID )
-		
-	}
-}
-
-void function Clubs_OpenKickTargetIsNotAMemberDialog( ClubMember targetMember )
-{
-	ConfirmDialogData dialogData
-	dialogData.headerText = "#CLUB_KICK_USER_NAME"
-	dialogData.messageText = Localize( "#CLUB_KICK_USER_INVALID", targetMember.memberName )
-
-	OpenOKDialogFromData( dialogData )
-}
-
-void function Clubs_OpenUserAlreadyAcceptedDialog( ClubJoinRequest joinRequest )
-{
-	ConfirmDialogData dialogData
-	dialogData.headerText = "#CLUB_JOIN_REQUEST_NAME"
-	dialogData.messageText = Localize( "#CLUB_DIALOG_PETITION_ACCEPT_INVALID", joinRequest.userName)
-
-	OpenOKDialogFromData( dialogData )
-}
-
-void function Clubs_OpenUserAlreadyDeniedDialog( ClubJoinRequest joinRequest )
-{
-	ConfirmDialogData dialogData
-	dialogData.headerText = "#CLUB_JOIN_REQUEST_NAME"
-	dialogData.messageText = Localize( "#CLUB_DIALOG_PETITION_REJECT_INVALID", joinRequest.userName)
-
-	OpenOKDialogFromData( dialogData )
-}
-
-void function Clubs_OpenJoinReqsChangedDialog( ClubHeader clubHeader )
-{
-	if ( IsDialog( GetActiveMenu() ) )
-		CloseActiveMenu()
-
-	ConfirmDialogData dialogData
-	dialogData.headerText = "#CLUB_DIALOG_JOIN_NAME"
-	dialogData.messageText = Localize( "#CLUB_DIALOG_JOIN_REQS_CHANGED", clubHeader.name )
-
-	OpenOKDialogFromData( dialogData )
-}
-
-void function Clubs_OpenTooLowRankToInviteDialog()
-{
-	if ( IsDialog( GetActiveMenu() ) )
-		CloseActiveMenu()
-
-	ConfirmDialogData dialogData
-	dialogData.headerText = Localize( "#CLUB_POPUP_INVITE" ).toupper()
-	dialogData.messageText = "#CLUB_DIALOG_INVITE_UNDERRANK"
-
-	OpenOKDialogFromData( dialogData )
-}
-
-void function Clubs_OpenJoinRegionConfirmationDialog( ClubHeader clubHeader )
-{
-	ConfirmDialogData dialogData
-	file.selectedOutOfRegionClub = clubHeader
-
-	dialogData.headerText = "#CLUB_DIALOG_JOIN_NAME"
-	dialogData.messageText = "#CLUB_DIALOG_JOIN_DIFFERENT_DATACENTER"
-	dialogData.resultCallback = AcceptClubDifferentDataCenterResult
-
-	OpenConfirmDialogFromData( dialogData )
-}
-
-void function AcceptClubDifferentDataCenterResult( int result )
-{
-	if ( result == eDialogResult.YES )
-	{
-		Clubs_JoinClub( file.selectedOutOfRegionClub.clubID )
-		
-	}
-}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 

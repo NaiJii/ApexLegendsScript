@@ -20,6 +20,10 @@ global function DeathboxNetwork_TrackBoxTargets
 global function DeathboxNetwork_UntrackBoxTargets
 global function DeathboxNetwork_UntrackIfTracking
 
+
+
+
+
 global function DeathboxNetwork_ServerToClient_ForceUsable  
 
 
@@ -105,6 +109,9 @@ void function MpWeaponAshDataknife_Init()
 		Remote_RegisterServerFunction( FUNCNAME_TryActivate, "typed_entity", "prop_death_box" )
 		Remote_RegisterServerFunction( FUNCNAME_PingDeathboxFromMap, "typed_entity", "prop_death_box" )
 		Remote_RegisterClientFunction( FUNCNAME_DevForceUsable )
+
+
+
 
 
 
@@ -274,6 +281,17 @@ void function OnCharacterButtonPressed( entity player )
 		file.deathboxBeingUsed = useEnt
 	}
 }
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -701,6 +719,101 @@ bool function PlayerIsLinkedToDeathbox( entity player, entity deathbox )
 
 	return false
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 void function DeathboxNetwork_ServerToClient_ForceUsable()

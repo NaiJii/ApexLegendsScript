@@ -39,6 +39,7 @@ const float ARC_BOLT_SOUND_FEEDBACK_FALLOUT_DISTANCE_SQR = 1000.0 * 1000.0
 const asset ARC_BOLT_PROJECTILE_FX = $"P_ash_arcbolt_projectile"  
 const asset ARC_BOLT_PROJECTILE_CRAWL_FX = $"P_ash_arcbolt_crawl" 
 const asset ARC_BOLT_PROJECTILE_PLANTED_FX = $"P_ash_arcbolt_trap"
+const asset ARC_BOLT_TETHER_RADIUS_FX_UPGRADED = $"P_LU_Ash_LastingSnare"  
 
 const asset ARC_BOLT_ZAP_CONNECT_FX = $"P_ash_arcbolt_active_hit"
 const asset ARC_BOLT_ZAP_FX = $"P_ash_arcbolt_tether" 
@@ -61,6 +62,7 @@ global const string TETHER_SCRIPTNAME = "arc_tether"
 global const string TETHER_BLOCKER_SCRIPTNAME = "tether_blocker"
 
 
+const float TETHER_DURATION_DEFAULT = 5.0
 const float SHIELD_SCALE_DAMAGE_MULT_DEFAULT = 2.0
 const float TETHER_RADIUS_DEFAULT = 190
 const float TETHER_MAX_PULL_VELOCITY_DEFAULT = 100.0
@@ -95,10 +97,20 @@ struct boltState
 	int    type
 	float  timeBeforePlanted
 	entity plantedRadiusFx
+
+
+
+
+
+
 }
 
 struct
 {
+
+
+
+
 
 
 
@@ -132,12 +144,18 @@ void function MpWeaponArcBolt_Init()
 	PrecacheParticleSystem( ARC_BOLT_PROJECTILE_PLANTED_FX )
 	PrecacheParticleSystem( ARC_BOLT_ZAP_CONNECT_FX )
 	PrecacheParticleSystem( ARC_BOLT_TETHER_INDICATOR_FX )
+	PrecacheParticleSystem( ARC_BOLT_TETHER_RADIUS_FX_UPGRADED )
 
 	PrecacheModel( ARC_BOLT_TETHER_ANCHOR )
 	PrecacheScriptString( TETHER_TRAP_SCRIPTNAME )
 	PrecacheScriptString( TETHER_SCRIPTNAME )
 
 	file.doOnHitPing = GetCurrentPlaylistVarBool( "ash_tether_do_hit_ping", true )
+
+
+
+
+
 
 
 
@@ -347,6 +365,68 @@ void function OnProjectileCollision_arc_bolt( entity projectile, vector pos, vec
 
 
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

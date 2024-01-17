@@ -144,7 +144,8 @@ int function ConsumableStickersPanel_GetCurrentConsumable()
 void function ConsumableStickersPanel_OnShow( var panel )
 {
 	file.activePanel = panel
-	RunClientScript( "EnableModelTurn" )
+	if ( CanRunClientScript() )
+		RunClientScript( "EnableModelTurn" )
 
 	thread TrackIsOverScrollBar( file.panelDataMap[panel].stickerListPanel )
 
@@ -154,7 +155,8 @@ void function ConsumableStickersPanel_OnShow( var panel )
 void function ConsumableStickersPanel_OnHide( var panel )
 {
 	Signal( uiGlobal.signalDummy, "TrackIsOverScrollBar" )
-	RunClientScript( "EnableModelTurn" )
+	if ( CanRunClientScript() )
+		RunClientScript( "EnableModelTurn" )
 	ConsumableStickersPanel_Update( panel )
 }
 
@@ -220,7 +222,7 @@ void function ConsumableStickersPanel_Update( var panel )
 
 
 
-			CustomizeButton_UpdateAndMarkForUpdating( button, entries, stickerItem, null, CanEquipCanBuyCharacterItemCheck, false, null, null, [], void function( var button ) : () { UpdatePreview() } )
+			CustomizeButton_UpdateAndMarkForUpdating( button, entries, stickerItem, null, null, false, null, null, [], void function( var button ) : () { UpdatePreview() } )
 			RegisterGetFocusCallback( button, stickerItem )
 			RegisterLoseFocusCallback( button )
 
@@ -230,6 +232,7 @@ void function ConsumableStickersPanel_Update( var panel )
 			var rui = Hud_GetRui( button )
 			RuiDestroyNestedIfAlive( rui, "badge" )
 			RuiSetBool( rui, "displayQuality", true )
+			RuiSetBool( rui, "displayShimmer", true )
 
 			var nestedRui = CreateNestedRuiForSticker( rui, "badge", stickerItem )
 
@@ -344,7 +347,8 @@ void function PreviewAppliedStickers( int stickerSlot = -1 )
 	file.unappliedPreviewItem = null
 
 	UI_SetPresentationType( GetStickerPresentationType( file.currentConsumable ) )
-	RunClientScript( "UIToClient_PreviewAppliedStickers", file.currentConsumable, stickerSlot )
+	if ( CanRunClientScript() )
+		RunClientScript( "UIToClient_PreviewAppliedStickers", file.currentConsumable, stickerSlot )
 	UpdateFooterOptions()
 	UpdateStoryBlurb()
 }
@@ -356,7 +360,8 @@ void function PreviewUnappliedSticker()
 	file.unappliedPreviewItem = file.focusedItem
 
 	UI_SetPresentationType( ePresentationType.UNAPPLIED_STICKER )
-	RunClientScript( "UIToClient_PreviewUnappliedSticker", ItemFlavor_GetGUID( expect ItemFlavor( file.focusedItem ) ) )
+	if ( CanRunClientScript() )
+		RunClientScript( "UIToClient_PreviewUnappliedSticker", ItemFlavor_GetGUID( expect ItemFlavor( file.focusedItem ) ) )
 	UpdateFooterOptions()
 	UpdateStoryBlurb()
 }
@@ -390,6 +395,8 @@ void function UpdateStoryBlurb()
 		Hud_SetVisible( blurbPanel, false )
 	}
 }
+
+
 
 
 

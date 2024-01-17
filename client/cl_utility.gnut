@@ -10,10 +10,6 @@ global struct AttackerDisplayNameStruct
 	int damageSourceId
 }
 
-
-string dev_messageString = ""
-string dev_messageSubString = ""
-
 string dev_infoPanelTitleString = ""
 string dev_infoPanelTextString = ""
 
@@ -696,37 +692,6 @@ void function MMR_RemotePrintTeams()
 	Remote_ServerCallFunction( "ClientCallback_Dev_PrintTeamsMMR" )
 }
 
-void function ServerCallback_DevEcho( int toto, string tata, bool bIsEcho, entity ent )
-{
-	Assert( tata.len() != 0 ) 
-	printt( "ServerCallback_DevEcho ", toto, tata, bIsEcho, ent)
-
-	if ( bIsEcho )
-		Remote_ServerCallFunction( "ClientCallback_DevEcho", toto, tata, false, ent )
-}
-
-void function Dev_BuildClientMessage( bool isMainMessage, string msg )
-{
-	if ( isMainMessage )
-		dev_messageString += msg
-	else
-		dev_messageSubString += msg
-}
-
-void function Dev_PrintClientMessage( float duration )
-{
-	entity player = GetLocalClientPlayer()
-	AnnouncementData announcement = Announcement_Create( dev_messageString )
-	Announcement_SetSubText( announcement, dev_messageSubString )
-	Announcement_SetHideOnDeath( announcement, false )
-	Announcement_SetDuration( announcement, duration )
-	Announcement_SetPurge( announcement, true )
-	AnnouncementFromClass( player, announcement )
-
-	dev_messageString = ""
-	dev_messageSubString = ""
-}
-
 void function ClientCodeCallback_OnDevnetBugScreenshot()
 {
 	printt( "(devnet screenshot client script callback)" )
@@ -977,14 +942,6 @@ var function CreateRUITopology_Worldspace( vector org, vector ang, float width, 
 	return topo
 }
 
-void function Dev_BuildTextInfoPanel( bool isTitleString, string msg )
-{
-	if ( isTitleString )
-		dev_infoPanelTitleString += msg
-	else
-		dev_infoPanelTextString += msg
-}
-
 void function Dev_CreateTextInfoPanel( vector org, vector ang, bool showPin, float textScale )
 {
 	__Dev_CreateTextInfoPanel( org, ang, showPin, textScale )
@@ -1181,7 +1138,7 @@ void function AddOverheadIconThread( entity prop, var rui )
 		{
 			if ( IsValid( prop ) )
 				prop.e.overheadRui = null
-			RuiDestroy( rui )
+			RuiDestroyIfAlive( rui )
 		}
 	)
 
@@ -1203,51 +1160,37 @@ void function AddOverheadIconThread( entity prop, var rui )
 	WaitForever()
 }
 
-
-
-const bool RUI_PERMANENT = true
-const bool RUI_TRANSIENT = false
-
-void function InitHUDRui( var rui, bool isTracked = false )
+void function InitHUDRui( var rui )
 {
 	UISize ruiScreenSize = GetCurrentVirtualScreenSize( true )
 	RuiSetResolution( rui, float( ruiScreenSize.width ), float( ruiScreenSize.height ) )
-
-	if ( isTracked )
-		clGlobal.fullscreenRuiSet[rui] <- true
-}
-
-void function ReleaseHUDRui( var rui )
-{
-	if( rui in clGlobal.fullscreenRuiSet )
-		delete clGlobal.fullscreenRuiSet[rui]
 }
 
 var function CreateCockpitRui( asset ruiAsset, int sortKey = 0 )
 {
 	var rui = RuiCreate( ruiAsset, clGlobal.topoFullscreenHud, RUI_DRAW_HUD, sortKey )
-	InitHUDRui( rui, RUI_PERMANENT )
+	InitHUDRui( rui )
 	return rui
 }
 
 var function CreateCockpitPostFXRui( asset ruiAsset, int sortKey = 0 )
 {
 	var rui = RuiCreate( ruiAsset, clGlobal.topoFullscreenHud, RUI_DRAW_POSTEFFECTS, sortKey )
-	InitHUDRui( rui, RUI_PERMANENT )
+	InitHUDRui( rui )
 	return rui
 }
 
 var function CreateFullscreenRui( asset ruiAsset, int sortKey = 0 )
 {
 	var rui = CreateTransientFullscreenRui( ruiAsset, sortKey )
-	InitHUDRui( rui, RUI_PERMANENT )
+	InitHUDRui( rui )
 	return rui
 }
 
 var function CreateFullscreenPostFXRui( asset ruiAsset, int sortKey = 0 )
 {
 	var rui = RuiCreate( ruiAsset, clGlobal.topoFullScreen, RUI_DRAW_POSTEFFECTS, sortKey )
-	InitHUDRui( rui, RUI_PERMANENT )
+	InitHUDRui( rui )
 	return rui
 
 }
@@ -1257,28 +1200,28 @@ var function CreateTransientFullscreenRui( asset ruiAsset, int sortKey = 0 )
 {
 	
 	var rui = RuiCreate( ruiAsset, clGlobal.topoFullScreen, RUI_DRAW_POSTEFFECTS, sortKey )
-	InitHUDRui( rui, RUI_TRANSIENT )
+	InitHUDRui( rui )
 	return rui
 }
 
 var function CreateTransientCockpitRui( asset ruiAsset, int sortKey = 0 )
 {
 	var rui = RuiCreate( ruiAsset, clGlobal.topoFullscreenHud, RUI_DRAW_HUD, sortKey )
-	InitHUDRui( rui, RUI_TRANSIENT )
+	InitHUDRui( rui )
 	return rui
 }
 
 var function CreatePermanentCockpitRui( asset ruiAsset, int sortKey = 0 )
 {
 	var rui = RuiCreate( ruiAsset, clGlobal.topoFullscreenHudPermanent, RUI_DRAW_HUD, sortKey )
-	InitHUDRui( rui, RUI_PERMANENT )
+	InitHUDRui( rui )
 	return rui
 }
 
 var function CreatePermanentCockpitPostFXRui( asset ruiAsset, int sortKey = 0 )
 {
 	var rui = RuiCreate( ruiAsset, clGlobal.topoFullscreenHudPermanent, RUI_DRAW_POSTEFFECTS, sortKey )
-	InitHUDRui( rui, RUI_PERMANENT )
+	InitHUDRui( rui )
 	return rui
 }
 
@@ -1456,18 +1399,6 @@ void function ClientCodeCallback_OnStaticPropRuiVisibilityChange( array<int> new
 		}
 #endif
 }
-
-#if DEV
-void function DumpFullscreenRuis()
-{
-	printt( "DumpFullscreenRuis" )
-	foreach ( k, v in clGlobal.fullscreenRuiSet )
-	{
-		printt( "\t", v )
-	}
-	printt( "Done" )
-}
-#endif
 
 bool function IsMenuOpen()
 {
@@ -1788,3 +1719,15 @@ array<var> function Client_GetPanelElementsByClassname( var panel, string classN
 
 	return allElements
 }
+
+
+void function UpdateAbilityToggleOrHoldBasedOnInput()
+{
+	if ( !GetConVarBool( "toggle_on_jump_to_deactivate_changed" ) )
+	{
+		SetConVarBool( "toggle_on_jump_to_deactivate", IsControllerModeActive() ? true : false )
+		SetConVarBool( "toggle_on_jump_to_deactivate_changed", false )
+	}
+}
+
+

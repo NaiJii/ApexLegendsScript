@@ -115,6 +115,63 @@ global struct CommunityFriends
 	array<string> names
 }
 
+global struct CupsMatchStatInformation
+{
+	string statRef
+	int statChange
+	int pointsGained
+}
+
+global struct CupsPlayerMatchSummary
+{
+	int									playerPlacement
+	string								playerLegendName
+	string								playerUID
+	string								playerHardware
+	int 								playerCalculatedScore
+	array< CupsMatchStatInformation > 	statInformation
+}
+
+global struct CupMatchSummary
+{
+	int								squadCalculatedScore
+	array< CupsPlayerMatchSummary >	playerSummaries
+}
+
+global struct CupEntry
+{
+	int cupID
+	string squadID
+	int currSquadPosition
+	float positionPercentage
+	int currSquadScore
+	array< CupMatchSummary > matchSummaryData
+	array< int > tierScoreBounds
+}
+
+global struct CupLeaderboardEntry
+{
+	string squadID
+	int squadScore
+	array<CupMatchSummary> matchHistoryData
+	table<string, int> squadCalculatedStatTotals
+}
+
+global struct CupTierRewardData
+{
+	asset		reward
+	int        	quantity
+}
+
+global struct CupTierData
+{
+	int		tierType
+	int		bound
+
+	asset	icon
+
+	array<CupTierRewardData> rewardData
+}
 
 global struct CommunityUserInfo
 {
@@ -224,7 +281,7 @@ global struct GRXStoreOffer
 	string offerAlias
 	bool isSparkable
 	int purchaseCount
-	int eligibilityCode
+	int ineligibilityCode
 }
 
 global struct GRXGetOfferInfo
@@ -234,13 +291,6 @@ global struct GRXGetOfferInfo
 }
 
 
-
-global struct GRXBundleOffer
-{
-	array< array<int> >bundlePrices
-	int purchaseCount
-	string ineligibleReason
-}
 
 global struct GRXScriptInboxMessage
 {
@@ -272,7 +322,6 @@ global struct GRXUserInfo
 	int marketplaceEdition
 
 	bool isOfferRestricted
-	bool hasUpToDateBundleOffers
 }
 
 
@@ -694,6 +743,7 @@ global struct CustomMatch_LobbyPlayer
 	string uid
 	string uidHashed
 	string eaid
+	string firstPartyID
 	string hardware
 	string name
 	string clubTag
@@ -915,28 +965,33 @@ global struct CommunityFriendsWithPresence
 	array<CommunityFriendsData> friends
 }
 
-global struct PlayerCardData
+global struct XProgProfileInfo
 {
+	int    platformId
 	string nickname
-	string progressionHardware
-	string personaId
-	string firstPartyUid
-	int level
-	int rankScore
+}
 
+global struct XProgMigrateData
+{
+	bool coolingDown
+	int retryMinutes
+	int processStatus
+	bool hasMultipleProfiles
+
+	string nickname
+	int level
+
+	int apexPacks
 	int cosmetics
 	int credits
 	int crafting
 	int premium
+	int premiumNx
 	int heirloom
-	int games
-	int wins
-}
+	int heirloomShards
 
-global struct PlayerCardList
-{
-	bool   isValid
-	array< PlayerCardData > playerCards
+	string eaId
+	array<XProgProfileInfo> profiles
 }
 
 global struct UMAttribute

@@ -12,6 +12,9 @@ global function GetRankedGameData
 global function Ranked_GetRankedLevelRequirement
 global function Ranked_GetTiers
 global function Ranked_GetCostForEntry
+
+
+
 global function Ranked_GetRankedDivisionDataForTier
 global function Ranked_GetNextTierData
 global function Ranked_GetLadderPosition
@@ -37,6 +40,14 @@ global function Ranked_GetStryderLadderNameForLatestRankedPeriod
 global function SharedRanked_CompareDivision
 global function SharedRanked_GetEmblemDisplayModeFromEmblemText
 global function SharedRanked_GetNumPlayerOnLaddersOverridePlaylistVar
+global function Ranked_PlayerDeservesRewardsInPeriod
+
+
+global function Ranked_GetXProgMergedPersistenceData
+
+
+
+
 
 global function Ranked_GetCurrentActiveRankedPeriod
 global function Ranked_GetAllRanked2Pt0Periods
@@ -44,10 +55,10 @@ global function Ranked_GetSeasonForRanked2Pt0Period
 global function Ranked_GetAllRankedPeriodsInAscendingChronologicalOrder
 
 
-
-
-
-
+global function IsRankedGame
+global function Ranked_IsPlayerAbandoning
+global function SharedRanked_DidPlayerEverHaveAFullTeam
+global function SharedRanked_GetAbandonPenaltyLength
 
 
 
@@ -59,8 +70,12 @@ global function Ranked_GetTierOfThresholdForRankedPartyDifferences
 
 
 
-global function Ranked_GetTierCount
-global function Ranked_IsLocalPlayerInLadderOnlyTier
+
+
+
+
+
+
 
 
 
@@ -117,14 +132,35 @@ global const string RANKED_SEASON_16_GUIDSTRING = "SAID02005235415"
 
 global const string RANKED_2PT0_PERIOD_17_GUIDSTRING = "SAID01711148254" 
 
+global const string RANKED_2PT0_PERIOD_19_GUIDSTRING = "SAID01234567890" 
+
+
 global const asset RANKED_PLACEMENT_BADGE = $"ui/ranked_badge_placement.rpak"
 global const asset RANKED_PLACEMENT_ICON = $"ui_image/rui/menu/ranked/rank_emblem_placement.rpak"
 global const asset RANKED_PLACEMENT_LEVEL_UP_BADGE = $"ui/rank_emblem_rank_up_anim_placement.rpak"
 
+global const string RANKED_LAST_INITIALIZED_PERIOD_GUID_VAR_NAME = "lastInitializedRankedPeriodGUID"
+global const string RANKED_CURRENT_SCORE_PERSISTENCE_VAR_NAME = "currentRankedScore"
+global const string RANKED_PROVISIONAL_MATCH_COUNT_PERSISTENCE_VAR_NAME = "rankedProvisionalMatchesCompleted"
+global const string RANKED_PROVISIONAL_MATCH_HAS_PROGRESSED_OUT_PERSISTENCE_VAR_NAME = "rankedHasProgressedOutOfProvisional"
+global const string RANKED_SHOW_RANKED_SUMMARY_PERSISTENCE_VAR_NAME = "showRankedSummary"
+
+const array< string > XPROG_MERGED_PLATFORM_PERSISTENCE_FIELDS = [
+	RANKED_CURRENT_SCORE_PERSISTENCE_VAR_NAME,
+	RANKED_PROVISIONAL_MATCH_COUNT_PERSISTENCE_VAR_NAME,
+	RANKED_PROVISIONAL_MATCH_HAS_PROGRESSED_OUT_PERSISTENCE_VAR_NAME,
+	RANKED_SHOW_RANKED_SUMMARY_PERSISTENCE_VAR_NAME,
+]
+
+global const string XPROG_PERSISTENCE_RANKED_STRUCT_NAME = "xProgRanked"
+global const string XPROG_PERSISTENCE_PREFIX_FORMAT_STRING = XPROG_PERSISTENCE_MERGED_PLAT_STRUCT_NAME + "[ %s ]." + XPROG_PERSISTENCE_RANKED_STRUCT_NAME + "." 
+global const string XPROG_PERSISTENCE_FORMAT_STRING = XPROG_PERSISTENCE_PREFIX_FORMAT_STRING + "%s" 
+
 const array<string> RANKED_2PT0_PERSISTENCE_FIELDS = [
-	"currentRankedScore",
+	RANKED_CURRENT_SCORE_PERSISTENCE_VAR_NAME,
 	"highestRankedScore",
 	"endSeriesLadderPosition",
+	"rewardSeq",
 ]
 
 global enum emblemDisplayMode 
@@ -134,6 +170,7 @@ global enum emblemDisplayMode
 	DISPLAY_LADDER_POSITION,
 	NONE,
 }
+
 
 
 
@@ -237,6 +274,7 @@ global struct SharedRankedTierData
 	asset                     bgImage
 	asset					  glowImage
 	asset                     levelUpRuiAsset
+	asset					  promotionalMetallicImage
 	int                       entryCost = 9999999
 	int 					  maxProtection
 	int 					  minProtection
@@ -340,6 +378,7 @@ void function Sh_Ranked_Init()
 
 
 
+			Sh_RankedTrials_Init() 
 
 
 
@@ -353,10 +392,15 @@ void function Sh_Ranked_Init()
 
 
 
+		Remote_RegisterServerFunction( "ClientCallback_rankedPeriodRewardAcknowledged" )
 
+		Remote_RegisterUIFunction( "ServerToUI_Ranked_NotifyRankedPeriodScoreChanged" ) 
 
+		Remote_RegisterClientFunction ( "ServerToClient_Ranked_UpdatePlayerPrevRankedScore" , "entity", "int", -1, INT_MAX )
+		Remote_RegisterClientFunction ( "ServerToClient_Ranked_UpdatePlayerPrevLadderPos" , "entity", "int", -1, INT_MAX )
 
-
+		if ( !IsRankedGame() )
+			return
 
 
 
@@ -378,20 +422,17 @@ void function Sh_Ranked_ItemRegistrationInit()
 
 
 
-
-
-
-
-
-
 	AddCallback_RegisterRootItemFlavors( RegisterRanked2Pt0Periods )
+
+		AddCallback_OnPreAllItemFlavorsRegistered( RankedTrials_RegisterAllRankedTrials )
+
 
 	
 	if ( !file.itemRegistrationInitialized ) 
 	{
 
-			
-			AddCallback_OnItemFlavorRegistered( eItemType.ranked_2pt0_period, StatsCard_OnRankedPeriodRegistered )
+
+
 
 		AddCallback_OnItemFlavorRegistered( eItemType.calevent_rankedperiod, OnRankedPeriodRegistered )
 		AddCallback_OnItemFlavorRegistered( eItemType.ranked_2pt0_period, OnRankedPeriodRegistered )
@@ -403,7 +444,7 @@ void function Sh_Ranked_ItemRegistrationInit()
 void function RegisterRanked2Pt0Periods()
 {
 
-		file.allRanked2Pt0Periods.clear() 
+
 
 	foreach ( asset rp2pt0 in GetBaseItemFlavorsFromArray( "ranked2Pt0Periods" ) )
 	{
@@ -440,6 +481,10 @@ void function OnRankedPeriodRegistered( ItemFlavor rp )
 			tier.isTopEnd			   = GetSettingsBlockBool( tierBlock, "isTopEnd" )
 
 
+
+
+
+			tier.promotionalMetallicImage = GetSettingsBlockAsset( tierBlock, "promotionalMetallicImage" )
 
 		}
 		tier.levelUpRuiAsset       = GetSettingsBlockStringAsAsset( tierBlock, "levelUpRuiAsset" )
@@ -523,6 +568,10 @@ void function OnRankedPeriodRegistered( ItemFlavor rp )
 
 
 			ladderOnlyTier.glowImage			 = GetSettingsBlockAsset( tierBlock, "glowImage" )
+
+
+			ladderOnlyTier.promotionalMetallicImage = GetSettingsBlockAsset( tierBlock, "promotionalMetallicImage" )
+
 		}
 		ladderOnlyTier.levelUpRuiAsset       = GetSettingsBlockStringAsAsset( tierBlock, "levelUpRuiAsset" )
 		ladderOnlyTier.iconRuiAsset          = GetSettingsBlockStringAsAsset( tierBlock, "iconRuiAsset" )
@@ -637,16 +686,11 @@ array<ItemFlavor> function Ranked_GetAllRanked2Pt0Periods()
 	return file.allRanked2Pt0Periods
 }
 
-ItemFlavor ornull function Ranked_GetSeasonForRanked2Pt0Period( ItemFlavor period )
+ItemFlavor function Ranked_GetSeasonForRanked2Pt0Period( ItemFlavor period )
 {
 	asset parentAsset = GetGlobalSettingsAsset( ItemFlavor_GetAsset( period ), "parentItemFlavor" )
-	
-	if ( IsValidItemFlavorSettingsAsset( parentAsset ) )
-	{
-		return GetItemFlavorByAsset( parentAsset )
-	}
-
-	return null
+	Assert( IsValidItemFlavorSettingsAsset( parentAsset ) )
+	return GetItemFlavorByAsset( parentAsset )
 }
 
 int function SharedRanked_GetEmblemDisplayModeFromEmblemText( string emblemText )
@@ -1007,26 +1051,32 @@ int function Ranked_GetCostForEntry()
 
 
 
+
+
+
+
+
+
 int function Ranked_GetHistoricalRankScore( entity player, string rankedSeasonGUID, bool highScore = false )
 {
 	
 	
 
-	if ( !IsFullyConnected() )
+
+
+
+
+
+	if ( !IsConnected() )
 		return 0
 
 
 
-
-
-
-
-
-
-
-
-
 		Assert ( player == GetLocalClientPlayer() )
+
+
+
+
 
 
 	int score
@@ -1036,7 +1086,7 @@ int function Ranked_GetHistoricalRankScore( entity player, string rankedSeasonGU
 	}
 	else
 	{
-		score = expect int ( Ranked_GetHistoricalRankedPersistenceData( player, "currentRankedScore", rankedSeasonGUID ) )
+			score = expect int ( Ranked_GetHistoricalRankedPersistenceData( player, RANKED_CURRENT_SCORE_PERSISTENCE_VAR_NAME, rankedSeasonGUID ) )
 	}
 
 	return score
@@ -1051,21 +1101,21 @@ int function Ranked_GetHistoricalFirstSplitRankScore( entity player, string rank
 
 	
 
-	if ( !IsFullyConnected() )
+
+
+
+
+
+	if ( !IsConnected() )
 		return 0
 
 
 
-
-
-
-
-
-
-
-
-
 		Assert ( player == GetLocalClientPlayer() )
+
+
+
+
 
 
 	int score
@@ -1190,6 +1240,12 @@ int function Ranked_GetHistoricalLadderPosition( entity player, string rankedSea
 	unreachable
 }
 
+bool function Ranked_PlayerDeservesRewardsInPeriod(entity player, string rankedPeriodGUID )
+{
+	
+	return Ranked_GetHistoricalRankedPersistenceData( player, "rewardSeq", rankedPeriodGUID ) != GRX_INVALID_SEQUENCE_NUMBER
+}
+
 
 var function Ranked_GetHistoricalRankedPersistenceData( entity player, string persistenceField, string rankedSeasonGUID )
 {
@@ -1205,17 +1261,17 @@ var function Ranked_GetHistoricalRankedPersistenceData( entity player, string pe
 		if ( !(RANKED_2PT0_PERSISTENCE_FIELDS.contains( persistenceField )) )
 			return null
 
-			return GetPersistentVar( "rankedPeriodData[" + rankedSeasonGUID + "]." + persistenceField )
 
 
+			return player.GetPersistentVar( "rankedPeriodData[" + rankedSeasonGUID + "]." + persistenceField )
 
 	}
 	else
 	{
 
-			return GetPersistentVar( "allRankedData[" + rankedSeasonGUID + "]." + persistenceField )
 
 
+			return player.GetPersistentVar( "allRankedData[" + rankedSeasonGUID + "]." + persistenceField )
 
 	}
 
@@ -1226,7 +1282,12 @@ var function Ranked_GetHistoricalRankedPersistenceData( entity player, string pe
 int function GetPrevSeasonPeakPlayerRankScore( entity player )
 {
 
-	if ( !IsFullyConnected() )
+
+
+
+
+
+	if ( !IsConnected() )
 		return 0
 
 
@@ -1263,6 +1324,9 @@ int function GetPrevSeasonPeakPlayerRankScore( entity player )
 
 
 
+		Assert( !IsLobby() )
+		EHI playerEHI = ToEHI( player )
+		return GetEHIScriptStruct( playerEHI ).rankScorePrevSeason
 
 
 
@@ -1274,44 +1338,36 @@ int function GetPrevSeasonPeakPlayerRankScore( entity player )
 
 
 
-		if ( !IsLobby() )
-		{
-			EHI playerEHI = ToEHI( player )
-			return GetEHIScriptStruct( playerEHI ).rankScorePrevSeason
-		}
-		else
-		{
-			Assert( player == GetLocalClientPlayer() )
-			int score = -1
-			ItemFlavor ornull latestRankedPeriod = Ranked_GetCurrentActiveRankedPeriod()
 
-			if ( latestRankedPeriod == null )
-				return 0
 
-			expect ItemFlavor ( latestRankedPeriod )
 
-			ItemFlavor ornull previousRankedPeriod = GetPrecedingRankedPeriod( latestRankedPeriod )
 
-			if ( previousRankedPeriod == null )
-				return 0
 
-			expect ItemFlavor ( previousRankedPeriod )
 
-			if ( SharedRankedPeriod_HasSplits( previousRankedPeriod ) )
-			{
-				score = Ranked_GetHistoricalRankScoreAcrossSplitsForPlayer ( player, previousRankedPeriod )
-			}
-			else
-			{
-				string previousRankedPeriodRef = ItemFlavor_GetGUIDString( previousRankedPeriod )
-				score = Ranked_GetHistoricalRankScore ( player, previousRankedPeriodRef, true )
-			}
 
-			if ( score == -1 )
-				return 0
 
-			return score
-		}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 	unreachable
@@ -1321,7 +1377,12 @@ int function GetPrevSeasonPeakPlayerRankScore( entity player )
 int function GetPlayerRankScore( entity player )
 {
 
-	if ( !IsFullyConnected() )
+
+
+
+
+
+	if ( !IsConnected() )
 		return 0
 
 
@@ -1364,6 +1425,9 @@ int function GetPlayerRankScore( entity player )
 
 
 
+		Assert( !IsLobby() )
+		EHI playerEHI = ToEHI( player )
+		return GetEHIScriptStruct( playerEHI ).rankScore
 
 
 
@@ -1375,40 +1439,238 @@ int function GetPlayerRankScore( entity player )
 
 
 
-		if ( !IsLobby() )
-		{
-			EHI playerEHI = ToEHI( player )
-			return GetEHIScriptStruct( playerEHI ).rankScore
-		}
-		else
-		{
-			Assert( player == GetLocalClientPlayer() )
 
-			int score
-			if ( GetCurrentPlaylistVarBool( "use_user_stats_for_rp", true ) )
-			{
-				CommunityUserInfo ornull cui = GetUserInfo( GetPlayerHardware(), GetPlayerUID() )
 
-				if ( cui == null )
-				{
-					score = GetRankedPersistenceData( player, "currentRankedScore" )
-				}
-				else
-				{
-				expect CommunityUserInfo( cui )
-				score = cui.rankScore
-			}
-			}
-			else
-			{
-				score = GetRankedPersistenceData( player, "currentRankedScore" )
-			}
 
-			return score
-		}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 	unreachable
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+bool function IsRankedGame()
+{
+	return GetMatchRankedMode() == MATCHRANKEDMODE_RANKED && !IsLobby() 
+}
+
+
+
+
+bool function Ranked_IsPlayerAbandoning( entity player )
+
+{
+	if ( !IsRankedGame() )
+		return false
+
+	if ( !GetCurrentPlaylistVarBool( "ranked_match_abandon_penalty", true ) )
+		return false
+
+	if ( bool( GetRankedGameData( player, "lastGameRankedForgiveness" ) ) )
+		return false
+
+	
+	
+	
+
+	if ( Ranked_IsMatchOverForPlayer( player ) )
+		return false
+
+	if ( Ranked_HasPlayerWaitedTooLongAfterBannerWasPickedUp( player ) )
+		return false
+
+	if ( GetGameState() >= eGameState.Prematch && !SharedRanked_DidPlayerEverHaveAFullTeam( player ) ) 
+		return false
+
+	return true
+}
+
+
+
+
+bool function SharedRanked_DidPlayerEverHaveAFullTeam( entity player )
+
+{
+	return player.GetPlayerNetBool( "rankedDidPlayerEverHaveAFullTeam" )
+}
+
+
+
+
+
+int function SharedRanked_GetAbandonPenaltyLength( entity player )
+{
+	if( !IsValid( player ) )
+		return 0
+
+	int numGamesAbandoned = expect int ( player.GetPersistentVar( "numPenalizedAbandons" ) ) + 1
+	if ( numGamesAbandoned == 0 )
+		return 0
+
+	int banLengthInSeconds = 0
+
+	if ( GetCurrentPlaylistVarBool( "ranked_abandon_stacking_penalties", false ) )
+	{
+		switch( numGamesAbandoned )
+		{
+			case 1:
+				banLengthInSeconds = GetCurrentPlaylistVarInt( "ranked_abandon_penalty_1", 60 * 5 ) 
+				break
+
+			case 2:
+				banLengthInSeconds = GetCurrentPlaylistVarInt( "ranked_abandon_penalty_2", 60 * 10 ) 
+				break
+
+			case 3:
+				banLengthInSeconds = GetCurrentPlaylistVarInt( "ranked_abandon_penalty_3", 60 * 20 )  
+				break
+
+			case 4:
+				banLengthInSeconds = GetCurrentPlaylistVarInt( "ranked_abandon_penalty_4", 60 * 45 ) 
+				break
+
+			case 5:
+				banLengthInSeconds = GetCurrentPlaylistVarInt( "ranked_abandon_penalty_5", 60 * 90 ) 
+				break
+
+			case 6:
+				banLengthInSeconds = GetCurrentPlaylistVarInt( "ranked_abandon_penalty_6", 60 * 180 ) 
+				break
+
+			case 7:
+				banLengthInSeconds = GetCurrentPlaylistVarInt( "ranked_abandon_penalty_7", 60 * 360 ) 
+				break
+
+			case 8:
+				banLengthInSeconds = GetCurrentPlaylistVarInt( "ranked_abandon_penalty_8", 60 * 720 ) 
+				break
+
+			case 9:
+				banLengthInSeconds = GetCurrentPlaylistVarInt( "ranked_abandon_penalty_9", 60 * 1440 ) 
+				break
+
+			case 10:
+				banLengthInSeconds = GetCurrentPlaylistVarInt( "ranked_abandon_penalty_10", 60 * 1440 * 3 ) 
+				break
+
+			case 11:
+				banLengthInSeconds = GetCurrentPlaylistVarInt( "ranked_abandon_penalty_11", 60 * 1440 * 5 )  
+				break
+
+			case 12:
+			default:
+				banLengthInSeconds = GetCurrentPlaylistVarInt( "ranked_abandon_penalty_12", 60 * 1440 * 7 ) 
+				break
+		}
+	}
+	else
+	{
+		banLengthInSeconds = GetCurrentPlaylistVarInt( "ranked_abandon_penalty_1", 60 * 10 ) 
+	}
+
+	return banLengthInSeconds
+}
+
+
+
+
+
+
+
+
+
+
+
+
+bool function Ranked_IsMatchOverForPlayer( entity player )
+
+{
+	if ( GetGameState() >= eGameState.WinnerDetermined )
+		return true
+
+	
+	if ( GetGameState() >= eGameState.Playing && GetPlayerArrayOfTeam_Alive( player.GetTeam() ).len() == 0 ) 
+		return true
+
+	if ( PlayerMatchState_GetFor( player ) >= ePlayerMatchState.NORMAL )
+	{
+		switch ( player.GetPlayerNetInt( "respawnStatus" ) )
+		{
+			case eRespawnStatus.PICKUP_DESTROYED:
+			case eRespawnStatus.SQUAD_ELIMINATED: 
+				return true
+
+			default:
+				break
+		}
+	}
+
+	return false
+}
+
+
+
+
+bool function Ranked_HasPlayerWaitedTooLongAfterBannerWasPickedUp( entity player )
+{
+	if ( IsAlive( player ) )
+		return false
+
+	if ( PlayerMatchState_GetFor( player ) < ePlayerMatchState.NORMAL )
+		return false
+
+	if ( player.GetPlayerNetInt( "respawnStatus" ) !=  eRespawnStatus.WAITING_FOR_DELIVERY )
+		return false
+
+	Assert( player.GetPlayerNetTime( "respawnBannerPickedUpTime" ) > -1 )
+	float timeSinceBeaconPickedUp = Time() - player.GetPlayerNetTime( "respawnBannerPickedUpTime" )
+
+	return (timeSinceBeaconPickedUp > GetCurrentPlaylistVarFloat( "ranked_respawn_banner_pickedup_timeout", 150.0 ))
 }
 
 
@@ -1456,191 +1718,19 @@ int function GetPlayerRankScore( entity player )
 
 
 
+int function Ranked_GetXProgMergedPersistenceData( entity player, string persistenceField )
+{
+	Assert( XPROG_MERGED_PLATFORM_PERSISTENCE_FIELDS.contains( persistenceField ) )
+	string platformId = GetMergedPlatformIdForPlayer( player )
+	string persistenceKey = format( XPROG_PERSISTENCE_FORMAT_STRING, platformId, persistenceField )
 
 
 
 
 
+	return SafeGetPersistentVarAsInt( player, persistenceKey )
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+}
 
 
 
@@ -1672,17 +1762,27 @@ int function GetRankedPersistenceData( entity player, string persistenceField )
 			if ( !(RANKED_2PT0_PERSISTENCE_FIELDS.contains( persistenceField )) )
 				return 0
 
-				return GetPersistentVarAsInt( "rankedPeriodData[" + currentSeasonRefOrNull + "]." + persistenceField )
+
+			if ( XPROG_MERGED_PLATFORM_PERSISTENCE_FIELDS.contains( persistenceField ) )
+			{
+				return Ranked_GetXProgMergedPersistenceData( player, persistenceField )
+			}
+			else
+
+			{
 
 
 
+				return player.GetPersistentVarAsInt( "rankedPeriodData[" + currentSeasonRefOrNull + "]." + persistenceField )
+
+			}
 		}
 		else
 		{
 
-				return GetPersistentVarAsInt( "allRankedData[" + currentSeasonRefOrNull + "]." + persistenceField )
 
 
+			return player.GetPersistentVarAsInt( "allRankedData[" + currentSeasonRefOrNull + "]." + persistenceField )
 
 		}
 	}
@@ -1698,9 +1798,9 @@ int function GetRankedGameData( entity player, string persistenceField )
 #endif
 
 
-		return GetPersistentVarAsInt( "rankedGameData." + persistenceField )
 
 
+		return player.GetPersistentVarAsInt( "rankedGameData." + persistenceField )
 
 }
 
@@ -2252,6 +2352,37 @@ array< SharedRankedDivisionData > function Ranked_GetRankedDivisionDataForTier( 
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 void function Ranked_UpdateEHIRankScore( EHI playerEHI, int rankScore )
 
 {
@@ -2297,28 +2428,28 @@ int function Ranked_GetLadderPosition( entity player )
 
 
 
+		Assert( !IsLobby() )
+		EHI playerEHI = ToEHI( player )
+		return GetEHIScriptStruct( playerEHI ).rankedLadderPosition
 
 
 
 
 
 
-		if ( !IsLobby() )
-		{
-			EHI playerEHI = ToEHI( player )
-			return GetEHIScriptStruct( playerEHI ).rankedLadderPosition
-		}
-		else
-		{
-			Assert( player == GetLocalClientPlayer() )
-			CommunityUserInfo ornull cui = GetUserInfo( GetPlayerHardware(), GetPlayerUID() )
 
-			if ( cui == null )
-				return -1
 
-			expect CommunityUserInfo( cui )
-			return cui.rankedLadderPos
-		}
+
+
+
+
+
+
+
+
+
+
+
 
 
 	unreachable
@@ -2724,22 +2855,67 @@ SharedRankedDivisionData function Ranked_GetNewDivisionForNewSeasonOrSplitReset(
 
 
 
-int function Ranked_GetTierCount()
-{
-	string rankedPeriodGUID = Ranked_GetCurrentPeriodGUIDString()
-	array < SharedRankedTierData > currentTiers = file.historicalRankedTiers[ rankedPeriodGUID ]
-	return currentTiers.len()
-}
 
-bool function Ranked_IsLocalPlayerInLadderOnlyTier()
-{
-	entity player 						 = GetLocalClientPlayer()
-	int currentScore                     = GetPlayerRankScore( player )
-	int ladderPosition                   = Ranked_GetLadderPosition( player  )
-	SharedRankedDivisionData currentRank = GetCurrentRankedDivisionFromScoreAndLadderPosition( currentScore, ladderPosition )
-	SharedRankedTierData currentTier     = currentRank.tier
-	return currentTier.isLadderOnlyTier
-}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -102,6 +102,9 @@ void function SmartAmmo_SetVerticalOffset( int offset )
 void function SmartAmmo_LockedOntoWarningHUD_Update()
 {
 	RuiSetInt( file.lockon_hud, "verticalOffset", file.verticalOffset )
+	int AnnouncementActivePositionZone = Announcement_GetActivePositionZone()
+	bool isAnnouncementActiveInSpace = AnnouncementActivePositionZone != ANNOUNCEMENT_POSITION_ZONE_CENTER && AnnouncementActivePositionZone != ANNOUNCEMENT_POSITION_ZONE_NONE
+	RuiSetBool( file.lockon_hud, "isAnnouncementActiveInSpace", isAnnouncementActiveInSpace )
 
 	entity player = GetLocalViewPlayer()
 
@@ -176,6 +179,21 @@ void function SmartAmmo_LockedOntoWarningHUD_Update()
 			RuiSetFloat3( file.lockon_hud, "borderColor", borderColor )
 		}
 
+		else if (StatusEffect_HasSeverity( player, eStatusEffect.red_revenant_revealed ))
+		{
+			RuiSetString( file.lockon_hud, "lockMessage", "#SHADOW_ARMY_LANDING_FULL_REV" )
+
+			RuiSetBool( file.lockon_hud, "isVisible", true )
+			RuiSetBool( file.lockon_hud, "northLock", false )
+			RuiSetBool( file.lockon_hud, "southLock", false )
+			RuiSetBool( file.lockon_hud, "westLock", false )
+			RuiSetBool( file.lockon_hud, "eastLock", false )
+			RuiSetImage( file.lockon_hud, "characterIcon", $"rui/gamemodes/rev_army/red_eye_rev_banner_icon" )
+			RuiSetFloat3( file.lockon_hud, "borderColor", < 1.0, 0.0, 0.0 > )
+			RuiSetFloat (file.lockon_hud, "characterIconScale", 0.8)
+		}
+
+
 
 		else if ( StatusEffect_HasSeverity( player, eStatusEffect.shadow_form ) )
 		{
@@ -203,6 +221,30 @@ void function SmartAmmo_LockedOntoWarningHUD_Update()
 			hasBottomUiHandle = true
 			MpAbilityShadowForm_PopulateRui( player, file.lockon_hud_bottom_nested )
 		}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 		else if ( StatusEffect_HasSeverity( player, eStatusEffect.lockon_detected ) )
@@ -291,6 +333,21 @@ void function SmartAmmo_LockedOntoWarningHUD_Update()
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 		else if ( (StatusEffect_HasSeverity( player, eStatusEffect.camera_detected )
 			|| StatusEffect_HasSeverity( player, eStatusEffect.maphack_detected )
 			|| StatusEffect_HasSeverity( player, eStatusEffect.sonar_detected )
@@ -298,10 +355,8 @@ void function SmartAmmo_LockedOntoWarningHUD_Update()
 
 			|| StatusEffect_HasSeverity( player, eStatusEffect.mortar_ring_reveal ) )
 
-
 			
 			|| ( !GetSonicBlastDoesSonarScan() && StatusEffect_HasSeverity( player, eStatusEffect.seer_detected ) )
-
 
 
 
@@ -738,6 +793,44 @@ void function SmartAmmo_LockedOntoWarningHUD_Update()
 
 
 
+		else if ( StatusEffect_HasSeverity( player, eStatusEffect.rev_shell_targeted ) )
+		{
+			 RuiSetString( file.lockon_hud, "lockMessage", "#REV_SHELL_LOCKON" )
+			 RuiSetBool( file.lockon_hud, "isVisible", true )
+			 RuiSetBool( file.lockon_hud, "northLock", false )
+			 RuiSetBool( file.lockon_hud, "southLock", false )
+			 RuiSetBool( file.lockon_hud, "westLock", false )
+			 RuiSetBool( file.lockon_hud, "eastLock", false )
+			 RuiSetImage( file.lockon_hud, "characterIcon", $"rui/ordnance_icons/grenade_rev_shell" )
+			 RuiSetFloat3( file.lockon_hud, "borderColor", <1, 0, 0> )
+			 RuiSetBool( file.lockon_hud, "showProgress", false )
+		}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -827,7 +920,6 @@ void function SmartAmmo_LockedOntoWarningHUD_Update()
 			RuiSetImage( file.lockon_hud, "additionalInfo1Icon", $"" )
 			RuiSetImage( file.lockon_hud, "additionalInfo2Icon", $"" )
 			RuiSetBool( file.lockon_hud, "isVisible", false )
-
 
 		}
 

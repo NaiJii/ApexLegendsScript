@@ -5,7 +5,10 @@ global function ShGRX_LevelInit
 global function ShGRX_RegisterItemFlavor
 
 
-global function ShGRX_LevelShutdown
+
+
+
+
 
 
 
@@ -17,6 +20,7 @@ global function ItemFlavor_GetGRXIndex
 global function ItemFlavor_GetGRXAlias
 global function ItemFlavor_GetGRXOwnershipTarget
 global function ItemFlavor_GetGRXOwnershipTargettedBy
+global function GRXCurrency_RegisterNewCurrencyAssetInEventSlot
 global function GRXCurrency_GetCurrencyIndex
 global function GRXCurrency_GetPurchaseSound
 global function GRXCurrency_GetPreviewModel
@@ -25,11 +29,11 @@ global function GRXCurrencyBundle_GetCurrencyFlav
 global function GRXCurrencyBundle_GetValue
 global function GRX_IsInventoryReady
 global function GRX_HasInventoryEverBeenReady
+global function GRX_GetNumberOfOwnedItemsByPlayer
 global function GRX_IsItemOwnedByPlayer
 global function GRX_IsItemOwnedByPlayer_AllowOutOfDateData
 global function GRX_GetPlayerEdition
 global function GRX_IsOfferRestricted
-global function GRX_HasUpToDateBundleOffers
 global function GRXPack_IsEphemeral
 global function GRXPack_IsExpectedToContainSingleItemWithCurrency
 global function GRXPack_GetTickModel
@@ -48,39 +52,6 @@ global function DEV_IsValidGRXRef
 
 
 
-global function GRXOffer_IsFullyClaimed
-global function GRXOffer_GetOwnedItemsCount
-global function GRXOffer_GetActiveBPPLevelCount
-global function GRXOffer_ContainsBattlePassLevel
-global function GRXOffer_ContainsPack
-global function GRXOffer_ContainsOnlySinglePack
-global function GRXOffer_ContainsApexPack
-global function GRXOffer_ContainsEventPack
-global function GRXOffer_ContainsThematicPack
-global function GRXOffer_ContainsEventThematicPack
-global function GRXOffer_GetSpecialPackName
-global function GRXOffer_GetSpecialPackContainsStickers
-global function GRXOffer_GetSpecialPackContainsSkydives
-global function GRXOffer_GetSpecialPackCountShownOnMOTD
-global function GRXOffer_GetBundleOfferRestrictions
-global function GRXOffer_IsHeirloomPack
-global function GRX_PurchaseOffer
-global function GRX_MakeItemFlavorBagFromPriceArray
-global function GRX_CheckBundleAndUpdateOfferPrices
-global function GRXOffer_GetEventThematicPackCollectionInfo
-global function GRXOffer_GetEventThematicPackCollectionInfoFromScriptOffer
-global function GRX_IsLocationActive
-global function GRX_ScriptOfferFromCraftingOffer
-global function GRX_GetPostGameRewards
-global function GRX_MarkRewardAcknowledged
-global function GRX_IsOfferRestrictedByOfferAttributes
-global function GRX_IsLegendOffer
-
-
-
-global function GRXCurrency_GetPlayerBalance
-global function QueueGRXOperation
-global function IsGRXOperationDone
 
 
 
@@ -104,45 +75,97 @@ global function IsGRXOperationDone
 
 
 
-global function GRX_GetAllPackFlavors
-global function GRX_GetPackCounts
-global function GRX_GetTotalPackCount
-global function GRX_GetLocationOffers
-global function GRX_GetItemDedicatedStoreOffers
-global function GRX_GetStoreOfferColumn
-global function GRX_GetStoreOfferColumnNumRows
-global function GRX_GetStoreOffers
-global function GRX_GetStoreOfferItems
-global function GRX_GetLocationOfferItems
-global function GRX_AreOffersReady
-global function GRX_GetItemPurchasabilityInfo
-global function GRX_IsItemCraftable
-global function GRX_CanAfford
-global function GRX_CanAffordDelta
-global function GRX_GetMaxCanAfford
-global function GRX_GetCurrencyArrayFromBag
-global function GRX_GetFormattedPrice
-global function GRX_GetPriceDisplayData
-global function GRX_IsCraftingPrice
-global function GRX_IsPremiumPrice
-global function GRX_GetNextCurrencyExpirationAmt
-global function GRX_GetNextCurrencyExpirationTime
-global function GRX_GetGiftingLimitCounter
-global function GRX_GetGiftingLimitResetDate
-global function GetFormattedValueForCurrency
-global function AddCallbackAndCallNow_OnGRXInventoryStateChanged
-global function AddCallback_OnGRXInventoryStateChanged
-global function RemoveCallback_OnGRXInventoryStateChanged
-global function AddCallbackAndCallNow_OnGRXOffersRefreshed
-global function AddCallback_OnGRXOffersRefreshed
-global function RemoveCallback_OnGRXOffersRefreshed
-global function AddCallback_OnGRXBundlesRefreshed
-global function RemoveCallback_OnGRXBundlesRefreshed
-global function SortStoreOfferItems
-global function ShowGRXErrorDialogue
-global function DEV_GRX_DescribeOffer
-global function GRX_IsBadLuckProtectionActive
-global function GRXPack_GetOpenButtonIcon
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+global function GRXPack_GetTickSoundAlias
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -159,13 +182,13 @@ global function GRXPack_GetCustomCountTextCol
 
 
 
+global function DEV_GRX_ForcePackResults
 
 
-global function DEV_GRX_PrintStoreOfferLocations
-global function DEV_GRX_PrintNextCurrencyExpirationInfo
-global function DEV_GRX_TestOpenPack
-global function DEV_GRX_TestPurchase
-global function DEV_GRX_PreviewStoreItem
+
+
+
+
 
 #endif
 
@@ -181,21 +204,23 @@ global function DEV_GRX_PreviewStoreItem
 
 
 
+global function UIToClient_GRXInventoryCleanStateChange
+global function ClientCodeCallback_GRXPackOpened
 
 
-global function ServerToUI_PROTO_YouAreGreenLightedForGRX
-global function ServerToUI_GRX_QueuedRewardsGiven
-global function DisplayQueuedRewardsGiven
-global function UICodeCallback_GRXOffersRefreshed
-global function UICodeCallback_GRXUserInfoUpdated
-global function UICodeCallback_GRXQueryCompleted
-global function UICodeCallback_GRXBundlesUpdated
-global function UICodeCallback_GRXGetOfferCompleted
-global function UICodeCallback_GRXCheckForGiftsCompleted
-global function ShGRX_UIScriptResetComplete
-global function ClientToUI_WORKAROUND_GRXPackOpened_Start
-global function ClientToUI_WORKAROUND_GRXPackOpened_Entry
-global function ClientToUI_WORKAROUND_GRXPackOpened_Finish
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 global const int MAX_REWARDS_PER_REWARD_SEQ_CALL = 255
@@ -206,7 +231,11 @@ const int QUEUED_REWARDS_MAX_ITEMS_COUNT = 1
 
 
 
-const int GRX_SCRIPT_QUERY_IDENTIFIER_START_INDEX = INT_MIN
+
+
+
+
+
 
 
 const bool GRX_DEBUG_PRINTS = true
@@ -231,13 +260,6 @@ global enum eItemFlavorGRXMode
 
 
 
-global enum eStoreLocation
-{
-	SHOP,
-	SPECIALS,
-	SEASONAL,
-	_COUNT
-}
 
 
 
@@ -282,112 +304,118 @@ global enum eStoreLocation
 
 
 
-global struct GRXScriptOffer
-{
-	array<ItemFlavorBag>  prices
-	ItemFlavorBag&        output
-	table<string, string> attributes
-	array<GRXStoreOfferItem> items
 
-	ItemFlavor ornull     prereq
 
-	bool isCraftingOffer = false
 
-	string               titleText = "Offer Title"
-	string               descText = "Description of offer"
-	string               offerAlias = ""
-	string               prereqText = ""
-	asset                image = $""
-	string               imageRef = ""
-	string               tagText = ""
-	string               seasonTag = ""
-	string               tooltipTitle = ""
-	string               tooltipDesc = ""
-	ItemFlavorBag ornull originalPrice = null
-	int                  offerType = GRX_OFFERTYPE_DEFAULT
-	int                  purchaseLimit = 1
-	int					 displayPriority = 0
-	int                  expireTime = 0
 
-	bool   isAvailable = true
-	string unavailableReason = "#UNAVAILABLE"
-	bool   isSKUOffer = false 
-	bool isGiftable = false
 
 
 
 
 
 
-	
-	
 
-	ItemFlavor ornull WORKAROUND_claimedSentinel = null
-}
 
-global struct GRXScriptCraftingOffer
-{
-	ItemFlavor& flavor
-	int         craftingPrice
-	bool        isAvailable = true
-}
 
-	global struct GiftingFriend
-	{
-		EadpPeopleData& eadpData
-		string activeNucleusPersonaId
-		EadpPresenceData& activePresence
-	}
 
 
 
-global struct PurchaseDialogDeepLinkConfig
-{
-	string ornull 		message = null
-	string ornull		priceText = null
-	void functionref()	onPurchaseCallback = null
-}
 
 
 
-global struct PurchaseDialogConfig
-{
-	
-	ItemFlavor ornull     flav = null
-	GRXScriptOffer ornull offer = null
-	
-	GiftingFriend ornull friend = null
-	bool isGiftPack = false 
-	bool isEventShopDialog = false 
-	
-	int           quantity = 1
-	bool          markAsNew = true
-	string ornull messageOverride = null
-	string ornull purchaseSoundOverride = null
-	string ornull purchaseOptionsMessage = null
-	PurchaseDialogDeepLinkConfig ornull deepLinkConfig = null
 
-	void functionref()                     onPurchaseStartCallback = null
-	void functionref( bool wasSuccessful ) onPurchaseResultCallback = null
-}
 
 
 
 
-global struct ItemFlavorPurchasabilityInfo
-{
-	bool                                  isPurchasableAtAll = false
-	GRXScriptCraftingOffer ornull         craftingOfferOrNull = null
-	table<string, array<GRXScriptOffer> > locationToDedicatedStoreOffersMap
-}
 
 
 
-global struct PriceDisplayData
-{
-	asset  symbol
-	string amount
-}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -435,20 +463,14 @@ global int GRX_QA_ITEM = -1
 
 
 
-
-
-
-
-
-
-
-
-
-
-global struct GRX_PackCollectionInfo
+global enum eGRXPackTickSoundKind
 {
-	int numCollected = 0
-	int numTotalInCollection = 0
+	TriadBounce
+	PuckLand
+	Unpack
+	DeployTriadExplo1
+	DeployTriadExplo2
+	DeployTriadExplo3
 }
 
 
@@ -458,37 +480,45 @@ global struct GRX_PackCollectionInfo
 
 
 
-global enum eScriptGRXOperationStatus
-{
-	INVALID,
-	QUEUED,
-	RUNNING,
-	DONE_INTERRUPTED,
-	DONE_SUCCESS,
-	DONE_FAILED,
-}
-
-
-global struct ScriptGRXOperationInfo
-{
-	int id = -1
-	int expectedQueryGoal = -1
 
 
 
-		bool shouldRetryOnInterrupt = true
 
-	bool _isAutoOperation = false 
 
-	void functionref( int id )             doOperationFunc
-	void functionref( int status )         onDoneCallback
 
-	int    status = eScriptGRXOperationStatus.INVALID
-	int    _codeQueryState = -1
-	string DEV_culprit = ""
-	string DEV_goalInfo = ""
-	float  DEV_queueTime = 0.0
-}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -508,31 +538,33 @@ struct PlayerGRXScriptState
 		bool hasInventoryEverBeenClean = false
 		int  marketplaceEdition = -1
 		bool isOfferRestricted = false
-		bool hasUpToDateBundleOffers = false
-
-
-
-		int          inventoryState = GRX_INVENTORYSTATE_UNINITIALIZED
-		array<int>   balances
-
-		int                           nextScriptQueryId = GRX_SCRIPT_QUERY_IDENTIFIER_START_INDEX
-		array<ScriptGRXOperationInfo> operationQueue
-		ScriptGRXOperationInfo ornull activeOperationOrNull = null
-
-		bool isAutoOperationQueued = false
-
-		GRXUserInfo& WORKAROUND_lastCodeUserInfo
 
 
 
 
 
 
-			bool areOffersReady
-			int nextCurrencyExpirationAmt = 0
-			int nextCurrencyExpirationTime = 0
-			int giftingLimitCounter = -1
-			int giftingLimitResetDate = 0
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 }
@@ -540,30 +572,30 @@ struct PlayerGRXScriptState
 
 
 
-struct FileStruct_LifetimeVM
-{
-	
-	int                       WORKAROUND_delayedOffersState
-	array< GRXCraftingOffer > WORKAROUND_delayedCraftingOffers
-	array< GRXStoreOffer >    WORKAROUND_delayedStoreOffers
 
-	bool WORKAROUND_wasUserInfoUpdatedBeforeLevelInit = false
 
-#if DEV
-		string grxStorePreviewItem = ""
-#endif
-}
-FileStruct_LifetimeVM& fileVM
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
 
 struct FileStruct_LifetimeLevel
 {
-	array<ItemFlavor>      packFlavorList
-	table<ItemFlavor, int> currencyIndexMap
-	table<int, ItemFlavor> grxIndexItemFlavorMap
-	table<string, int>     grxRefToGRXIndexMap
+	array<ItemFlavor>      	packFlavorList
+	table<string, int> 	   	currencyIndexMap
+	table<int, ItemFlavor> 	grxIndexItemFlavorMap
+	table<string, int>     	grxRefToGRXIndexMap
 
 	array<ItemFlavor> stickerPacksWithRewards
 
@@ -581,25 +613,26 @@ struct FileStruct_LifetimeLevel
 		ItemFlavorBag ornull mostRecentPackOpeningResultsOrNull = null
 
 
-			bool WORKAROUND_isInLifetime = false
 
-			bool PROTO_serverHasGivenGreenLightForUIGRX = false
 
-			array<void functionref()> onGRXInventoryStateChangedCallbacks
-			array<void functionref()> onGRXOffersRefreshedCallbacks
-			array<void functionref()> onGRXBundlesRefreshedCallbacks
 
-			table<ItemFlavor, ItemFlavorPurchasabilityInfo> itemFlavorPurchasabilityInfoMap
 
-			table<string, array<GRXScriptOffer> > locationOffersMap
 
-			array<array<array<GRXScriptOffer> > > storeOfferColumns
 
-			array<array<array<GRXScriptOffer> > > specialsStoreOfferColumns
 
-			array<array<array<GRXScriptOffer> > > seasonalStoreOfferColumns
 
-			bool HACK_allowOneBadQueryCompleteCallBecauseOfUIScriptReset = false
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -613,6 +646,18 @@ FileStruct_LifetimeLevel& fileLevel
 const float USERINFO_DIRTY_DEBOUNCE_DURATION = 0.3
 
 
+global enum eIneligibilityCode
+{
+	ELIGIBLE = 0,
+	UNKNOWN = 1,
+
+	PURCHASE_CONDITIONS = 100,
+	PURCHASE_LIMIT = 101,
+	BUNDLE_ITEMS_OWNED = 102,
+	CONTENTS_NOT_GRANTABLE = 103
+}
+
+
 
 
 
@@ -623,7 +668,7 @@ void function ShGRX_LevelInit()
 {
 	FileStruct_LifetimeLevel newFileLevel
 
-		newFileLevel.WORKAROUND_isInLifetime = true
+
 
 	fileLevel = newFileLevel
 
@@ -632,9 +677,10 @@ void function ShGRX_LevelInit()
 		GRX_CURRENCIES[GRX_CURRENCY_PREMIUM] = expect ItemFlavor(RegisterItemFlavorFromSettingsAsset( $"settings/itemflav/grx_currency/premium.rpak" )) 
 		GRX_CURRENCIES[GRX_CURRENCY_CREDITS] = expect ItemFlavor(RegisterItemFlavorFromSettingsAsset( $"settings/itemflav/grx_currency/credits.rpak" )) 
 		GRX_CURRENCIES[GRX_CURRENCY_CRAFTING] = expect ItemFlavor(RegisterItemFlavorFromSettingsAsset( $"settings/itemflav/grx_currency/crafting.rpak" )) 
-		GRX_CURRENCIES[GRX_CURRENCY_SEASON02_EVENT01] = expect ItemFlavor(RegisterItemFlavorFromSettingsAsset( $"settings/itemflav/grx_currency/season02_event01.rpak" )) 
-		
 		GRX_CURRENCIES[GRX_CURRENCY_HEIRLOOM] = expect ItemFlavor(RegisterItemFlavorFromSettingsAsset( $"settings/itemflav/grx_currency/heirloom.rpak" )) 
+
+		
+		GRX_CURRENCIES[GRX_CURRENCY_EVENT] = expect ItemFlavor(RegisterItemFlavorFromSettingsAsset( $"settings/itemflav/grx_currency/s19me01_coin.rpak" )) 
 
 		foreach ( int currencyIndex, ItemFlavor flav in GRX_CURRENCIES )
 		{
@@ -662,12 +708,18 @@ void function ShGRX_LevelInit()
 
 	AddCallbackOrMaybeCallNow_OnAllItemFlavorsRegistered( OnAllItemFlavorsRegistered )
 
-		AddCallback_OnGRXInventoryStateChanged( SortAllScriptOffers )
+
 
 
 	RegisterSignal( "ScriptGRXOperationDone" )
 
 
+		Remote_RegisterUIFunction( "ServerToUI_PROTO_YouAreGreenLightedForGRX" )
+		Remote_RegisterUIFunction( "ServerToUI_GRX_QueuedRewardsGiven" )
+		Remote_RegisterUIFunction( "ServerToUI_SetMilestonePackAutoOpenStatus", "bool" )
+
+		Remote_RegisterServerFunction( "UICallback_AutoOpenMilestonePacks" )
+		Remote_RegisterServerFunction( "ClientCallback_acknowledge_reward", "int", 0, QUEUED_REWARDS_MAX_COUNT, "int", INT_MIN, INT_MAX )
 
 
 
@@ -682,21 +734,18 @@ void function ShGRX_LevelInit()
 
 
 
-		if ( !CanRunClientScript() )
-			return
 
-		PlayerGRXScriptState scriptState = GetPlayerGRXScriptState( GetLocalClientPlayer() )
-		RunClientScript( "UIToClient_GRXInventoryCleanStateChange", scriptState.isInventoryReady, scriptState.WORKAROUND_lastCodeUserInfo.marketplaceEdition, scriptState.WORKAROUND_lastCodeUserInfo.isOfferRestricted )
 
-		if ( fileVM.WORKAROUND_wasUserInfoUpdatedBeforeLevelInit )
-		{
-			fileVM.WORKAROUND_wasUserInfoUpdatedBeforeLevelInit = false
-			void functionref() whatTheFunc = (void function() {
-				wait 1.0
-				UICodeCallback_GRXUserInfoUpdated( GRX_GetUserInfo() )
-			})
-			thread whatTheFunc()
-		}
+
+
+
+
+
+
+
+
+
+
 
 
 	GRX_DEV_ITEM = GRX_RegisterItem( "account_flag_dev", eItemFlavorGRXMode.REGULAR )
@@ -706,19 +755,19 @@ void function ShGRX_LevelInit()
 
 
 
-void function ShGRX_LevelShutdown()
-{
-	FileStruct_LifetimeLevel newFileLevel
-	fileLevel = newFileLevel
 
-	fileLevel.WORKAROUND_isInLifetime = false
 
-	fileVM.WORKAROUND_delayedOffersState = GRX_OFFERSSTATE_UNINITIALIZED
-	fileVM.WORKAROUND_delayedCraftingOffers = []
-	fileVM.WORKAROUND_delayedStoreOffers = []
 
-	UpdatePlayerGRXScriptState( GetLocalClientPlayer(), null )
-}
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -760,8 +809,8 @@ void function ShGRX_RegisterItemFlavor( ItemFlavor flavor )
 	}
 
 
-		ItemFlavorPurchasabilityInfo ifpi
-		fileLevel.itemFlavorPurchasabilityInfoMap[flavor] <- ifpi
+
+
 
 }
 
@@ -771,7 +820,6 @@ void function ShGRX_RegisterItemFlavor( ItemFlavor flavor )
 
 void function OnAllItemFlavorsRegistered()
 {
-	
 }
 
 
@@ -898,6 +946,27 @@ array<ItemFlavor> function ItemFlavor_GetGRXOwnershipTargettedBy( ItemFlavor fla
 
 
 
+void function GRXCurrency_RegisterNewCurrencyAssetInEventSlot( ItemFlavor newCurrencyFlav )
+{
+	Assert( ItemFlavor_GetType( newCurrencyFlav ) == eItemType.account_currency )
+	ItemFlavor oldCurrencyFlav = GRX_CURRENCIES [ GRX_CURRENCY_EVENT ]
+	GRX_CURRENCIES[ GRX_CURRENCY_EVENT ] = newCurrencyFlav
+
+	int targetIndex = GRXCurrency_GetCurrencyIndex( oldCurrencyFlav )
+	delete fileLevel.currencyIndexMap[ ItemFlavor_GetGUIDString( oldCurrencyFlav ) ]
+	fileLevel.currencyIndexMap[ ItemFlavor_GetGUIDString( newCurrencyFlav ) ] <- targetIndex
+
+
+
+
+
+
+
+
+}
+
+
+
 
 int function GRXCurrency_GetCurrencyIndex( ItemFlavor flav )
 {
@@ -958,7 +1027,7 @@ bool function GRX_IsInventoryReady( entity player = null )
 
 
 
-		player = GetLocalClientPlayer()
+
 
 	return GetPlayerGRXScriptState( player ).isInventoryReady
 }
@@ -984,11 +1053,11 @@ bool function GRX_HasInventoryEverBeenReady( entity player = null )
 
 
 
-
-
-
 		if ( player == null )
 			player = GetLocalClientPlayer()
+
+
+
 
 
 	PlayerGRXScriptState scriptState = GetPlayerGRXScriptState( player )
@@ -1003,17 +1072,33 @@ int function GRX_GetPlayerEdition( entity player = null )
 
 
 
-
-
-
 		if ( player == null )
 			player = GetLocalClientPlayer()
+
+
+
 
 
 	return GetPlayerGRXScriptState( player ).marketplaceEdition
 }
 
 
+
+
+int function GRX_GetNumberOfOwnedItemsByPlayer( array<ItemFlavor> items, entity player = null )
+{
+	if ( !GetPlayerGRXScriptState( player ).isInventoryReady )
+		return 0
+	int count = 0
+	foreach( item in items )
+	{
+		if ( GRX_IsItemOwnedByPlayer( item, player ) )
+		{
+			count++
+		}
+	}
+	return count
+}
 
 bool function GRX_IsItemOwnedByPlayer( ItemFlavor flav, entity player = null )
 {
@@ -1038,11 +1123,11 @@ bool function IsItemOwnedByPlayerInternal( ItemFlavor flav, entity player = null
 
 
 
-
-
-
 		if ( player == null )
 			player = GetLocalClientPlayer()
+
+
+
 
 
 	if ( ItemFlavor_GetPlaylistAvailability( flav ) == eItemFlavorPlaylistAvailability.FORCE_UNLOCK_FOR_SPECIAL_EVENT )
@@ -1061,14 +1146,46 @@ bool function IsItemOwnedByPlayerInternal( ItemFlavor flav, entity player = null
 	}
 
 	
+	
+	
+	
+
+	
+	
+
+
+		
+		
+		
+		if ( grxMode == eItemFlavorGRXMode.REGULAR && IsLobby() && GetConVarBool( "mtx_allow_pending_grants_for_item_ownership" ) )
+		{
+			for ( int index = 0; index < QUEUED_REWARDS_MAX_COUNT; index++ )
+			{
+				SettingsAssetGUID rewardGUID = player.GetPersistentVarAsInt( format( "grxQueuedRewards[%d].rewardGUIDs[0]", index ) )
+				if ( rewardGUID == 0 || !IsValidItemFlavorGUID( rewardGUID ) )
+				{
+					continue
+				}
+
+				ItemFlavor rewardFlav = GetItemFlavorByGUID( rewardGUID )
+				if ( flav.guid == rewardFlav.guid )
+				{
+					printf( "%s() - reporting queued GRX reward as owned instead of relying on GRX_Inventory call or persistence cache --- this should be temporary and should resolve on next successful GRX refresh", FUNC_NAME() )
+					return true
+				}
+			}
+		}
+
+
+	
 	if ( ItemFlavor_HasUnlockFunc( flav ) && grxMode == GRX_ITEMFLAVORMODE_NONE )
 		return ItemFlavor_PassesUnlockFunc( flav, player )
 
 
-
-
-
-
+		if( ItemFlavor_HasExclusiveFunc( flav ) )
+		{
+			return ItemFlavor_PassesExclusiveFunc( flav, player )
+		}
 
 
 	if ( grxMode == GRX_ITEMFLAVORMODE_NONE )
@@ -1101,9 +1218,9 @@ bool function IsItemOwnedByPlayerInternal( ItemFlavor flav, entity player = null
 
 
 
-
-
 				Assert( player == GetLocalClientPlayer() )
+
+
 
 			has = GRX_HasItem( flav.grxIndex )
 
@@ -1117,374 +1234,79 @@ bool function IsItemOwnedByPlayerInternal( ItemFlavor flav, entity player = null
 
 
 
-GRX_PackCollectionInfo function GRXOffer_GetEventThematicPackCollectionInfoFromScriptOffer( GRXScriptOffer offerData )
-{
-	GRX_PackCollectionInfo packCollectionInfo
-	if ( offerData.output.flavors.len() == 1 && ItemFlavor_GetType( offerData.output.flavors[0] ) == eItemType.account_pack )
-	{
-		
-		packCollectionInfo = GRXOffer_GetEventThematicPackCollectionInfo( offerData.output.flavors[0] )
-
-		
-		if ( packCollectionInfo.numCollected > packCollectionInfo.numTotalInCollection )
-			packCollectionInfo.numCollected = packCollectionInfo.numTotalInCollection
-	}
-
-	return packCollectionInfo
-}
-
-
-
-GRX_PackCollectionInfo function GRXOffer_GetEventThematicPackCollectionInfo( ItemFlavor flav )
-{
-	Assert( ItemFlavor_GetType( flav ) == eItemType.account_pack, "Tried to get Pack Info on an ItemFlavor that was NOT of type 'account_pack'" )
-
-	GRX_PackCollectionInfo data
-	if ( ItemFlavor_GetAccountPackType( flav ) != eAccountPackType.EVENT_THEMATIC )
-		return data
-
-	array<ItemFlavor> packContents = GRXPack_GetPackContents( flav )
-	Assert( packContents.len() > 0 )
-	int numOwned = 0
-	foreach ( packContent in packContents )
-	{
-		if ( GRX_IsItemOwnedByPlayer_AllowOutOfDateData( packContent, GetLocalClientPlayer() ) )
-			++numOwned
-	}
-
-	int ownedPackCount = GRX_GetPackCount( ItemFlavor_GetGRXIndex( flav ) )
-	numOwned += ownedPackCount
-
-	data.numCollected = numOwned
-	data.numTotalInCollection = packContents.len()
-	return data
-}
-
-bool function GRXOffer_IsFullyClaimed( GRXScriptOffer offer )
-{
-	if ( offer.WORKAROUND_claimedSentinel != null )
-	{
-		ItemFlavor sentinelFlav = expect ItemFlavor(offer.WORKAROUND_claimedSentinel)
-		if ( GRX_IsItemOwnedByPlayer( sentinelFlav ) )
-			return true
-	}
-
-	if( GRXOffer_GetBundleOfferRestrictions( offer ) != "" )
-		return true
-
-	foreach ( int outputIdx, ItemFlavor outputFlav in offer.output.flavors )
-	{
-		if ( ItemFlavor_GetGRXMode( outputFlav ) == eItemFlavorGRXMode.REGULAR )
-		{
-			if ( !GRX_IsItemOwnedByPlayer( outputFlav ) )
-				return false
-		}
-		else if ( ItemFlavor_GetType( outputFlav ) == eItemType.account_pack )
-		{
-			GRX_PackCollectionInfo packCollectionInfo = GRXOffer_GetEventThematicPackCollectionInfo( outputFlav )
-			if ( packCollectionInfo.numTotalInCollection > 0 )
-			{
-				if ( packCollectionInfo.numCollected < packCollectionInfo.numTotalInCollection )
-					return false
-			}
-			else
-			{
-				return false 
-			}
-		}
-		else
-		{
-
-					
-			return false
-		}
-	}
-	return true
-}
-
-
-
-int function GRXOffer_GetActiveBPPLevelCount( GRXScriptOffer offer )
-{
-	int activeBPLevels = 0
-
-	foreach ( GRXStoreOfferItem item in offer.items )
-	{
-		ItemFlavor flav = GetItemFlavorByGRXIndex( item.itemIdx )
-
-		
-		if ( ItemFlavor_GetType( flav ) == eItemType.battlepass_purchased_xp )
-		{
-			
-			if ( flav == BattlePass_GetXPPurchaseFlav( expect ItemFlavor( GetActiveBattlePass() ) ) )
-			{
-				activeBPLevels += item.itemQuantity
-			}
-		}
-	}
 
-	return activeBPLevels
-}
 
 
 
-bool function GRXOffer_ContainsBattlePassLevel( GRXScriptOffer offer )
-{
-	foreach ( GRXStoreOfferItem item in offer.items )
-	{
-		ItemFlavor flav = GetItemFlavorByGRXIndex( item.itemIdx )
 
-		if ( ItemFlavor_GetType( flav ) == eItemType.battlepass_purchased_xp )
-		{
-			return true
-		}
-	}
 
-	return false
-}
 
 
 
-int function GRXOffer_GetOwnedItemsCount( GRXScriptOffer offer )
-{
-	int count = 0
-	foreach ( ItemFlavor outputFlav in offer.output.flavors )
-	{
-		if ( ItemFlavor_GetGRXMode( outputFlav ) == eItemFlavorGRXMode.REGULAR )
-		{
-			if ( GRX_IsItemOwnedByPlayer( outputFlav ) )
-				count = count + 1
-		}
-	}
-	return count
-}
 
 
 
 
-bool function GRXOffer_IsHeirloomPack( GRXScriptOffer offer  )
-{
-	foreach ( ItemFlavor outputFlav in offer.output.flavors )
-	{
-		if ( !ItemFlavor_HasQuality( outputFlav ) )
-			return false
 
-		if ( ItemFlavor_GetQuality( outputFlav ) != eRarityTier.MYTHIC )
-			return false
-	}
 
-	return true
-}
 
-bool function GRXOffer_ContainsPack( GRXScriptOffer offer )
-{
-	foreach ( ItemFlavor outputFlav in offer.output.flavors )
-		if ( ItemFlavor_GetGRXMode( outputFlav ) == eItemFlavorGRXMode.PACK && !ItemFlavor_IsBattlepass( outputFlav ) )
-		{
-			
-			if ( !ItemFlavor_HasQuality( outputFlav ) || ItemFlavor_GetQuality( outputFlav ) != eRarityTier.MYTHIC )
-				return true
-		}
 
-	return false
-}
 
-bool function GRXOffer_ContainsOnlySinglePack( GRXScriptOffer offer )
-{
 
 
 
 
 
-	bool hasSticker = GRXOffer_GetSpecialPackContainsStickers( offer )
-	foreach ( ItemFlavor outputFlav in offer.output.flavors )
-	{
-		if ( ItemFlavor_GetGRXMode( outputFlav ) != eItemFlavorGRXMode.PACK || hasSticker )
-			return false
-	}
-	return true
-}
 
 
 
-bool function GRXOffer_ContainsApexPack( GRXScriptOffer offer )
-{
-	foreach ( ItemFlavor outputFlav in offer.output.flavors )
-	{
-		if ( ItemFlavor_GetGRXMode( outputFlav ) == eItemFlavorGRXMode.PACK && ItemFlavor_GetAccountPackType( outputFlav ) == eAccountPackType.APEX )
-			return true
-	}
 
-	return false
-}
 
 
 
-bool function GRXOffer_ContainsEventPack( GRXScriptOffer offer )
-{
-	foreach ( ItemFlavor outputFlav in offer.output.flavors )
-	{
-		if ( ItemFlavor_GetGRXMode( outputFlav ) == eItemFlavorGRXMode.PACK && ItemFlavor_GetAccountPackType( outputFlav ) == eAccountPackType.EVENT )
-			return true
-	}
 
-	return false
-}
 
 
 
-bool function GRXOffer_ContainsThematicPack( GRXScriptOffer offer )
-{
-	foreach ( ItemFlavor outputFlav in offer.output.flavors )
-	{
-		if ( ItemFlavor_GetGRXMode( outputFlav ) == eItemFlavorGRXMode.PACK && ItemFlavor_GetAccountPackType( outputFlav ) == eAccountPackType.THEMATIC )
-			return true
-	}
 
-	return false
-}
 
 
 
-bool function GRXOffer_ContainsEventThematicPack( GRXScriptOffer offer )
-{
-	foreach ( ItemFlavor outputFlav in offer.output.flavors )
-	{
-		if ( ItemFlavor_GetGRXMode( outputFlav ) == eItemFlavorGRXMode.PACK && ItemFlavor_GetAccountPackType( outputFlav ) == eAccountPackType.EVENT_THEMATIC )
-			return true
-	}
 
-	return false
-}
 
 
 
-string function GRXOffer_GetSpecialPackName( GRXScriptOffer offer )
-{
-	string specialPackName = ""
-	foreach ( ItemFlavor outputFlav in offer.output.flavors )
-	{
-		if ( ItemFlavor_GetGRXMode( outputFlav ) == eItemFlavorGRXMode.PACK && ItemFlavor_GetAccountPackType( outputFlav ) != eAccountPackType.APEX )
-			specialPackName = ItemFlavor_GetShortName( outputFlav )
-	}
 
-	return specialPackName
-}
 
 
 
-bool function GRXOffer_GetSpecialPackContainsStickers( GRXScriptOffer offer )
-{
-	bool hasStickers = false
-	foreach ( ItemFlavor outputFlav in offer.output.flavors )
-	{
-		if ( ItemFlavor_GetGRXMode( outputFlav ) == eItemFlavorGRXMode.PACK && ItemFlavor_GetAccountPackType( outputFlav ) != eAccountPackType.APEX )
-			hasStickers = GetGlobalSettingsBool( ItemFlavor_GetAsset( outputFlav ), "hasStickers" )
-	}
 
-	return hasStickers
-}
 
 
 
-bool function GRXOffer_GetSpecialPackContainsSkydives( GRXScriptOffer offer )
-{
-	bool hasSkydives = false
-	foreach ( ItemFlavor outputFlav in offer.output.flavors )
-	{
-		if ( ItemFlavor_GetGRXMode( outputFlav ) == eItemFlavorGRXMode.PACK && ItemFlavor_GetAccountPackType( outputFlav ) != eAccountPackType.APEX )
-			hasSkydives = GetGlobalSettingsBool( ItemFlavor_GetAsset( outputFlav ), "hasSkydives" )
-	}
 
-	return hasSkydives
-}
 
 
 
-bool function GRXOffer_GetSpecialPackCountShownOnMOTD( GRXScriptOffer offer )
-{
-	bool usesMOTDButtonForCount = false
-	foreach ( ItemFlavor outputFlav in offer.output.flavors )
-	{
-		if ( ItemFlavor_GetGRXMode( outputFlav ) == eItemFlavorGRXMode.PACK && ItemFlavor_GetAccountPackType( outputFlav ) != eAccountPackType.APEX )
-			usesMOTDButtonForCount = GetGlobalSettingsBool( ItemFlavor_GetAsset( outputFlav ), "usesMOTDButtonForCount" )
-	}
 
-	return usesMOTDButtonForCount
-}
 
 
 
 
-string function GRXOffer_GetBundleOfferRestrictions( GRXScriptOffer offer )
-{
-	if( offer.output.flavors.len() <= 1 )
-		return ""
 
-	if ( GRXOffer_IsHeirloomPack( offer ) ) 
-		return ""
 
-	if ( offer.isSKUOffer )
-		return ""
 
-	
-	
-	int itemsOwned = 0
-	int coreItemCount = 0
-	for ( int offerIndex = 0; offerIndex < offer.items.len(); ++offerIndex )
-	{
-		
-		
-		if ( offer.offerType != GRX_OFFERTYPE_BUNDLE || offer.items[offerIndex].itemType == GRX_OFFERITEMTYPE_CORE )
-		{
-			ItemFlavor coreItemFlav = GetItemFlavorByGRXIndex( offer.items[offerIndex].itemIdx )
 
-			
-			if( ItemFlavor_GetGRXMode( coreItemFlav ) != eItemFlavorGRXMode.REGULAR )
-			{
-				Assert( offer.items[offerIndex].itemType != GRX_OFFERITEMTYPE_CORE ) 
-				continue
-			}
 
-			
-			if( GRX_IsItemOwnedByPlayer( coreItemFlav ) )
-				itemsOwned++
-			coreItemCount++
-		}
-	}
 
-	bool lockout = false
-	if ( offer.offerType == GRX_OFFERTYPE_BUNDLE )
-		lockout = coreItemCount == itemsOwned
-	else
-		lockout = itemsOwned >= 1 
 
-	
-	if ( lockout )
-	{
-		if ( itemsOwned == 1 )
-			return "#BUNDLE_BONUS_LOCKED"
-		else if ( itemsOwned > 1 )
-			return "#BUNDLE_BONUS_LOCKED_PLURAL"
-	}
 
-	return ""
-}
 
 
 
-void function QueueGRXOperation( entity player, ScriptGRXOperationInfo operationInfo, bool DEV_isDevOperation = false )
-{
-	Assert( IsLobby() || DEV_isDevOperation, "QueueGRXOperation should only be called when in the lobby." )
-	if ( !IsLobby() && !DEV_isDevOperation )
-		return
 
-	PlayerGRXScriptState scriptState = GetPlayerGRXScriptState( player )
 
-	QueueGRXOperationInternal( player, operationInfo, scriptState )
 
-	UpdatePlayerGRXScriptState( player, scriptState.WORKAROUND_lastCodeUserInfo )
-}
 
 
 
@@ -1498,129 +1320,574 @@ void function QueueGRXOperation( entity player, ScriptGRXOperationInfo operation
 
 
 
-bool function IsGRXOperationDone( ScriptGRXOperationInfo operationInfo )
-{
-	if ( operationInfo.status == eScriptGRXOperationStatus.DONE_SUCCESS )
-		return true
 
-	if ( operationInfo.status == eScriptGRXOperationStatus.DONE_FAILED )
-		return true
 
-	if ( operationInfo.status == eScriptGRXOperationStatus.DONE_INTERRUPTED )
-		return true
 
-	return false
-}
 
 
 
 
-void function QueueGRXOperationInternal( entity player, ScriptGRXOperationInfo operationInfo, PlayerGRXScriptState scriptState )
-{
 
-		Assert( scriptState.operationQueue.len() == 0, "Attempted to queue a UI GRX operation while one was already queued." )
 
 
-	operationInfo.DEV_culprit = FUNC_NAME( 2 )
 
-	operationInfo.DEV_queueTime = UITime()
 
 
 
 
-	operationInfo.status = eScriptGRXOperationStatus.QUEUED
-	operationInfo.id = scriptState.nextScriptQueryId
-	scriptState.nextScriptQueryId += 1
-	if ( operationInfo._isAutoOperation )
-	{
-		Assert( !scriptState.isAutoOperationQueued )
-		scriptState.isAutoOperationQueued = true
-		scriptState.operationQueue.insert( 0, operationInfo )
-	}
-	else
-	{
-		scriptState.operationQueue.append( operationInfo )
-	}
-}
 
 
 
 
-int function GRXCurrency_GetPlayerBalance( entity player, ItemFlavor flav )
-{
-	Assert( ItemFlavor_GetType( flav ) == eItemType.account_currency )
 
-	PlayerGRXScriptState scriptState = GetPlayerGRXScriptState( player )
-	Assert( scriptState.isInventoryReady, "Tried to get player currency balance while their GRX inventory state was not ready" )
 
-	if( !scriptState.isInventoryReady || scriptState.balances.len() == 0 )
-		return 0
 
-	int currencyIndex = GRXCurrency_GetCurrencyIndex( flav )
-	return scriptState.balances[currencyIndex]
-}
 
 
 
 
-void function GRX_WaitXprogressMigrateStatus_GiftOffer( int opId, string offerAlias, int hardwareId, string nucleus_pid, string nucleus_id, array< int > expectedPrice, bool useDiscountedPrice )
-{
-	while ( CrossProgression_IsRequestingUserMigrateStatus() )
-		WaitFrame()
 
-	GRX_GiftOffer( opId, offerAlias, hardwareId, nucleus_pid, nucleus_id, expectedPrice, useDiscountedPrice )
-}
 
-void function GRX_PurchaseOffer( int opId, int queryGoal, GRXScriptOffer offer, ItemFlavorBag price, int quantity, GiftingFriend ornull friend )
-{
-	if ( offer.isCraftingOffer )
-	{
-		Assert( queryGoal == GRX_HTTPQUERYGOAL_CRAFT_ITEM )
-		Assert( quantity == 1 )
-		GRX_CraftItem( opId, ItemFlavor_GetGRXIndex( offer.output.flavors[0] ) )
-		return
-	}
 
-	if ( friend != null )
-	{
-		expect GiftingFriend( friend )
 
-		bool useDiscountedPrice = false
-		if ( offer.originalPrice != null ) 
-			useDiscountedPrice = true
 
-		printt("gift offer - offer alias = ", offer.offerAlias, ", giftee hardware = ", friend.activePresence.hardware, ", giftee nuc pid = ", friend.activeNucleusPersonaId, ", giftee nuc id =", friend.eadpData.eaid )
 
-		
-		if ( CrossProgression_QueryUserMigrateStatusIfNeeded( friend.eadpData.eaid ) )
-		{
-			thread GRX_WaitXprogressMigrateStatus_GiftOffer( opId, offer.offerAlias, friend.activePresence.hardware, friend.activeNucleusPersonaId, friend.eadpData.eaid, GRX_GetCurrencyArrayFromBag( price ), useDiscountedPrice )
-			return
-		}
 
-		GRX_GiftOffer( opId, offer.offerAlias , friend.activePresence.hardware, friend.activeNucleusPersonaId, friend.eadpData.eaid, GRX_GetCurrencyArrayFromBag( price ), useDiscountedPrice )
-		return
-	}
 
-	Assert( offer.output.flavors.len() == offer.output.quantities.len() )
-	int numItems = offer.output.flavors.len()
 
-	array<int> grxIndices = []
-	array<int> grxQuantities = []
-	for ( int i = 0; i < numItems; i++ )
-	{
-		grxIndices.append( ItemFlavor_GetGRXIndex( offer.output.flavors[i] ) )
-		grxQuantities.append( offer.output.quantities[i] )
-	}
 
-	if ( offer.WORKAROUND_claimedSentinel != null )
-		grxIndices.append( ItemFlavor_GetGRXIndex( expect ItemFlavor(offer.WORKAROUND_claimedSentinel) ) )
 
-	if ( offer.offerType == GRX_OFFERTYPE_BUNDLE )
-		GRX_PurchaseBundleOffer( opId, queryGoal, offer.offerAlias, quantity, grxIndices, grxQuantities, GRX_GetCurrencyArrayFromBag( price ) )
-	else
-		GRX_PurchaseStoreOffer( opId, queryGoal, quantity, grxIndices, grxQuantities, GRX_GetCurrencyArrayFromBag( price ) )
-}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1637,41 +1904,19 @@ ItemFlavorBag function GRX_GetMostRecentPackOpeningResults()
 
 
 
-array<ItemFlavor> function GRX_GetAllPackFlavors()
-{
-	return fileLevel.packFlavorList
-}
 
 
 
 
-table<ItemFlavor, int> function GRX_GetPackCounts()
-{
-	Assert( GetPlayerGRXScriptState( GetLocalClientPlayer() ).isInventoryReady )
 
-	table<ItemFlavor, int> packCountMap = {}
 
-	foreach ( ItemFlavor pack in GRX_GetAllPackFlavors() )
-	{
-		packCountMap[pack] <- GRX_GetPackCount( ItemFlavor_GetGRXIndex( pack ) )
-	}
 
-	return packCountMap
-}
 
 
 
 
-int function GRX_GetTotalPackCount()
-{
-	Assert( GetPlayerGRXScriptState( GetLocalClientPlayer() ).isInventoryReady )
 
-	int count = 0
-	foreach ( ItemFlavor pack in GRX_GetAllPackFlavors() )
-		count += GRX_GetPackCount( ItemFlavor_GetGRXIndex( pack ) )
 
-	return count
-}
 
 
 
@@ -1693,184 +1938,257 @@ int function GRX_GetTotalPackCount()
 
 
 
-array<GRXScriptOffer> function GRX_GetLocationOffers( string location )
-{
-	Assert( GetPlayerGRXScriptState( GetLocalClientPlayer() ).areOffersReady, "Called GRX_GetLocationOffers when offers weren't ready" )
 
-	if ( location in fileLevel.locationOffersMap )
-		return fileLevel.locationOffersMap[location]
 
-	return []
-}
 
 
 
-bool function GRX_IsLocationActive( string location )
-{
-	Assert( GetPlayerGRXScriptState( GetLocalClientPlayer() ).areOffersReady, "Called GRX_IsLocationActive when offers weren't ready" )
 
-	if ( location in fileLevel.locationOffersMap )
-		return fileLevel.locationOffersMap[location].len() > 0
 
-	return false
-}
 
 
 
-array<GRXScriptOffer> function GRX_GetItemDedicatedStoreOffers( ItemFlavor flav, string location )
-{
-	ItemFlavorPurchasabilityInfo ifpi = GRX_GetItemPurchasabilityInfo( flav )
-	if ( !(location in ifpi.locationToDedicatedStoreOffersMap) )
-		return []
-	return ifpi.locationToDedicatedStoreOffersMap[location]
-}
 
 
 
 
-int function GRX_GetStoreOfferColumnNumRows( int col, int storeLocation )
-{
-	Assert( GetPlayerGRXScriptState( GetLocalClientPlayer() ).areOffersReady, "Called GRX_GetStoreOfferColumnNumRows when offers weren't ready" )
 
-	int numRows = 0
-	array<array<array<GRXScriptOffer> > > storeOfferColumns
 
-	if( storeLocation == eStoreLocation.SHOP )
-		storeOfferColumns = fileLevel.storeOfferColumns
-	else if( storeLocation == eStoreLocation.SPECIALS )
-		storeOfferColumns = fileLevel.specialsStoreOfferColumns
-	else if( storeLocation == eStoreLocation.SEASONAL )
-		storeOfferColumns = fileLevel.seasonalStoreOfferColumns
-	else
-		return 0
 
-	if ( storeOfferColumns.isvalidindex( col ) )
-	{
-		if ( storeOfferColumns[col].len() > 0 && storeOfferColumns[col][0].len() > 0 )
-		{
-			foreach ( offer in storeOfferColumns[col][0] )
-			{
-				if ( offer.expireTime <= GetUnixTimestamp() )
-					continue
 
-				numRows++
-				break
-			}
-		}
 
-		if ( storeOfferColumns[col].len() > 1 && storeOfferColumns[col][1].len() > 0 )
-		{
-			foreach ( offer in storeOfferColumns[col][1] )
-			{
-				if ( offer.expireTime <= GetUnixTimestamp() )
-					continue
 
-				numRows++
-				break
-			}
-		}
-	}
 
-	return numRows
-}
 
 
 
-array<GRXScriptOffer> function GRX_GetStoreOfferColumn( int col, int row, int storeLocation )
-{
-	Assert( GetPlayerGRXScriptState( GetLocalClientPlayer() ).areOffersReady, "Called GRX_GetStoreOfferColumn when offers weren't ready" )
 
-	array<GRXScriptOffer> offers
-	array<array<array<GRXScriptOffer> > > storeOfferColumns
 
-	if( storeLocation == eStoreLocation.SHOP )
-		storeOfferColumns = fileLevel.storeOfferColumns
-	else if( storeLocation == eStoreLocation.SPECIALS )
-		storeOfferColumns = fileLevel.specialsStoreOfferColumns
-	else if( storeLocation == eStoreLocation.SEASONAL )
-		storeOfferColumns = fileLevel.seasonalStoreOfferColumns
-	else
-		return offers
 
-	if ( storeOfferColumns.isvalidindex( col ) )
-	{
-		if ( storeOfferColumns[col].isvalidindex( row ) && storeOfferColumns[col][row].len() > 0 )
-		{
-			foreach ( offer in storeOfferColumns[col][row] )
-			{
-				if ( offer.expireTime <= GetUnixTimestamp() )
-					continue
 
-				offers.append( offer )
-			}
-		}
-	}
 
-	return offers
-}
 
 
 
 
-array<GRXScriptOffer> function GRX_GetStoreOffers( int storeLocation )
-{
-	Assert( GetPlayerGRXScriptState( GetLocalClientPlayer() ).areOffersReady, "Called GRX_GetStoreOffers when offers weren't ready" )
 
-	array<GRXScriptOffer> offers
-	for ( int col = 0; col < 5; col++ ) 
-		for ( int row = 0; row < 2; row++ )
-			offers.extend( GRX_GetStoreOfferColumn( col, row, storeLocation ) )
 
-	return offers
-}
 
 
 
 
-array<ItemFlavor> function GRX_GetStoreOfferItems( int storeLocation )
-{
-	array<GRXScriptOffer> offers = GRX_GetStoreOffers( storeLocation )
-	array<ItemFlavor> items
 
-	foreach ( offer in offers )
-		items.append( offer.output.flavors[0] )
 
-	return items
-}
 
 
 
 
-array<ItemFlavor> function GRX_GetLocationOfferItems( string location )
-{
-	array<GRXScriptOffer> offers = GRX_GetLocationOffers( location )
-	array<ItemFlavor> items
 
-	foreach ( offer in offers )
-		items.append( offer.output.flavors[0] )
 
-	return items
-}
 
 
 
 
-bool function GRX_AreOffersReady()
-{
-	PlayerGRXScriptState scriptState = GetPlayerGRXScriptState( GetLocalClientPlayer() )
-	return scriptState.isInventoryReady && scriptState.areOffersReady
-}
 
 
 
 
-bool function GRX_IsBadLuckProtectionActive()
-{
-	if ( !GRX_IsInventoryReady() )
-		return false
 
-	return false
-}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1972,27 +2290,27 @@ string function GRXPack_GetStickerCompletionRewardSequence( ItemFlavor flav )
 
 
 
+string function GRXPack_GetTickSoundAlias( ItemFlavor flav, int soundKind )
+{
+	Assert( ItemFlavor_GetType( flav ) == eItemType.account_pack )
 
+	switch ( soundKind )
+	{
+		case eGRXPackTickSoundKind.TriadBounce: return GetGlobalSettingsString( ItemFlavor_GetAsset( flav ), "triadBounceSound" )
 
+		case eGRXPackTickSoundKind.PuckLand: return GetGlobalSettingsString( ItemFlavor_GetAsset( flav ), "puckLandSound" )
 
+		case eGRXPackTickSoundKind.Unpack: return GetGlobalSettingsString( ItemFlavor_GetAsset( flav ), "unpackSound" )
 
+		case eGRXPackTickSoundKind.DeployTriadExplo1: return GetGlobalSettingsString( ItemFlavor_GetAsset( flav ), "deployTriadExplo1Sound" )
 
+		case eGRXPackTickSoundKind.DeployTriadExplo2: return GetGlobalSettingsString( ItemFlavor_GetAsset( flav ), "deployTriadExplo2Sound" )
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+		case eGRXPackTickSoundKind.DeployTriadExplo3: return GetGlobalSettingsString( ItemFlavor_GetAsset( flav ), "deployTriadExplo3Sound" )
+	}
+	Assert( false )
+	return ""
+}
 
 
 
@@ -2036,390 +2354,372 @@ bool function GRXPack_PlayerOwnsAllItemsInPack( entity player, ItemFlavor pack )
 
 
 
-ItemFlavorPurchasabilityInfo function GRX_GetItemPurchasabilityInfo( ItemFlavor flavor )
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#if DEV
+ItemFlavorBag ornull DEV_GRX_ForcePackResults_resultsOrNull
+void function DEV_GRX_ForcePackResults( int packError, ... )
 {
-	PlayerGRXScriptState scriptState = GetPlayerGRXScriptState( GetLocalClientPlayer() )
-	Assert( scriptState.isInventoryReady, "Called ItemFlavor_GetPurchasabilityInfo when the GRX inventory state was not ready" )
-	Assert( scriptState.areOffersReady, "Called ItemFlavor_GetPurchasabilityInfo when the GRX offers were not ready" )
-	Assert( flavor in fileLevel.itemFlavorPurchasabilityInfoMap, "Called ItemFlavor_GetPurchasabilityInfo when item was not in itemFlavorPurchasabilityInfoMap: " + string(ItemFlavor_GetAsset( flavor )) )
-
-	return fileLevel.itemFlavorPurchasabilityInfoMap[flavor]
-}
-
-
-
-
-bool function GRX_IsItemCraftable( ItemFlavor itemFlavor )
-{
-	ItemFlavorPurchasabilityInfo ifpi = GRX_GetItemPurchasabilityInfo( itemFlavor )
-	return (ifpi.craftingOfferOrNull != null)
-}
-
-
-
-
-bool function GRX_CanAfford( ItemFlavorBag price, int quantity )
-{
-	PlayerGRXScriptState scriptState = GetPlayerGRXScriptState( GetLocalClientPlayer() )
-	Assert( scriptState.isInventoryReady, "Tried to check is the player can afford something while their GRX inventory state was not ready" )
-
-	foreach ( int costIndex, ItemFlavor costFlav in price.flavors )
+	if ( packError == -1 )
 	{
-		int costQuantity = quantity * price.quantities[costIndex]
-		Assert( ItemFlavor_GetType( costFlav ) == eItemType.account_currency, "NYI!" )
-
-		if ( costQuantity > GRXCurrency_GetPlayerBalance( GetLocalClientPlayer(), costFlav ) )
-			return false
-	}
-
-	return true
-}
-
-int function GRX_CanAffordDelta( ItemFlavorBag price, int quantity )
-{
-	PlayerGRXScriptState scriptState = GetPlayerGRXScriptState( GetLocalClientPlayer() )
-	Assert( scriptState.isInventoryReady, "Tried to check is the player can afford something while their GRX inventory state was not ready" )
-
-	foreach ( int costIndex, ItemFlavor costFlav in price.flavors )
-	{
-		int costQuantity = quantity * price.quantities[costIndex]
-		Assert( ItemFlavor_GetType( costFlav ) == eItemType.account_currency, "NYI!" )
-
-		if ( costQuantity > GRXCurrency_GetPlayerBalance( GetLocalClientPlayer(), costFlav ) )
-			return costQuantity - GRXCurrency_GetPlayerBalance( GetLocalClientPlayer(), costFlav )
-	}
-
-	return 0
-}
-
-
-
-
-int function GRX_GetMaxCanAfford( ItemFlavorBag price, int quantity )
-{
-	PlayerGRXScriptState scriptState = GetPlayerGRXScriptState( GetLocalClientPlayer() )
-	Assert( scriptState.isInventoryReady, "Tried to check is the player can afford something while their GRX inventory state was not ready" )
-
-	Assert( GRX_IsPremiumPrice( price ) )
-	foreach ( int costIndex, ItemFlavor costFlav in price.flavors )
-	{
-		Assert( ItemFlavor_GetType( costFlav ) == eItemType.account_currency, "NYI!" )
-
-		int basePrice       = price.quantities[costIndex]
-		int currencyBalance = GRXCurrency_GetPlayerBalance( GetLocalClientPlayer(), costFlav )
-		int maxAfford       = int( floor( currencyBalance / float( basePrice ) ) )
-
-		return minint( maxAfford, quantity )
-	}
-
-	return 0
-}
-
-
-
-array<int> function GRX_GetCurrencyArrayFromBag( ItemFlavorBag bag )
-{
-	array<int> priceArray
-	priceArray.resize( GRX_CURRENCY_COUNT, 0 )
-	foreach ( int costIndex, ItemFlavor costFlav in bag.flavors )
-	{
-		int costQuantity = bag.quantities[costIndex]
-		Assert( ItemFlavor_GetType( costFlav ) == eItemType.account_currency, "NYI!" )
-
-		priceArray[GRXCurrency_GetCurrencyIndex( costFlav )] = costQuantity
-	}
-
-	return priceArray
-}
-
-
-
-
-string function GRX_GetFormattedPrice( ItemFlavorBag bag, int quantity = 1 )
-{
-	array<int> priceArray = GRX_GetCurrencyArrayFromBag( bag ) 
-	string formattedPrice = ""
-	foreach ( currencyIndex, price in priceArray )
-	{
-		if ( price == 0 )
-			continue
-
-		if ( formattedPrice.len() > 0 )
-			formattedPrice = formattedPrice + " & "
-
-		ItemFlavor currency = GRX_CURRENCIES[currencyIndex]
-		formattedPrice = formattedPrice + "%$" + ItemFlavor_GetIcon( currency ) + "% " + FormatAndLocalizeNumber( "1", float(price * quantity), true )
-	}
-
-	return formattedPrice
-}
-
-
-
-
-
-PriceDisplayData function GRX_GetPriceDisplayData( ItemFlavorBag bag, int quantity = 1 )
-{
-	array<int> priceArray = GRX_GetCurrencyArrayFromBag( bag ) 
-	PriceDisplayData data
-
-	foreach ( currencyIndex, price in priceArray )
-	{
-		if ( price == 0 )
-			continue
-
-		Assert( data.amount.len() == 0 )
-
-		data.symbol = ItemFlavor_GetIcon( GRX_CURRENCIES[currencyIndex] )
-		data.amount = FormatAndLocalizeNumber( "1", float(price * quantity), true )
-	}
-
-	return data
-}
-
-
-
-
-bool function GRX_IsCraftingPrice( ItemFlavorBag bag )
-{
-	return (bag.flavors.len() == 1 && bag.flavors[0] == GRX_CURRENCIES[GRX_CURRENCY_CRAFTING])
-}
-
-
-
-
-bool function GRX_IsPremiumPrice( ItemFlavorBag bag )
-{
-	return (bag.flavors.len() == 1 && bag.flavors[0] == GRX_CURRENCIES[GRX_CURRENCY_PREMIUM])
-}
-
-
-
-
-string function GetFormattedValueForCurrency( int value, int currencyIndex )
-{
-	ItemFlavor currency = GRX_CURRENCIES[currencyIndex]
-
-	return "%$" + ItemFlavor_GetIcon( currency ) + "% " + FormatAndLocalizeNumber( "1", float( value ), true )
-}
-
-
-
-
-void function AddCallbackAndCallNow_OnGRXInventoryStateChanged( void functionref() cb, bool HACK_dontErrorOnDuplicate = false )
-{
-	if ( fileLevel.onGRXInventoryStateChangedCallbacks.contains( cb ) )
-	{
-		Assert( HACK_dontErrorOnDuplicate, "Tried to add a callback that was already added" )
-	}
-	fileLevel.onGRXInventoryStateChangedCallbacks.append( cb )
-
-	cb()
-}
-
-
-
-void function AddCallback_OnGRXInventoryStateChanged( void functionref() cb, bool HACK_dontErrorOnDuplicate = false )
-{
-	if ( fileLevel.onGRXInventoryStateChangedCallbacks.contains( cb ) )
-	{
-		Assert( HACK_dontErrorOnDuplicate, "Tried to add a callback that was already added" )
-	}
-	fileLevel.onGRXInventoryStateChangedCallbacks.append( cb )
-}
-
-
-
-
-void function RemoveCallback_OnGRXInventoryStateChanged( void functionref() cb )
-{
-	Assert( fileLevel.onGRXInventoryStateChangedCallbacks.contains( cb ), "Tried to remove a callback that was not added" )
-	fileLevel.onGRXInventoryStateChangedCallbacks.fastremovebyvalue( cb )
-}
-
-
-
-
-void function AddCallbackAndCallNow_OnGRXOffersRefreshed( void functionref() cb, bool HACK_dontErrorOnDuplicate = false )
-{
-	if ( fileLevel.onGRXOffersRefreshedCallbacks.contains( cb ) )
-	{
-		Assert( HACK_dontErrorOnDuplicate, "Tried to add a callback that was already added" )
+		DEV_GRX_ForcePackResults_resultsOrNull = null
 		return
 	}
-	fileLevel.onGRXOffersRefreshedCallbacks.append( cb )
 
-	cb()
-}
-
-
-
-
-void function AddCallback_OnGRXOffersRefreshed( void functionref() cb )
-{
-	Assert( !fileLevel.onGRXOffersRefreshedCallbacks.contains( cb ), "Tried to add a callback that was already added" )
-	fileLevel.onGRXOffersRefreshedCallbacks.append( cb )
-}
-
-
-
-
-void function RemoveCallback_OnGRXOffersRefreshed( void functionref() cb )
-{
-	Assert( fileLevel.onGRXOffersRefreshedCallbacks.contains( cb ), "Tried to remove a callback that was not added" )
-	fileLevel.onGRXOffersRefreshedCallbacks.fastremovebyvalue( cb )
-}
-
-
-
-
-void function AddCallback_OnGRXBundlesRefreshed( void functionref() cb )
-{
-	Assert( !fileLevel.onGRXBundlesRefreshedCallbacks.contains( cb ), "Tried to add a callback that was already added" )
-	fileLevel.onGRXBundlesRefreshedCallbacks.append( cb )
-}
-
-
-
-void function RemoveCallback_OnGRXBundlesRefreshed( void functionref() cb )
-{
-	Assert( fileLevel.onGRXBundlesRefreshedCallbacks.contains( cb ), "Tried to remove a callback that was not added" )
-	fileLevel.onGRXBundlesRefreshedCallbacks.fastremovebyvalue( cb )
-}
-
-
-
-
-
-
-
-
-
-#if DEV
-void function DEV_GRX_PrintStoreOfferLocations()
-{
-	foreach ( ItemFlavor itemLocation, ItemFlavorPurchasabilityInfo ifpi in fileLevel.itemFlavorPurchasabilityInfoMap )
+	ItemFlavorBag bag
+	bag.associatedError = packError
+	for ( int argIdx = 0; argIdx < vargc; argIdx += 2 )
 	{
-		if ( ifpi.locationToDedicatedStoreOffersMap.len() == 0 )
-			continue
-
-		printf( "%s", string(ItemFlavor_GetAsset( itemLocation )) )
-		foreach ( string storeLocation, array< GRXScriptOffer > locationOffers in ifpi.locationToDedicatedStoreOffersMap )
-		{
-			foreach ( GRXScriptOffer locationOffer in locationOffers )
-				printf( "\t[%s] %s", storeLocation, Localize( locationOffer.titleText ) )
-		}
+		bag.flavors.append( DEV_GetItemFlavorByGRXRef( expect string(vargv[argIdx + 0]) ) )
+		bag.quantities.append( expect int(vargv[argIdx + 1]) )
 	}
-}
 
-void function DEV_GRX_PrintNextCurrencyExpirationInfo()
-{
-	PlayerGRXScriptState grxState = GetPlayerGRXScriptState( GetLocalClientPlayer() )
-
-	int secondsToExpire = grxState.nextCurrencyExpirationTime - GetUnixTimestamp(); 
-	float SECPERDAY = 86400.0; 
-	float daysToExpire = secondsToExpire / SECPERDAY;
-	printt( "Next Currency Expiration Info:", grxState.nextCurrencyExpirationAmt, "AC expire in", daysToExpire, "days | expiretime =", grxState.nextCurrencyExpirationTime )
-}
-
-void function DEV_GRX_TestOpenPack( string ref = "pack_cosmetic_rare" )
-{
-	ItemFlavor pack = DEV_GetItemFlavorByGRXRef( ref )
-	ScriptGRXOperationInfo operation
-	operation.expectedQueryGoal = GRX_HTTPQUERYGOAL_OPEN_PACK
-	operation.doOperationFunc = (void function( int opID ) : ( pack )
-	{
-		GRX_OpenPack( opID, ItemFlavor_GetGRXIndex( pack ) )
-	})
-	operation.onDoneCallback = null
-	QueueGRXOperation( GetLocalClientPlayer(), operation, true )
+	DEV_GRX_ForcePackResults_resultsOrNull = bag
 }
 #endif
-
-
-#if DEV
-void function DEV_GRX_TestPurchase( string ref = "pack_cosmetic_rare", array<int> price = [1, 0, 0, 0, 0], int qty = 1 )
-{
-	ItemFlavor flav = DEV_GetItemFlavorByGRXRef( ref )
-	ScriptGRXOperationInfo operation
-	operation.expectedQueryGoal = GRX_HTTPQUERYGOAL_PURCHASE_PACK
-	operation.doOperationFunc = (void function( int opID ) : ( flav, price, qty )
-	{
-		GRX_PurchaseStoreOffer( opID, GRX_HTTPQUERYGOAL_PURCHASE_PACK, qty, [ItemFlavor_GetGRXIndex( flav )], [1], price )
-	})
-	operation.onDoneCallback = null
-	QueueGRXOperation( GetLocalClientPlayer(), operation, true )
-}
-#endif
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -2428,9 +2728,9 @@ string function GRX_DBG_PREFIX()
 
 
 
+		string vm = "CL"
 
 
-		string vm = "UI"
 
 	return "<><>GRX<><> " + vm + " " + FUNC_NAME( 1 )
 }
@@ -2843,11 +3143,11 @@ PlayerGRXScriptState function GetPlayerGRXScriptState( entity player )
 
 
 
+			Assert( player == GetLocalClientPlayer() )
 
 
-			Assert( player == GetLocalClientPlayer()
-			|| player == null 
-			|| GetLocalClientPlayer() == null  )
+
+
 
 
 		return fileLevel.localGRXState
@@ -2869,1869 +3169,1993 @@ PlayerGRXScriptState function GetPlayerGRXScriptState( entity player )
 
 
 
-void function UICodeCallback_GRXUserInfoUpdated( GRXUserInfo codeUserInfo )
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+void function UIToClient_GRXInventoryCleanStateChange( bool isClean, int marketplaceEdition, bool isOfferResticted )
 {
-	if ( !fileLevel.WORKAROUND_isInLifetime )
-	{
-		fileVM.WORKAROUND_wasUserInfoUpdatedBeforeLevelInit = true
-		return
-	}
-
-	HandleGRXCodeUserInfoUpdated( GetLocalClientPlayer(), codeUserInfo )
-
-	if ( fileVM.WORKAROUND_delayedOffersState != GRX_OFFERSSTATE_UNINITIALIZED )
-	{
-		HandleGRXOffersRefreshed( fileVM.WORKAROUND_delayedOffersState, fileVM.WORKAROUND_delayedCraftingOffers, fileVM.WORKAROUND_delayedStoreOffers )
-
-		fileVM.WORKAROUND_delayedOffersState = GRX_OFFERSSTATE_UNINITIALIZED
-		fileVM.WORKAROUND_delayedCraftingOffers = []
-		fileVM.WORKAROUND_delayedStoreOffers = []
-	}
-}
-
-
-
-
-void function ShGRX_UIScriptResetComplete()
-{
-	fileLevel.HACK_allowOneBadQueryCompleteCallBecauseOfUIScriptReset = true
-	fileLevel.PROTO_serverHasGivenGreenLightForUIGRX = true 
-
-	GRXUserInfo codeUserInfo = GRX_GetUserInfo()
-	HandleGRXCodeUserInfoUpdated( GetLocalClientPlayer(), codeUserInfo )
-}
-
-
-
-
-void function HandleGRXCodeUserInfoUpdated( entity player, GRXUserInfo codeUserInfo )
-{
-#if GRX_DEBUG_PRINTS
-		if ( !fileLevel.GRX_DEBUG_PRINTS_disableTemporarily )
-		{
-			GRXDbg( player, "",
-				"inventoryState", string(codeUserInfo.inventoryState) + (codeUserInfo.inventoryState == GRX_INVENTORYSTATE_CLEAN ? "CLEAN" : "NON-CLEAN"),
-				"balances", codeUserInfo.balances.join( "," ),
-				"queryGoal", codeUserInfo.queryGoal,
-				"queryOwner", string(codeUserInfo.queryOwner) + (codeUserInfo.queryOwner == GRX_HTTPQUERYOWNER_CLIENT ? "CLIENT" : "SERVER"),
-				"queryState", string(codeUserInfo.queryState) + (codeUserInfo.queryState == GRX_HTTPQUERYSTATE_ACTIVE ? "ACTIVE" : "NON-ACTIVE"),
-				"querySeqNum", codeUserInfo.querySeqNum )
-
-
-				if ( codeUserInfo.nextCurrencyExpirationAmt > 0 )
-				{
-					GRXDbg( player, "",
-						"nextCurrencyExpirationAmount", codeUserInfo.nextCurrencyExpirationAmt,
-						"nextCurrencyExpirationTime", codeUserInfo.nextCurrencyExpirationTime )
-				}
-
-		}
-#endif
-
-	UpdatePlayerGRXScriptState( player, codeUserInfo )
-}
-
-
-
-
-void function UpdatePlayerGRXScriptState( entity player, GRXUserInfo ornull codeUserInfo = null )
-{
-#if GRX_DEBUG_PRINTS
-	if ( !fileLevel.GRX_DEBUG_PRINTS_disableTemporarily )
-	{
-		GRXDbg( player, "",
-			"calledFrom", FUNC_NAME( 1 ) )
-	}
-#endif
-
-
-
-
-
-
-
-
-
-
-
-
-	if ( codeUserInfo == null ) 
-	{
-
-
-
-			codeUserInfo = GRX_GetUserInfo()
-
-	}
-	expect GRXUserInfo(codeUserInfo)
-
-	PlayerGRXScriptState scriptState = GetPlayerGRXScriptState( player )
-	scriptState.WORKAROUND_lastCodeUserInfo = codeUserInfo
-	scriptState.marketplaceEdition = codeUserInfo.marketplaceEdition
-	scriptState.isOfferRestricted = codeUserInfo.isOfferRestricted
-	scriptState.hasUpToDateBundleOffers = codeUserInfo.hasUpToDateBundleOffers
-
-	scriptState.nextCurrencyExpirationAmt = codeUserInfo.nextCurrencyExpirationAmt
-	scriptState.nextCurrencyExpirationTime = codeUserInfo.nextCurrencyExpirationTime
-
-	scriptState.giftingLimitCounter = codeUserInfo.sparkleLimitCounter
-	scriptState.giftingLimitResetDate = codeUserInfo.sparkleLimitResetDate
-
-
-	bool wasConsideringInventoryReady = scriptState.isInventoryReady
-
-	bool willConsiderInventoryReady = false
-	if ( codeUserInfo.inventoryState == GRX_INVENTORYSTATE_CLEAN && codeUserInfo.queryState == GRX_HTTPQUERYSTATE_NONE )
-	{
-		willConsiderInventoryReady = true
-
-
-			if ( !fileLevel.PROTO_serverHasGivenGreenLightForUIGRX || !fileLevel.WORKAROUND_isInLifetime )
-				willConsiderInventoryReady = false
-
-	}
-
-	scriptState.inventoryState = codeUserInfo.inventoryState
-
-	bool isFirstTimeClean = false
-	if ( willConsiderInventoryReady )
-	{
-
-
-
-
-
-
-
-			if ( !wasConsideringInventoryReady )
-				scriptState.isInventoryReady = true
-
-			bool updateCurrencyUI = false
-			foreach ( int idx, int balance in scriptState.balances )
-			{
-				if ( balance != codeUserInfo.balances[ idx ] )
-				{
-					updateCurrencyUI = true
-					break
-				}
-			}
-			scriptState.balances = codeUserInfo.balances
-			if ( updateCurrencyUI )
-				UpdateActiveUserInfoPanels()
-
-
-
-
-
-
-
-
-
-
-
-		if ( scriptState.isInventoryReady && !scriptState.hasInventoryEverBeenClean )
-		{
-			scriptState.hasInventoryEverBeenClean = true
-			isFirstTimeClean = true
-
-
-
-
-
-
-
-
-
-
-
-
-
-		}
-
-
-
-
-
-
-
-
-
-
-
-
-
-		RunGRXOperations( player, scriptState )
-		if ( scriptState.activeOperationOrNull != null )
-			willConsiderInventoryReady = false
-	}
-
-	if ( !willConsiderInventoryReady && scriptState.isInventoryReady )
-	{
-		scriptState.isInventoryReady = false
-		scriptState.balances.clear()
-	}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-		if ( willConsiderInventoryReady != wasConsideringInventoryReady )
-		{
-			foreach ( void functionref() cb in fileLevel.onGRXInventoryStateChangedCallbacks )
-				cb()
-
-			if ( CanRunClientScript() )
-				RunClientScript( "UIToClient_GRXInventoryCleanStateChange", scriptState.isInventoryReady, scriptState.WORKAROUND_lastCodeUserInfo.marketplaceEdition, scriptState.WORKAROUND_lastCodeUserInfo.isOfferRestricted )
-		}
-
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-void function ServerToUI_PROTO_YouAreGreenLightedForGRX()
-{
-	fileLevel.PROTO_serverHasGivenGreenLightForUIGRX = true
-	UpdatePlayerGRXScriptState( GetLocalClientPlayer() )
-}
-
-
-
-
-void function ServerToUI_GRX_QueuedRewardsGiven()
-{
-	thread TryRunDialogFlowThread()
-}
-
-
-
-
-bool function DisplayQueuedRewardsGiven()
-{
-	
-
-	entity player = GetLocalClientPlayer()
-
-	if ( !IsLocalClientEHIValid() )
-		return false
-
-	for ( int persistentArrayIdx = 0; persistentArrayIdx < QUEUED_REWARDS_MAX_COUNT; persistentArrayIdx++ )
-	{
-		Assert( QUEUED_REWARDS_MAX_ITEMS_COUNT == 1 )
-		SettingsAssetGUID ornull rewardItemFlavGUID = GetQueuedRewardOrNull( persistentArrayIdx )
-		if ( rewardItemFlavGUID == null)
-			continue
-
-		expect SettingsAssetGUID( rewardItemFlavGUID )
-		ItemFlavor rewardItemFlav = GetItemFlavorByGUID( rewardItemFlavGUID )
-
-		Assert( QUEUED_REWARDS_MAX_ITEMS_COUNT == 1 )
-		int quantity = expect int(  GetDialogFlowTablesValueOrPersistence( format( "grxQueuedRewards[%d].rewardQuantities[0]", persistentArrayIdx )  ) ) 
-
-		SettingsAssetGUID sourceItemFlavGUID   = expect int( GetDialogFlowTablesValueOrPersistence( format( "grxQueuedRewards[%d].sourceGUID", persistentArrayIdx ) ) ) 
-		int sourceItemExtraData                = expect int( GetDialogFlowTablesValueOrPersistence( format( "grxQueuedRewards[%d].sourceGUID_extraData", persistentArrayIdx ) ) ) 
-		ItemFlavor ornull sourceItemFlav       = null
-		if ( sourceItemFlavGUID != 0 )
-		{
-			if ( IsValidItemFlavorGUID( sourceItemFlavGUID ) )
-				sourceItemFlav = GetItemFlavorByGUID( sourceItemFlavGUID )
-			else
-				Warning( "Found unregistered ItemFlavorGUID " + string(sourceItemFlavGUID) + ". This is probably because the source asset has been deleted from Bakery." )
-		}
-
-		string titleText = "#GENERIC_REWARD_RECEIVED"
-		string descText  = ""
-		string headerText = ""
-		bool noShowLow   = false
-		if ( sourceItemFlav != null )
-		{
-			expect ItemFlavor( sourceItemFlav )
-			switch( ItemFlavor_GetType( sourceItemFlav ) )
-			{
-				case eItemType.challenge:
-				{
-					int tierIdx = sourceItemExtraData
-
-					int tierCount = Challenge_GetTierCount( sourceItemFlav )
-
-					if ( tierCount <= 0 ) 
-					{
-						descText = ""
-					}
-					else
-					{
-						descText = Challenge_GetDescription( sourceItemFlav, tierIdx )
-					}
-
-					if ( Challenge_GetTimeSpanKind( sourceItemFlav ) == eChallengeTimeSpanKind.EVENT_SPECIAL_2 )
-					{
-						titleText = ItemFlavor_GetShortDescription( sourceItemFlav )
-						descText = ItemFlavor_GetLongDescription( sourceItemFlav )
-					}
-					else
-					{
-						titleText = "#CHALLENGE_COMPLETED_HEADER"
-					}
-					break
-				}
-
-				case eItemType.calevent_collection:
-				{
-					titleText = ItemFlavor_GetLongName( sourceItemFlav )
-					descText = "#LOGIN_REWARD"
-
-					
-					if ( ItemFlavor_GetType( rewardItemFlav ) == eItemType.music_pack )
-					{
-						thread (void function() : (rewardItemFlav) {
-							RequestSetItemFlavorLoadoutSlot( WaitForLocalClientEHI(), Loadout_MusicPack(), rewardItemFlav )
-						})()
-					}
-
-					break
-				}
-
-				case eItemType.calevent_login:
-				{
-					titleText = ItemFlavor_GetLongName( sourceItemFlav )
-					descText = ItemFlavor_GetLongDescription( sourceItemFlav )
-					break
-				}
-
-				default: Assert( false )
-			}
-		}
-
-		BattlePassReward rewardInfo
-		rewardInfo.level = -1
-		rewardInfo.flav = rewardItemFlav
-		rewardInfo.quantity = quantity
-		ShowRewardCeremonyDialog(
-			headerText,
-			titleText,
-			descText,
-			[rewardInfo],
-			false,
-			false,
-			noShowLow,
-			true )
-
-		GRX_MarkRewardAcknowledged( rewardItemFlavGUID, persistentArrayIdx )
-
-		return true 
-	}
-
-	return false
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-void function RunGRXOperations( entity player, PlayerGRXScriptState scriptState )
-{
-	if ( !scriptState.isInventoryReady )
-		return
-
-	if ( scriptState.activeOperationOrNull != null )
-		return
-
-
-
-
-
-	if ( scriptState.operationQueue.len() == 0 )
-	{
-
-
-
-
-
-
-
-		return
-	}
-
-	ScriptGRXOperationInfo operationInfo = scriptState.operationQueue[0] 
-	scriptState.activeOperationOrNull = operationInfo
-
-	operationInfo.status = eScriptGRXOperationStatus.RUNNING
-
-#if GRX_DEBUG_PRINTS
-	if ( !fileLevel.GRX_DEBUG_PRINTS_disableTemporarily )
-	{
-
-		float time = UITime()
-
-
-
-		GRXDbg( player, "script operation running",
-			"culprit", operationInfo.DEV_culprit,
-			"id", operationInfo.id,
-			"age", time - operationInfo.DEV_queueTime )
-	}
-#endif
-
-	
-	
-
-
-
-	thread WORKAROUND_CallOperationDoFuncOnFrameEnd( operationInfo )
-}
-void function WORKAROUND_CallOperationDoFuncOnFrameEnd( ScriptGRXOperationInfo operationInfo )
-{
-	WaitEndFrame()
-
-	if ( operationInfo.status != eScriptGRXOperationStatus.RUNNING )
-	{
-#if GRX_DEBUG_PRINTS
-			if ( !fileLevel.GRX_DEBUG_PRINTS_disableTemporarily )
-				printt( GRX_DBG_PREFIX(), "operationInfo.status != eScriptGRXOperationStatus.RUNNING", operationInfo.status )
-#endif
-		return
-	}
-
-
-
-
-	
-
-
-
-
-
-
-
-
-
-
-	float startTime = UITime()
-	while( GRX_GetUserInfo().queryState != GRX_HTTPQUERYSTATE_NONE )
-	{
-#if GRX_DEBUG_PRINTS
-			if ( UITime() - startTime > 5.0 )
-			{
-				printt( GRX_DBG_PREFIX(), "while( GRX_GetUserInfo().queryState != GRX_HTTPQUERYSTATE_NONE ) running for more than 5.0s", GRX_GetUserInfo().queryState )
-				startTime = UITime()
-			}
-#endif
-		WaitFrame()
-	}
-
-	if ( !fileLevel.WORKAROUND_isInLifetime )
-	{
-		
-		return
-	}
-
-
-
-
-
-
-
-
-
-
-
-
-	operationInfo.doOperationFunc( operationInfo.id )
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-void function UICodeCallback_GRXQueryCompleted( int queryScriptId, int queryGoal, int queryState )
-{
-	HandleGRXQueryCompleted( GetLocalClientPlayer(), queryScriptId, queryGoal, queryState )
-}
-
-
-
-
-
-
-
-
-
-void function UICodeCallback_GRXBundlesUpdated()
-{
-	foreach ( void functionref() cb in fileLevel.onGRXBundlesRefreshedCallbacks )
-		cb()
-}
-
-
-
-
-void function HandleGRXQueryCompleted( entity player, int queryScriptId, int queryGoal, int queryState )
-
-{
-#if GRX_DEBUG_PRINTS
-		if ( !fileLevel.GRX_DEBUG_PRINTS_disableTemporarily )
-		{
-			GRXDbg( player, "",
-				"queryScriptId", queryScriptId,
-				"queryGoal", queryGoal,
-				"queryState", queryState )
-		}
-#endif
-
-	
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-		PlayerGRXScriptState scriptState = GetPlayerGRXScriptState( player )
-
-
-	if ( queryScriptId == -1 || queryScriptId == 0 )
-		return 
-
-
-
-
-
-
-
-
-
-	if ( queryScriptId > 0 )
-		return 
-
-
-
-		if ( fileLevel.HACK_allowOneBadQueryCompleteCallBecauseOfUIScriptReset && scriptState.activeOperationOrNull == null )
-		{
-			fileLevel.HACK_allowOneBadQueryCompleteCallBecauseOfUIScriptReset = false
-			return
-		}
-
-
-	Assert( scriptState.activeOperationOrNull != null, "Looks like a GRX query was initiated without using QueueGRXOperation. This is dangerous!" )
-
-	ScriptGRXOperationInfo operationInfo = expect ScriptGRXOperationInfo( scriptState.activeOperationOrNull )
-
-	Assert( operationInfo.id == queryScriptId )
-
-	Assert( queryGoal == operationInfo.expectedQueryGoal ) 
-
-	operationInfo._codeQueryState = queryState
-
-	if ( queryState == GRX_HTTPQUERYSTATE_INTERRUPTED )
-	{
-		operationInfo.status = eScriptGRXOperationStatus.DONE_INTERRUPTED
-	}
-	else if ( queryState == GRX_HTTPQUERYSTATE_ERROR )
-	{
-
-
-
-
-
-
-
-		operationInfo.status = eScriptGRXOperationStatus.DONE_FAILED
-	}
-	else
-	{
-		operationInfo.status = eScriptGRXOperationStatus.DONE_SUCCESS
-	}
-
-#if GRX_DEBUG_PRINTS
-		if ( !fileLevel.GRX_DEBUG_PRINTS_disableTemporarily )
-		{
-			GRXDbg( player, "script operation done",
-				"culprit", operationInfo.DEV_culprit,
-				"id", operationInfo.id,
-				"status", GetEnumString( "eScriptGRXOperationStatus", operationInfo.status ) )
-		}
-#endif
-	if ( operationInfo.onDoneCallback != null )
-		operationInfo.onDoneCallback( operationInfo.status )
-	Signal( operationInfo, "ScriptGRXOperationDone" )
-
-
-		if ( operationInfo.status != eScriptGRXOperationStatus.DONE_SUCCESS )
-			ShowGRXErrorDialogue( "" )
-
-
-	if ( operationInfo._isAutoOperation )
-	{
-		Assert( scriptState.isAutoOperationQueued )
-		scriptState.isAutoOperationQueued = false
-	}
-	scriptState.activeOperationOrNull = null
-	scriptState.operationQueue.remove( 0 )
-
-	UpdatePlayerGRXScriptState( player )
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-void function UICodeCallback_GRXOffersRefreshed( int offersState, array< GRXCraftingOffer > craftingOffers, array< GRXStoreOffer > storeOffers )
-{
-#if GRX_DEBUG_PRINTS
-		if ( !fileLevel.GRX_DEBUG_PRINTS_disableTemporarily )
-		{
-			GRXDbg( null, "",
-				"offersState", offersState,
-				"craftingOffers", craftingOffers.len(),
-				"storeOffers", storeOffers.len() )
-		}
-#endif
-
-	if ( fileLevel.WORKAROUND_isInLifetime )
-	{
-		HandleGRXOffersRefreshed( offersState, craftingOffers, storeOffers )
-	}
-	else
-	{
-		fileVM.WORKAROUND_delayedOffersState = offersState
-		fileVM.WORKAROUND_delayedCraftingOffers = craftingOffers
-		fileVM.WORKAROUND_delayedStoreOffers = storeOffers
-	}
-}
-
-
-
-void function UICodeCallback_GRXGetOfferCompleted( GRXGetOfferInfo getOfferInfo )
-{
-	GiftingDialog_UpdateEligibilityInformation( getOfferInfo )
-
-#if DEV
-		printt( "GET OFFER COMPLETED" )
-		if ( getOfferInfo.isEligible == true )
-			printt("is eligible")
-		else
-			printt("not eligible")
-
-		for ( int i = 0; i < getOfferInfo.prices.len(); i++ )
-		{
-			printt( "Price set " + i )
-			foreach ( price in getOfferInfo.prices[i] )
-			{
-				printt( "price = " + price )
-			}
-		}
-#endif
-}
-
-
-
-void function UICodeCallback_GRXCheckForGiftsCompleted( int batchCounter, int totalNumBatches, GRXScriptInboxMessage inboxMessage )
-{
-	
-	ProcessGiftingInboxMessage( batchCounter, totalNumBatches, inboxMessage )
-}
-
-
-#if DEV
-
-void function DEV_GRX_PreviewStoreItem( string grxRef )
-{
-	fileVM.grxStorePreviewItem = grxRef
-	thread _Force_Refresh_Offers()
-}
-
-void function _Force_Refresh_Offers()
-{
-	ClientCommand( "mtx_getOffersInterval 5" )
-	wait 6.0
-	ClientCommand( "mtx_getOffersInterval 300" )
-}
-
-
-#endif
-
-
-
-void function HandleGRXOffersRefreshed( int offersState, array< GRXCraftingOffer > craftingOffers, array< GRXStoreOffer > storeOffers )
-{
-	bool isOfferRestricted = GRX_IsOfferRestricted()
-
-	fileLevel.storeOfferColumns.clear()
-	fileLevel.specialsStoreOfferColumns.clear()
-	fileLevel.seasonalStoreOfferColumns.clear()
-	fileLevel.locationOffersMap.clear()
-	foreach ( ItemFlavor itemFlavor, ItemFlavorPurchasabilityInfo ifpi in fileLevel.itemFlavorPurchasabilityInfoMap )
-		ifpi.locationToDedicatedStoreOffersMap.clear()
-
-	foreach ( GRXCraftingOffer codeOffer in craftingOffers )
-	{
-		if ( !IsValidItemFlavorGRXIndex( codeOffer.itemIdx ) )
-			continue
-
-		ItemFlavor flav = GetItemFlavorByGRXIndex( codeOffer.itemIdx )
-
-		ItemFlavorPurchasabilityInfo ifpi = fileLevel.itemFlavorPurchasabilityInfoMap[flav]
-
-		Assert( codeOffer.craftingPrice > 0 )
-		if ( codeOffer.craftingPrice > 0 )
-		{
-			GRXScriptCraftingOffer scriptOffer
-
-			if ( isOfferRestricted && GRX_IsItemCoveredByOfferRestrictions( flav ) )
-				scriptOffer.isAvailable = false
-
-			scriptOffer.craftingPrice = codeOffer.craftingPrice
-			scriptOffer.flavor = flav
-
-			ifpi.craftingOfferOrNull = scriptOffer
-		}
-		else
-		{
-			ifpi.craftingOfferOrNull = null
-		}
-	}
-
-	const bool TEMP_collapsePrereqOffers = false
-
-	array<GRXScriptOffer> tempPrereqOffers = []
-	foreach ( GRXStoreOffer codeOffer in storeOffers )
-	{
-		GRXScriptOffer scriptOffer
-
-		array<string> offerProblems = []
-		foreach ( GRXStoreOfferItem item in codeOffer.items )
-		{
-			if ( !IsValidItemFlavorGRXIndex( item.itemIdx ) )
-			{
-				offerProblems.append( format( "Invalid GRX index: %d", item.itemIdx ) )
-				continue
-			}
-
-			ItemFlavor outputFlav = GetItemFlavorByGRXIndex( item.itemIdx )
-
-			if ( isOfferRestricted && GRX_IsItemCoveredByOfferRestrictions( outputFlav ) )
-				scriptOffer.isAvailable = false
-
-			if ( ItemFlavor_GetType( outputFlav ) == eItemType.grx_sentinel )
-			{
-				scriptOffer.WORKAROUND_claimedSentinel = outputFlav
-				continue
-			}
-
-			scriptOffer.items.append( item )
-
-			bool foundMatchingOutputBagEntry = false
-			foreach ( int existingOutputIdx, ItemFlavor existingOutputFlav in scriptOffer.output.flavors )
-			{
-				if ( outputFlav == existingOutputFlav )
-				{
-					foundMatchingOutputBagEntry = true
-					scriptOffer.output.quantities[existingOutputIdx] += item.itemQuantity
-				}
-			}
-			if ( !foundMatchingOutputBagEntry )
-			{
-				scriptOffer.output.flavors.append( outputFlav )
-				scriptOffer.output.quantities.append( item.itemQuantity )
-			}
-		}
-
-		scriptOffer.attributes = clone codeOffer.attrs
-
-		if ( isOfferRestricted && GRX_IsOfferRestrictedByOfferAttributes( scriptOffer ) )
-			scriptOffer.isAvailable = false
-
-		if( scriptOffer.items.len() > 1 )
-			scriptOffer.items.sort( SortStoreOfferItems )
-
-		foreach ( int priceIdx, GRXStoreOfferPrice storeOfferPrice in codeOffer.prices )
-		{
-			ItemFlavorBag price
-			foreach ( int currencyIndex, int currencyQuantity in storeOfferPrice.currencies )
-			{
-				ItemFlavor currencyFlav = GRX_CURRENCIES[currencyIndex]
-
-				if ( currencyQuantity <= 0 )
-				{
-					if ( currencyQuantity < 0 )
-						offerProblems.append( format( "Price #%d currency '%s' has bad quantity: %d", priceIdx, string(ItemFlavor_GetAsset( currencyFlav )), currencyQuantity ) )
-					continue
-				}
-
-				price.flavors.append( currencyFlav )
-				price.quantities.append( currencyQuantity )
-			}
-			if ( price.flavors.len() == 0 )
-				continue
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-			scriptOffer.prices.append( price )
-		}
-
-		if ( scriptOffer.prices.len() == 0 )
-			offerProblems.append( "No prices" )
-
-		if ( !("location" in codeOffer.attrs) )
-			offerProblems.append( "Missing 'location' attribute" )
-
-		if ( offerProblems.len() > 0 )
-		{
-			Warning( "Offer %s has problems:\n - %s", DEV_GRX_DescribeOffer( scriptOffer ), offerProblems.join( "\n - " ) )
-			continue 
-		}
-
-		ItemFlavor flav = GetItemFlavorByGRXIndex( codeOffer.items[0].itemIdx )
-#if DEV
-			if ( fileVM.grxStorePreviewItem != "" )
-				flav = DEV_GetItemFlavorByGRXRef( fileVM.grxStorePreviewItem )
-#endif
-
-		string storeLocation              = codeOffer.attrs.location
-		ItemFlavorPurchasabilityInfo ifpi = fileLevel.itemFlavorPurchasabilityInfoMap[flav]
-		if ( !(storeLocation in ifpi.locationToDedicatedStoreOffersMap) )
-			ifpi.locationToDedicatedStoreOffersMap[storeLocation] <- []
-
-		scriptOffer.offerAlias = codeOffer.offerAlias
-		scriptOffer.offerType = codeOffer.offerType
-		scriptOffer.isGiftable = codeOffer.isSparkable
-
-
-
-
-
-
-
-
-
-
-		
-		scriptOffer.titleText = ( "offertitle" in scriptOffer.attributes ? scriptOffer.attributes["offertitle"] : ItemFlavor_GetLongName( flav ) )
-
-		if ( "offerdescription" in scriptOffer.attributes )
-		{
-			scriptOffer.descText = scriptOffer.attributes["offerdescription"]
-		}
-		else if ( scriptOffer.output.flavors.len() > 1 )
-		{
-			scriptOffer.descText= ItemFlavor_GetRewardShortDescription( flav )
-		}
-		else
-		{
-			scriptOffer.descText = ItemFlavor_GetTypeName( flav )
-		}
-
-		if( GRX_HasUpToDateBundleOffers() )
-			GRX_CheckBundleAndUpdateOfferPrices( scriptOffer )
-
-
-		scriptOffer.imageRef = ("imageref" in codeOffer.attrs ? codeOffer.attrs.imageref : "")
-		scriptOffer.tagText = ("tag" in codeOffer.attrs ? codeOffer.attrs.tag : "")
-		scriptOffer.seasonTag = ("seasontag" in codeOffer.attrs ? codeOffer.attrs.seasontag : "")
-
-		if ( scriptOffer.offerType != GRX_OFFERTYPE_BUNDLE )
-		{
-			scriptOffer.originalPrice = null
-
-			if ( "originalprice" in codeOffer.attrs && codeOffer.attrs.originalprice != "0" )
-			{
-				Assert( scriptOffer.prices.len() == 1, "NYI!" )
-				Assert( scriptOffer.prices[0].flavors.len() == 1, "NYI!" )
-				ItemFlavor singleCurrencyFlav = scriptOffer.prices[0].flavors[0]
-
-				scriptOffer.originalPrice = MakeItemFlavorBag( {
-					[singleCurrencyFlav] = int(codeOffer.attrs.originalprice),
-				} )
-			}
-		}
-
-		scriptOffer.tooltipTitle = ("tooltiptitle" in codeOffer.attrs ? codeOffer.attrs.tooltiptitle : "")
-		scriptOffer.tooltipDesc = ("tooltipdesc" in codeOffer.attrs ? codeOffer.attrs.tooltipdesc : "")
-		scriptOffer.prereqText = ("prereqtext" in codeOffer.attrs ? codeOffer.attrs.prereqtext : "")
-		scriptOffer.purchaseLimit = ( "purchaselimit" in scriptOffer.attributes ? scriptOffer.attributes["purchaselimit"].tointeger() : 1 )
-		scriptOffer.displayPriority = ( "displaypriority" in codeOffer.attrs ? int(codeOffer.attrs.displaypriority) : 0 )
-		scriptOffer.expireTime = ("expireSeconds" in codeOffer.attrs ? int(codeOffer.attrs.expireSeconds) + GetUnixTimestamp() : 0)
-
-		if ( GetConVarBool( "assetdownloads_enabled" ) && IsLobby() && scriptOffer.imageRef != "" )
-			RunClientScript( "RequestDownloadedImagePakLoad", scriptOffer.imageRef, ePakType.DL_STORE_TALL )
-
-		ifpi.locationToDedicatedStoreOffersMap[storeLocation].append( scriptOffer )
-
-		if ( !(storeLocation in fileLevel.locationOffersMap) )
-			fileLevel.locationOffersMap[storeLocation] <- []
-
-		
-			fileLevel.locationOffersMap[storeLocation].append( scriptOffer )
-
-		bool hasPrereq = ("prereq" in codeOffer.attrs)
-		if ( hasPrereq )
-		{
-			string ref = codeOffer.attrs["prereq"]
-
-			
-			ItemFlavor prereqFlav
-			bool foundPrereq
-			foreach ( ItemFlavor iterFlav in GetAllItemFlavorsCosmetic() )
-			{
-				if ( ItemFlavor_GetGRXMode( iterFlav ) != eItemFlavorGRXMode.NONE && ItemFlavor_GetGRXAlias( iterFlav ) == ref )
-				{
-					prereqFlav = iterFlav
-					foundPrereq = true
-					break
-				}
-			}
-
-			Assert( foundPrereq, "Store offer has invalid prereq: " + ref )
-			if ( !foundPrereq )
-				continue
-
-			scriptOffer.prereq = prereqFlav
-
-			if ( TEMP_collapsePrereqOffers )
-				tempPrereqOffers.append( scriptOffer )
-		}
-
-
-		if( !hasPrereq || !TEMP_collapsePrereqOffers )
-			ProcessColumnData( storeLocation, scriptOffer, codeOffer )
-
-	}
-
-	foreach ( scriptOffer in tempPrereqOffers )
-	{
-		if( !ProcessPrereqOffer( scriptOffer, fileLevel.storeOfferColumns ) )
-			if( !ProcessPrereqOffer( scriptOffer, fileLevel.specialsStoreOfferColumns ) )
-				ProcessPrereqOffer( scriptOffer, fileLevel.seasonalStoreOfferColumns )
-	}
-
-	SortAllScriptOffers()
-
-	foreach ( int grxIndex, ItemFlavor flav in fileLevel.grxIndexItemFlavorMap )
-	{
-		ItemFlavorPurchasabilityInfo ifpi = fileLevel.itemFlavorPurchasabilityInfoMap[flav]
-		ifpi.isPurchasableAtAll = (ifpi.craftingOfferOrNull != null || ifpi.locationToDedicatedStoreOffersMap.len() > 0)
-	}
-
 	PlayerGRXScriptState scriptState = GetPlayerGRXScriptState( GetLocalClientPlayer() )
-	scriptState.areOffersReady = (offersState == GRX_OFFERSSTATE_READY)
-
-	foreach ( void functionref() cb in fileLevel.onGRXOffersRefreshedCallbacks )
-		cb()
-}
-
-GRXScriptOffer function GRX_ScriptOfferFromCraftingOffer( GRXScriptCraftingOffer craftOffer )
-{
-	ItemFlavor flav = craftOffer.flavor
-
-	GRXScriptOffer scriptOffer
-	scriptOffer.isCraftingOffer = true
-	scriptOffer.isAvailable = craftOffer.isAvailable
-
-	ItemFlavorBag price
-	price.flavors.append( GRX_CURRENCIES[GRX_CURRENCY_CRAFTING] )
-	price.quantities.append( craftOffer.craftingPrice )
-	scriptOffer.prices.append( price )
-
-	
-	scriptOffer.output.flavors.append( flav )
-	scriptOffer.output.quantities.append( 1 )
-
-	
-	scriptOffer.titleText = ItemFlavor_GetLongName( flav )
-	scriptOffer.descText = ItemFlavor_GetTypeName( flav )
-	scriptOffer.image = ItemFlavor_GetIcon( flav )
-
-	return scriptOffer
-}
-
-bool function ProcessPrereqOffer( GRXScriptOffer scriptOffer, array<array<array<GRXScriptOffer> > > storeOfferColumns )
-{
-	foreach ( colIdx, rowArray in storeOfferColumns )
+	scriptState.isInventoryReady = isClean
+	scriptState.marketplaceEdition = marketplaceEdition
+	scriptState.isOfferRestricted = isOfferResticted
+	if ( isClean )
 	{
-		for ( int rowIdx = 0; rowIdx < rowArray.len(); rowIdx++ )
-		{
-			array<GRXScriptOffer> offerArray = rowArray[rowIdx]
+		scriptState.hasInventoryEverBeenClean = true
 
-			foreach ( flav in offerArray[0].output.flavors )
-			{
-				if ( flav != expect ItemFlavor( scriptOffer.prereq ) )
-					continue
+		
+		ItemFlavor ornull activeBattlePass = GetActiveBattlePass()
+		if ( activeBattlePass == null )
+			return
 
-				fileLevel.storeOfferColumns[colIdx][rowIdx].append( scriptOffer )
-				return true
-			}
-		}
-	}
-	return false
+		expect ItemFlavor( activeBattlePass )
+
+		ItemFlavor xpBoostFlav = BattlePass_GetXPBoostFlav( activeBattlePass )
+		SetConVarInt( "client_boostcount", GRX_GetConsumableCount( ItemFlavor_GetGRXIndex( xpBoostFlav ) ) )
+	}	
 }
 
-void function SortAllScriptOffers()
-{
-	SortScriptOffers( fileLevel.storeOfferColumns )
-	SortScriptOffers( fileLevel.specialsStoreOfferColumns )
-	SortScriptOffers( fileLevel.seasonalStoreOfferColumns )
-}
 
-void function SortScriptOffers( array<array<array<GRXScriptOffer> > > storeOfferColumns )
-{
-	foreach ( colIdx, rowArray in storeOfferColumns )
-	{
-		foreach ( rowIdx, offerArray in rowArray )
-		{
-			UpdateScriptOffersPriority( offerArray )
-			offerArray.sort( SortScriptOffer )
-		}
-	}
-}
 
-int function SortScriptOffer( GRXScriptOffer a, GRXScriptOffer b )
-{
-	if ( a.displayPriority > b.displayPriority )
-		return 1
-	else if ( b.displayPriority > a.displayPriority )
-		return -1
 
-	if ( a.expireTime > b.expireTime )
-		return 1
-	else if ( b.expireTime > a.expireTime )
-		return -1
 
-	return 0
-}
 
-void function UpdateScriptOffersPriority( array<GRXScriptOffer> offerArray )
-{
-	const int MAX_OFFER_COUNT_PER_PANEL = 5
 
-	if ( GRX_IsInventoryReady() )
-	{
-		foreach ( GRXScriptOffer offer in offerArray )
-		{
-			bool isOfferFullyClaimed = GRXOffer_IsFullyClaimed( offer )
 
-			if ( isOfferFullyClaimed && offer.displayPriority < MAX_OFFER_COUNT_PER_PANEL )
-			{
-				
-				offer.displayPriority += MAX_OFFER_COUNT_PER_PANEL
-			}
-		}
-	}
-}
 
-void function ProcessColumnData( string storeLocation, GRXScriptOffer scriptOffer, GRXStoreOffer codeOffer )
-{
-	if( storeLocation != "shop" && storeLocation != "specials" && storeLocation != "seasonal")
-		return
 
-	if( !( "storerow" in codeOffer.attrs ) || !( "storecolumn" in codeOffer.attrs ) )
-		return
 
-	int row = int( codeOffer.attrs["storerow"] )
-	int col = int( codeOffer.attrs["storecolumn"] )
 
-	if ( row > 0 && col > 0 && scriptOffer.expireTime > GetUnixTimestamp() )
-	{
-		int colIdx = col - 1, rowIdx = row - 1
 
-		if( storeLocation == "specials" )
-		{
-			while ( fileLevel.specialsStoreOfferColumns.len() < colIdx + 1 )
-				fileLevel.specialsStoreOfferColumns.append( [] )
 
-			while ( fileLevel.specialsStoreOfferColumns[colIdx].len() < rowIdx + 1 )
-				fileLevel.specialsStoreOfferColumns[colIdx].append( [] )
 
-			fileLevel.specialsStoreOfferColumns[colIdx][rowIdx].append( scriptOffer )
-		}
-		else if ( storeLocation == "seasonal" )
-		{
-			while ( fileLevel.seasonalStoreOfferColumns.len() < colIdx + 1 )
-				fileLevel.seasonalStoreOfferColumns.append( [] )
 
-			while ( fileLevel.seasonalStoreOfferColumns[colIdx].len() < rowIdx + 1 )
-				fileLevel.seasonalStoreOfferColumns[colIdx].append( [] )
 
-			fileLevel.seasonalStoreOfferColumns[colIdx][rowIdx].append( scriptOffer )
-		}
-		else
-		{
-			while ( fileLevel.storeOfferColumns.len() < colIdx + 1 )
-				fileLevel.storeOfferColumns.append( [] )
 
-			while ( fileLevel.storeOfferColumns[colIdx].len() < rowIdx + 1 )
-				fileLevel.storeOfferColumns[colIdx].append( [] )
 
-			fileLevel.storeOfferColumns[colIdx][rowIdx].append( scriptOffer )
-		}
-	}
 
-#if GRX_DEBUG_PRINTS
-		if ( !fileLevel.GRX_DEBUG_PRINTS_disableTemporarily )
-		{
-			GRXDbg( null, "store_offer",
-				"col", col,
-				"row", row,
-				"flav", DEV_DescItemFlavor( scriptOffer.output.flavors[0] ),
-				"expireTime", scriptOffer.expireTime,
-				"descText", scriptOffer.descText,
-				"titleText", scriptOffer.titleText )
-		}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#if DEV
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 #endif
 
-}
 
 
 
 
-const array<int> HIGH_PRIORITY_ITEM_TYPES = [
-	eItemType.battlepass,
-	eItemType.character,
-]
-
-
-const table<int, int> ITEM_TYPE_PRIORITY_MAP = {
-	[eItemType.battlepass] = 110,
-	[eItemType.battlepass_purchased_xp] = 109,
-	[eItemType.character] =  100,
-	[eItemType.character_skin] = 81,
-	[eItemType.character_execution] = 80,
-	[eItemType.melee_skin] = 72,
-	[eItemType.weapon_skin] = 71,
-	[eItemType.weapon_charm] = 70,
-	[eItemType.gladiator_card_stance] = 65,
-	[eItemType.gladiator_card_frame] = 64,
-	[eItemType.gladiator_card_intro_quip] = 63,
-	[eItemType.gladiator_card_kill_quip] = 62,
-	[eItemType.gladiator_card_stat_tracker] = 61,
-	[eItemType.gladiator_card_badge] = 60,
-	[eItemType.music_pack] = 52,
-	[eItemType.loadscreen] = 51,
-	[eItemType.skydive_emote] = 50,
-	[eItemType.character_emote] = 45,
-	[eItemType.emote_icon] = 40,
-	[eItemType.battlepass_purchased_xp] = 4,
-	[eItemType.voucher] = 3,
-	[eItemType.battlepass_presale_voucher] = 2,
-	[eItemType.account_pack] = 1,
-	[eItemType.image_2d] = 0,
-	[eItemType.sticker] = 5,
-}
-
-int function SortStoreOfferItems( GRXStoreOfferItem itemA, GRXStoreOfferItem itemB )
-{
-	ItemFlavor a = GetItemFlavorByGRXIndex( itemA.itemIdx )
-	ItemFlavor b = GetItemFlavorByGRXIndex( itemB.itemIdx )
-
-	int itemTypeA = ItemFlavor_GetType( a )
-	int itemTypeB = ItemFlavor_GetType( b )
-
-	Assert( itemTypeA in ITEM_TYPE_PRIORITY_MAP && itemTypeB in ITEM_TYPE_PRIORITY_MAP, format("Found unsupported item type in store offer. Add it to itemTypePriorityMap if it should be supported. Type A is %d and Type B is %d.", itemTypeA, itemTypeB ) )
-
-	int itemTypePriorityA = ITEM_TYPE_PRIORITY_MAP[itemTypeA]
-	int itemTypePriorityB = ITEM_TYPE_PRIORITY_MAP[itemTypeB]
-
-	
-	bool hasHighestPriorityItemType = false
-	foreach ( int highPriorityType in HIGH_PRIORITY_ITEM_TYPES )
-		if ( itemTypeA == highPriorityType || itemTypeB == highPriorityType )
-			hasHighestPriorityItemType = true
-
-	int result = hasHighestPriorityItemType ? SortLowestFirst( itemTypePriorityA, itemTypePriorityB ) : 0
-	if ( result != 0 )
-		return result
-
-	result = SortLowestFirst( ItemFlavor_GetGRXMode( b ), ItemFlavor_GetGRXMode( a ) )
-	if ( result != 0 )
-		return result
-
-	result = SortLowestFirst( ItemFlavor_GetQuality( a ), ItemFlavor_GetQuality( b ) )
-	if ( result != 0 )
-		return result
-
-	return SortLowestFirst( itemTypePriorityA, itemTypePriorityB )
-}
-
-int function SortLowestFirst( int a, int b )
-{
-	if ( a < b )
-		return 1
-	else if ( b < a )
-		return -1
-
-	return 0
-}
 
 
 
 
-string function DEV_GRX_DescribeOffer( GRXScriptOffer offer )
-{
-	array<string> priceDescs = []
-	foreach ( int priceIdx, ItemFlavorBag price in offer.prices )
-		priceDescs.append( format( "price%d= %s", priceIdx, DEV_DescribeItemFlavorBag( price ) ) )
-	return format( "[contents= %s; %s]", DEV_DescribeItemFlavorBag( offer.output ), priceDescs.join( "; " ) )
-}
 
 
 
 
-void function ShowGRXErrorDialogue( string optionalMessage = "" )
-{
-	EmitUISound( "menu_deny" )
-
-	CloseAllDialogs()
-
-	ConfirmDialogData data
-	data.headerText = "#GRX_ERROR_HEADER"
-	data.messageText = Localize( "#GRX_ERROR_GENERIC" )
-	if ( optionalMessage != "" )
-		data.messageText += "\n\n" + Localize( optionalMessage )
-	data.contextImage = $"ui/menu/common/dialog_error"
-
-	OpenOKDialogFromData( data )
-}
 
 
 
 
-ItemFlavorBag ornull WORKAROUND_GRXPackOpened_Contents = null
-void function ClientToUI_WORKAROUND_GRXPackOpened_Start( int associatedError )
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+void function ClientCodeCallback_GRXPackOpened( array<int> balanceDiffs, array<int> newItems, int packError )
 {
 	ItemFlavorBag bag
-	bag.associatedError = associatedError
-	WORKAROUND_GRXPackOpened_Contents = bag
+
+	for ( int currencyIndex = 0; currencyIndex < GRX_CURRENCY_COUNT; currencyIndex++ )
+	{
+		ItemFlavor currency = GRX_CURRENCIES[currencyIndex]
+		int diff            = balanceDiffs[currencyIndex]
+		if ( diff != 0 )
+		{
+			bag.flavors.append( currency )
+			bag.quantities.append( diff )
+		}
+	}
+
+	foreach ( int itemGRXIndex in newItems )
+	{
+		ItemFlavor flav = GetItemFlavorByGRXIndex( itemGRXIndex )
+		bag.flavors.append( flav )
+		bag.quantities.append( 1 )
+
+		Newness_TEMP_MarkItemAsNewAndInformServer( flav )
+	}
+
+#if GRX_DEBUG_PRINTS
+		if ( !fileLevel.GRX_DEBUG_PRINTS_disableTemporarily )
+		{
+			GRXDbg( null, "" )
+			foreach ( int flavIndex, ItemFlavor flav in bag.flavors )
+			{
+				GRXDbg( null, "",
+					"flav", DEV_DescItemFlavor( flav ),
+					"name", Localize( ItemFlavor_GetLongName( flav ) ),
+					"qty", bag.quantities[flavIndex] )
+			}
+		}
+#endif
+
+	
+	if ( packError != GRX_INVENTORYERROR_NONE )
+	{
+		bag.associatedError = packError
+#if GRX_DEBUG_PRINTS
+			if ( !fileLevel.GRX_DEBUG_PRINTS_disableTemporarily )
+				GRXDbg( null, "", "packError", packError )
+#endif
+	}
+
+#if DEV
+		int menuHeirloomOverrideGUID = DEV_GetMenuHeirloomOverrideGUID()
+
+		if ( menuHeirloomOverrideGUID >= 0 )
+		{
+			ItemFlavor item = GetItemFlavorByGUID( menuHeirloomOverrideGUID )
+			bag.flavors.append( item )
+			bag.flavors.append( item )
+			bag.flavors.append( item )
+			bag.quantities.append( 1 )
+			bag.quantities.append( 1 )
+			bag.quantities.append( 1 )
+			bag.associatedError = 0
+		}
+		else if ( DEV_GRX_ForcePackResults_resultsOrNull != null )
+		{
+			printt( "PACK RESULTS FORCED!!" )
+			bag = expect ItemFlavorBag(DEV_GRX_ForcePackResults_resultsOrNull)
+		}
+#endif
+
+	RunUIScript( "ClientToUI_WORKAROUND_GRXPackOpened_Start", bag.associatedError )
+	foreach ( int flavIdx, ItemFlavor flav in bag.flavors )
+		RunUIScript( "ClientToUI_WORKAROUND_GRXPackOpened_Entry", ItemFlavor_GetGUID( flav ), bag.quantities[flavIdx] )
+	RunUIScript( "ClientToUI_WORKAROUND_GRXPackOpened_Finish" )
+
+	fileLevel.mostRecentPackOpeningResultsOrNull = bag
 }
-void function ClientToUI_WORKAROUND_GRXPackOpened_Entry( int guid, int qty )
-{
-	ItemFlavorBag bag = expect ItemFlavorBag(WORKAROUND_GRXPackOpened_Contents)
-	bag.flavors.append( GetItemFlavorByGUID( guid ) )
-	bag.quantities.append( qty )
-}
-void function ClientToUI_WORKAROUND_GRXPackOpened_Finish()
-{
-	fileLevel.mostRecentPackOpeningResultsOrNull = WORKAROUND_GRXPackOpened_Contents
-	WORKAROUND_GRXPackOpened_Contents = null
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -5195,9 +5619,6 @@ array<ItemFlavor> function GRX_GetStickerPacksWithRewards()
 bool function GRX_IsOfferRestricted( entity player = null )
 {
 
-
-
-
 	if ( player == null )
 		player = GetLocalClientPlayer()
 
@@ -5213,67 +5634,63 @@ bool function GRX_IsOfferRestricted( entity player = null )
 		PlayerGRXScriptState grxState = GetPlayerGRXScriptState( player )
 
 
+
+
+
 	return grxState.isOfferRestricted
 }
 
 
 
-bool function GRX_IsOfferRestrictedByOfferAttributes( GRXScriptOffer scriptOffer )
-{
-	bool isOfferRestricted = false
-	bool hasUnavailableReason =  false
-
-	if ( "unavailableReason" in scriptOffer.attributes )
-	{
-		hasUnavailableReason = true
-		scriptOffer.unavailableReason = scriptOffer.attributes.unavailableReason
-	}
-
-	if ( "restrict" in scriptOffer.attributes )
-	{
-		string restrictVal = scriptOffer.attributes["restrict"]
-		if ( restrictVal == "true" )
-			isOfferRestricted = true
-	}
-
-	return isOfferRestricted || hasUnavailableReason
-}
-
-
-
-bool function GRX_HasUpToDateBundleOffers( entity player = null )
-{
 
 
 
 
 
 
-	if ( player == null )
-		player = GetLocalClientPlayer()
-
-
-	PlayerGRXScriptState grxState = GetPlayerGRXScriptState( player )
-	return grxState.hasUpToDateBundleOffers
-}
 
 
 
 
-int function GRX_GetNextCurrencyExpirationAmt()
-{
-	PlayerGRXScriptState grxState = GetPlayerGRXScriptState( GetLocalClientPlayer() )
-	return grxState.nextCurrencyExpirationAmt
-}
 
 
 
 
-int function GRX_GetNextCurrencyExpirationTime()
-{
-	PlayerGRXScriptState grxState = GetPlayerGRXScriptState( GetLocalClientPlayer() )
-	return grxState.nextCurrencyExpirationTime
-}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -5305,65 +5722,20 @@ bool function GRX_IsItemCoveredByOfferRestrictions( ItemFlavor flav )
 
 
 
-ItemFlavorBag function GRX_MakeItemFlavorBagFromPriceArray( array<int> prices )
-{
-	ItemFlavorBag priceBag
-	foreach ( int currencyIndex, int currencyQuantity in prices )
-	{
-		ItemFlavor currencyFlav = GRX_CURRENCIES[currencyIndex]
 
-		if ( currencyQuantity <= 0 )
-			continue
 
-		priceBag.flavors.append( currencyFlav )
-		priceBag.quantities.append( currencyQuantity )
-	}
-	return priceBag
-}
 
 
 
-bool function GRX_CheckBundleAndUpdateOfferPrices( GRXScriptOffer offer )
-{
-	if ( offer.offerType != GRX_OFFERTYPE_BUNDLE )
-		return false
 
-	GRXBundleOffer bundle = GRX_GetUserBundleOffer( offer.offerAlias )
 
-	if ( bundle.ineligibleReason != "" )
-		return false
 
-	offer.prices.clear()
 
-	bool hasValidBundlePrices = false
-	bool hasValidOriginalPrices = false
 
-	ItemFlavorBag bundlePricesBag = GRX_MakeItemFlavorBagFromPriceArray( bundle.bundlePrices[0] )
-	if ( bundlePricesBag.flavors.len() > 0 )
-	{
-		offer.prices.append( bundlePricesBag )
-		hasValidBundlePrices = true
-	}
 
-	ItemFlavorBag originalPriceBag = GRX_MakeItemFlavorBagFromPriceArray( bundle.bundlePrices[1] )
-	if( originalPriceBag.flavors.len() > 0 )
-	{
-		offer.originalPrice = originalPriceBag
-		hasValidOriginalPrices = true
-	}
 
-	if ( hasValidBundlePrices && hasValidOriginalPrices && bundlePricesBag.flavors[0] == GRX_CURRENCIES[GRX_CURRENCY_PREMIUM] &&
-			bundlePricesBag.flavors[0] == originalPriceBag.flavors[0] && bundlePricesBag.quantities[0] > originalPriceBag.quantities[0] )
-	{
-		Assert( false, "Discount price for " + offer.offerAlias + " is higher than the normal price." )
 
-		offer.prices.clear()
-		offer.prices.append( originalPriceBag )
-		offer.originalPrice = bundlePricesBag
-	}
 
-	return true
-}
 
 
 
@@ -5406,102 +5778,106 @@ bool function GRX_CheckBundleAndUpdateOfferPrices( GRXScriptOffer offer )
 
 
 
-table<int, int> function GRX_GetPostGameRewards()
-{
-	
-	
-	table<int, int> postGameRewards = {}
-	entity player = GetLocalClientPlayer()
-
-	if ( !IsLocalClientEHIValid() )
-		return postGameRewards
-
-	for ( int persistentArrayIdx = 0; persistentArrayIdx < QUEUED_REWARDS_MAX_COUNT; persistentArrayIdx++ )
-	{
-		SettingsAssetGUID ornull rewardItemFlavGUID = GetQueuedRewardOrNull( persistentArrayIdx )
-		if ( rewardItemFlavGUID == null)
-			continue
-
-		expect SettingsAssetGUID( rewardItemFlavGUID )
-
-		SettingsAssetGUID sourceItemFlavGUID   = expect int( GetDialogFlowTablesValueOrPersistence( format( "grxQueuedRewards[%d].sourceGUID", persistentArrayIdx ) ) )
-		if ( sourceItemFlavGUID != 0 && IsValidItemFlavorGUID( sourceItemFlavGUID, eValidation.ASSERT ) )
-		{
-			switch( ItemFlavor_GetType( GetItemFlavorByGUID( sourceItemFlavGUID ) ) )
-			{
-				case eItemType.challenge: 
-					if ( ItemFlavor_GetType( GetItemFlavorByGUID( rewardItemFlavGUID ) ) == eItemType.gladiator_card_badge )
-						postGameRewards[ rewardItemFlavGUID ] <- persistentArrayIdx
-
-					break
-			}
-		}
-	}
-
-	return postGameRewards
-}
-
-
-
-SettingsAssetGUID ornull function GetQueuedRewardOrNull( int persistentArrayIdx )
-{
-	SettingsAssetGUID rewardItemFlavGUID = expect int( GetDialogFlowTablesValueOrPersistence( format( "grxQueuedRewards[%d].rewardGUIDs[0]", persistentArrayIdx ) ) )
-	if ( rewardItemFlavGUID == 0 )
-		return null
-
-	if ( !IsValidItemFlavorGUID( rewardItemFlavGUID, eValidation.DONT_ASSERT ) )
-	{
-		if ( GetCurrentPlaylistVarBool( "grx_purge_unknown_guid_rewards", true ) )
-		{
-			Warning( "Purging unknown ItemFlavor GUID " + rewardItemFlavGUID + " found in grxQueuedRewards." )
-			GRX_MarkRewardAcknowledged( rewardItemFlavGUID, persistentArrayIdx )
-		}
-		else
-		{
-			Assert( false, "Unknown ItemFlavor GUID " + rewardItemFlavGUID + " found in grxQueuedRewards." )
-		}
-		return null
-	}
-
-	bool rewardGiven        = expect bool( GetDialogFlowTablesValueOrPersistence( format( "grxQueuedRewards[%d].rewardGiven", persistentArrayIdx )  ) ) 
-	bool rewardAcknowledged = expect bool( GetDialogFlowTablesValueOrPersistence( format( "grxQueuedRewards[%d].rewardAcknowledged", persistentArrayIdx )  )  ) 
-	if ( !rewardGiven || rewardAcknowledged )
-		return null
-
-	return rewardItemFlavGUID
-}
-
-
-
-
-void function GRX_MarkRewardAcknowledged( int rewardItemFlavGUID, int persistentArrayIdx )
-{
-	SetDialogFlowPersistenceTables( format( "grxQueuedRewards[%d].sourceGUID", persistentArrayIdx ), 0 )
-	SetDialogFlowPersistenceTables( format( "grxQueuedRewards[%d].sourceGUID_extraData", persistentArrayIdx ), 0 )
-	SetDialogFlowPersistenceTables( format( "grxQueuedRewards[%d].rewardGUIDs[0]", persistentArrayIdx ), 0 )
-	SetDialogFlowPersistenceTables( format( "grxQueuedRewards[%d].rewardQuantities[0]", persistentArrayIdx ), 0 )
-	SetDialogFlowPersistenceTables( format( "grxQueuedRewards[%d].rewardGiven", persistentArrayIdx ), false )
-	SetDialogFlowPersistenceTables( format( "grxQueuedRewards[%d].rewardAcknowledged", persistentArrayIdx ), false )
-
-	if ( IsValidItemFlavorGUID( rewardItemFlavGUID, eValidation.DONT_ASSERT ) || !GetCurrentPlaylistVarBool( "grx_purge_unknown_guid_rewards", true ) )
-		Remote_ServerCallFunction( "ClientCallback_acknowledge_reward", persistentArrayIdx, rewardItemFlavGUID )
-}
-
-
-
-int function GRX_GetGiftingLimitCounter()
-{
-	PlayerGRXScriptState grxState = GetPlayerGRXScriptState( GetLocalClientPlayer() )
-	return grxState.giftingLimitCounter
-}
-
-
-
-int function GRX_GetGiftingLimitResetDate()
-{
-	PlayerGRXScriptState grxState = GetPlayerGRXScriptState( GetLocalClientPlayer() )
-	return grxState.giftingLimitResetDate
-}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 #if DEV
@@ -5540,9 +5916,16 @@ int function GRX_GetGiftingLimitResetDate()
 
 
 
-bool function GRX_IsLegendOffer( GRXScriptOffer offer )
-{
-	return offer.output.flavors.len() == 1 && ItemFlavor_GetType( offer.output.flavors[0] ) == eItemType.character
-}
+
+
+
+
+
+
+
+
+
+
+
 
 

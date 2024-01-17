@@ -196,6 +196,14 @@ void function UpdateFirstPersonIncapShieldColor_Thread( entity weapon, int fxHan
 			break
 		}
 
+		
+		
+		if ( weaponOwner != GetLocalClientPlayer() && weapon.GetWeaponChargeFraction() < 1.0 )
+		{
+			weapon.StopWeaponEffect( fxShieldAsset, fxShieldAsset )
+			break
+		}
+
 		WaitFrame()
 	}
 }

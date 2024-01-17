@@ -347,6 +347,8 @@ void function MpWeaponTeslaTrap_Init()
 
 
 
+
+
 		PrecacheParticleSystem( TESLA_TRAP_PLACE_RANGE_FX )
 		AddCreateCallback( "prop_script", TeslaTrap_OnPropScriptCreated )
 		AddDestroyCallback( "prop_script", TeslaTrap_OnPropScriptDestroyed )
@@ -699,7 +701,7 @@ TeslaTrapPlacementInfo function TeslaTrap_GetPlacementInfoFromTraceResults_New( 
 	entity placementParent = weapon.GetObjectPlacementParent()
 	bool success = weapon.ObjectPlacementHasValidSpot()
 
-	if ( success && IsOriginInvalidForPlacingPermanentOnto( placementPosition ) )
+	if ( success && IsOriginInvalidForPlacingPermanentOnto( placementPosition, proxy ) )
 		success = false
 
 	TeslaTrapPlacementInfo placementInfo
@@ -1024,7 +1026,7 @@ TeslaTrapPlacementInfo function TeslaTrap_GetPlacementInfoFromTraceResults( enti
 
 	if ( success )
 	{
-		if ( IsOriginInvalidForPlacingPermanentOnto( hullTraceResults.endPos ) )
+		if ( IsOriginInvalidForPlacingPermanentOnto( hullTraceResults.endPos, proxy ) )
 			success = false
 	}
 
@@ -2879,6 +2881,27 @@ void function TeslaTrap_PlacementProxy( entity weapon, entity player, asset mode
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 entity function TeslaTrap_CalculateFocalTrap( entity player, entity trap )
 {
 	TeslaTrapPlayerPlacementData placementData
@@ -3089,6 +3112,16 @@ void function OnFocusTrapChanged( entity player, entity newEnt )
 
 	TeslaTrap_SetFocalTrapForPlayer( localViewPlayer, newEnt )
 }
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -3535,6 +3568,9 @@ void function TeslaTrap_OnPropScriptDestroyed( entity ent )
 
 void function CreateTrapMinimapData( entity trap )
 {
+	if(!IsValid(trap))
+		return
+
 	
 	if ( trap in file.trapMinimapData )
 		return
@@ -4042,30 +4078,6 @@ bool function TrippedEntIsFriendlyObstructionType( entity crossingEnt )
 
 void function CodeCallback_TeslaTrapCrossed( entity trigger, entity start, entity end, entity crossingEnt )
 {
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

@@ -10,6 +10,7 @@ global function CausticTT_SetGasFunctionInvertedValue
 
 
 
+
 global function Caustic_TT_ServerCallback_SetCanistersOpen
 global function Caustic_TT_ServerCallback_SetCanistersClosed
 global function Caustic_TT_ServerCallback_SetSwitchesEnabled
@@ -128,20 +129,13 @@ struct
 
 
 
-}file
+} file
 
 void function Caustic_TT_Init()
 {
-	if (!GetCurrentPlaylistVarBool( "caustic_tt_enabled", true ))
-		return
-
 	AddCallback_EntitiesDidLoad( EntitiesDidLoad )
 
 		AddCreateCallback( "prop_dynamic", CausticCanisterSwitchSpawned )
-
-
-	PrecacheScriptString( "caustic_tt_loot" )
-
 
 
 
@@ -202,6 +196,8 @@ void function EntitiesDidLoad()
 {
 	if ( !IsCausticTTEnabled() )
 		return
+
+	PrecacheScriptString( "caustic_tt_loot" )
 
 
 
@@ -1064,6 +1060,18 @@ void function SetCanistersOpen()
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
 void function Caustic_TT_ServerCallback_SetCanistersOpen()
 {
 	file.canistersClosed = false
@@ -1136,12 +1144,12 @@ bool function AreCausticTTCanistersClosed( entity canisterPanel )
 
 bool function IsCausticTTEnabled()
 {
-	bool causticTTSwitchExists = true
-	array<entity> causticTTSwitches = GetEntArrayByScriptName( CAUSTIC_TT_SWITCH_SCRIPTNAME )
-	if ( causticTTSwitches.len() == 0 )
-		causticTTSwitchExists = false
+	if ( GetCurrentPlaylistVarBool( "caustic_tt_enabled", true ) )
+	{
+		return HasEntWithScriptName( CAUSTIC_TT_SWITCH_SCRIPTNAME )
+	}
 
-	return causticTTSwitchExists
+	return false
 }
 
 

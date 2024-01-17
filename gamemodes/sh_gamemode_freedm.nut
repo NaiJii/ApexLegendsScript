@@ -34,7 +34,6 @@ global function DEV_ScoreTrackAnimateIn
 
 
 
-
 global function FreeDM_GamemodeInitClient
 global function FreeDM_ScoreboardSetup
 global function FreeDM_SetScoreboardSetupFunc
@@ -90,6 +89,11 @@ const string FDM_PODIUM_FX_CONFETTI = "confetti_burst"
 
 const string FDM_PODIUM_SCRIPT_FIREBALL = "script_fireballs"
 const string FDM_PODIUM_SCRIPT_SPARKS = "script_sparks"
+
+
+
+
+
 
 
 
@@ -192,6 +196,8 @@ struct {
 
 
 
+
+
 	bool                          isScoreText = false
 	var        					  introCountdownRUI = null
 	asset functionref( int team ) getCustomIndicatorCallback = null
@@ -208,6 +214,29 @@ void function FreeDM_GamemodeInitShared()
 {
 	SetScoreEventOverrideFunc( FreeDM_SetScoreEventOverride )
 	GamemodeSurvivalShared_Init()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -324,6 +353,9 @@ void function FreeDM_GamemodeInitShared()
 
 
 }
+
+
+
 
 
 
@@ -616,12 +648,6 @@ bool function FreeDM_ShouldSpawnOnConnect(entity player)
 
 
 
-
-
-
-
-
-
 void function FreeDM_SetAudioEvent( int event, string eventString )
 {
 	if( event < 0 || event >= eFreeDMAudioEvents.Count )
@@ -632,24 +658,6 @@ void function FreeDM_SetAudioEvent( int event, string eventString )
 
 	file.audioEvents[ event ] <- eventString
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -1478,6 +1486,47 @@ const int FramesToWait = 60
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 const string FREEDM_AIRDROP_ANIMATION = "droppod_loot_drop_lifeline"
 
 
@@ -1673,6 +1722,11 @@ const string FREEDM_DEFAULT_AIRDROP_CONTENTS = "arenas_red_airdrop_weapons arena
 
 
 
+
+
+
+
+
 void function FreeDM_SetScoreEventOverride()
 {
 	ScoreEvent_SetGameModeRelevant( GetScoreEvent( "KillPilot" ) )
@@ -1703,7 +1757,7 @@ void function FreeDM_GamemodeInitClient()
 
 void function Client_OnPrematchInit()
 {
-	if ( GameRules_GetTeamScore2( GetLocalViewPlayer().GetTeam() ) >= GetRoundScoreLimit_FromPlaylist() )
+	if ( GameMode_AreRoundsEnabled() && GameRules_GetTeamScore2( GetLocalViewPlayer().GetTeam() ) >= GetRoundScoreLimit_FromPlaylist() )
 		return
 
 	float roundStartTime = GetCurrentPlaylistVarFloat( "freedm_prematch_intro_time", 0.0 )
@@ -2103,7 +2157,8 @@ void function FreeDM_DelayedShowScoreboard()
 
 void function ServerCallback_FreeDM_ChampionSounds( int winningTeamOrAlliance )
 {
-	entity localPlayer = GetLocalViewPlayer()
+	entity localPlayer = GetLocalClientPlayer()
+
 	bool isWinner = false
 
 	if ( AllianceProximity_IsUsingAlliances() )
@@ -2111,22 +2166,31 @@ void function ServerCallback_FreeDM_ChampionSounds( int winningTeamOrAlliance )
 	else
 		isWinner = localPlayer.GetTeam() == winningTeamOrAlliance
 
+	var endMusic
+	var endSound
 	if( isWinner )
 	{
 		SetChampionScreenSound( file.audioEvents[eFreeDMAudioEvents.Victory_Sound] )
 
-			EmitSoundOnEntity( localPlayer, TDM_VICTORY_SOUND )
+			endSound = EmitSoundOnEntity_NoTimeScale( localPlayer, TDM_VICTORY_SOUND )
 
-		EmitSoundOnEntity( localPlayer, file.audioEvents[eFreeDMAudioEvents.Victory_Music] )
+		endMusic = EmitSoundOnEntity_NoTimeScale( localPlayer, file.audioEvents[eFreeDMAudioEvents.Victory_Music] )
 	}
 	else
 	{
 		SetChampionScreenSound( file.audioEvents[eFreeDMAudioEvents.Defeat_Sound] )
 
-			EmitSoundOnEntity( localPlayer, TDM_LOSS_SOUND )
+			endSound = EmitSoundOnEntity_NoTimeScale( localPlayer, TDM_LOSS_SOUND )
 
-		EmitSoundOnEntity( localPlayer, file.audioEvents[eFreeDMAudioEvents.Loss_Music] )
+		endMusic = EmitSoundOnEntity_NoTimeScale( localPlayer, file.audioEvents[eFreeDMAudioEvents.Loss_Music] )
 	}
+
+
+		SetPlayThroughKillReplay( endMusic )
+		SetPlayThroughPOVTransitions( endMusic )
+		SetPlayThroughKillReplay( endSound )
+		SetPlayThroughPOVTransitions( endSound )
+
 }
 
 
@@ -2164,8 +2228,7 @@ void function UICallback_FreeDM_OpenCharacterSelect()
 	const bool showLockedCharacters = true
 	bool isJIP = GamemodeUtility_IsJIPPlayerSpawnBonusPending( clientPlayer )
 	HideScoreboard()
-
-	OpenCharacterSelectNewMenu( browseMode, showLockedCharacters, isJIP )
+	OpenCharacterSelectMenu( browseMode, showLockedCharacters, isJIP )
 }
 
 
@@ -2176,7 +2239,7 @@ void function FreeDM_CloseCharacterSelect()
 		return
 
 	HideScoreboard()
-	CloseCharacterSelectNewMenu()
+	CloseCharacterSelectMenu()
 }
 
 
@@ -2234,7 +2297,7 @@ void function FreeDM_SetCharacterInfo( var rui, int infoIndex, entity player )
 
 	RuiSetImage( rui, "portraitImage_" + infoIndex, CharacterClass_GetGalleryPortrait( character ) )
 	RuiSetBool( rui, "portraitImageVisible_" + infoIndex, true )
-	RuiSetColorAlpha( rui, "portraitBorderColor_" + infoIndex, SrgbToLinear( GetPlayerInfoColor( player ) / 255.0 ), 1.0 )
+	RuiSetColorAlpha( rui, "portraitBorderColor_" + infoIndex, GetPlayerInfoColor( player ), 1.0 )
 }
 
 

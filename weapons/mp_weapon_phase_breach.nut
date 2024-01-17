@@ -11,6 +11,9 @@ global function OnWeaponAttemptOffhandSwitch_weapon_phase_breach
 global function ServerToClient_PhaseBreachPortalCancelled
 
 
+
+
+
 const string SOUND_PORTAL_ENTRANCE_OPEN_1P = "Ash_PhaseBreach_Activate_1p"
 const string SOUND_PORTAL_ENTRANCE_OPEN_3P = "Ash_PhaseBreach_Activate_3p"
 const string SOUND_PORTAL_EXIT_OPEN = "Ash_PhaseBreach_PortalOpen_Exit_3p"
@@ -30,6 +33,9 @@ const vector BREACH_HULLCHECK_MAXS   = < 5.0,  5.0, 36.0 + 5.0>
 const float PHASE_BREACH_SPEED = 1200.0
 const float PHASE_BREACH_TRAVEL_TIME_MIN = 0.3
 const float PHASE_BREACH_TRAVEL_TIME_MAX = 1.8
+
+
+
 const float PHASE_BREACH_PORTAL_LIFETIME = 15.0
 
 
@@ -43,6 +49,7 @@ const float PHASE_BREACH_MOVERS_MAX_SPEED_FOR_END_DEFAULT = 12.0
 const bool  PHASE_BREACH_ALLOW_END_ON_OOB = true
 const float PHASE_BREACH_MIN_VIEW_DOT = 0.95
 
+const bool DEBUG_DRAW_TARGETING = false
 const bool DEBUG_DRAW_PLACEMENT_TRACES = false
 const bool DEBUG_DRAW_ENDING_SCORES    = false
 const bool DEBUG_DRAW_PUSHER_MOVEMENT  = false
@@ -124,8 +131,29 @@ void function MpWeaponPhaseBreach_Init()
 
 	Remote_RegisterClientFunction( FUNC_BREACH_FAILED )
 
+
+
+
 	file.breachPersistsWhenAshDies = GetCurrentPlaylistVarBool( "ash_ult_persists_past_ash_death", true )
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 void function OnWeaponActivate_weapon_phase_breach( entity weapon )
@@ -251,12 +279,103 @@ var function OnWeaponPrimaryAttackAnimEvent_ability_phase_breach( entity weapon,
 
 
 
+
+
+
+
+
+
+
+
+
+
+
 		if ( player == GetLocalViewPlayer() )
 			weapon.Signal( SIGNAL_PHASE_BREACH_STOP_PLACEMENT )
 
 
 	return 0
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -545,6 +664,24 @@ void function ServerToClient_PhaseBreachPortalCancelled()
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 const float DOWN_TRACE_DISTANCE = 1000.0
 const float BACK_TRACE_STEP_DIST = 50.0
 const float BACK_TRACE_MAX_STEP = 200.0
@@ -574,7 +711,7 @@ PhaseBreachTargetInfo function GetPhaseBreachTargetInfo( entity player )
 
 	
 	
-	if ( ! PhaseTunnel_IsPortalExitPointValid( player, info.startPos, player, true, info.startCrouched ) )
+	if ( ! PhaseTunnel_IsPortalExitPointValid( player, info.startPos, player, true, info.startCrouched,DEBUG_DRAW_TARGETING ) )
 	{
 		info.startBlocked = true
 		return info
@@ -868,7 +1005,7 @@ bool function GenerateBreachPathInfo( entity player, PhaseBreachTargetInfo info,
 {
 	
 	
-	if ( !PhaseTunnel_IsPortalExitPointValid( player, endPos, player, true, false ) )
+	if ( !PhaseTunnel_IsPortalExitPointValid( player, endPos, player, true, false, DEBUG_DRAW_PLACEMENT_TRACES ) )
 		return false
 
 	vector portalDir = Normalize( endPos - info.startPos )

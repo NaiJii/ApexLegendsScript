@@ -23,7 +23,7 @@ const float DAMAGEHUD_GRENADE_DEBOUNCE_TIME = 0.4
 const float DAMAGEHUD_GRENADE_DEBOUNCE_TIME_LOWSPEED = 0.15
 const float DAMAGEHUD_GRENADE_DEBOUNCE_TIME_LOWSPEED_VELOCITYCUTOFF = 500.0
 
-const float GRENADE_INDICATOR_LIMIT = 128.0
+const int GRENADE_INDICATOR_LIMIT = 128
 
 
 struct {
@@ -361,12 +361,11 @@ bool function ShouldShowDamageArrows( int damageSourceId )
 
 
 
-
 		case eDamageSourceId.mp_ability_spike_strip:
-
-
 		case eDamageSourceId.damagedef_grenade_gas:
 		case eDamageSourceId.mp_weapon_tesla_trap:
+
+		case eDamageSourceId.mp_ability_conduit_shield_mines:
 
 		case eDamageSourceId.damagedef_ability_silence:
 
@@ -536,6 +535,7 @@ void function GrenadeArrowThink( entity player, entity grenade, float damageRadi
 
 	float lastVisibleTime = 0
 	bool shouldBeVisible  = true
+	bool wasVisible = false
 
 
 
@@ -652,29 +652,36 @@ void function GrenadeArrowThink( entity player, entity grenade, float damageRadi
 			}
 		}
 
-		if ( shouldBeVisible || Time() - lastVisibleTime < 0.25 )
+		bool inNoFlickerTime = Time() - lastVisibleTime < 0.25
+		if ( shouldBeVisible || inNoFlickerTime  )
 		{
-			arrow.EnableDraw()
-			mdl.EnableDraw()
+			if ( !wasVisible )
+			{
+				arrow.EnableDraw()
 
-			arrow.kv.rendercolor = GetKeyColor( COLORID_HUD_INDICATOR_ARROW )
-			mdl.kv.rendercolor = GetKeyColor( COLORID_HUD_INDICATOR_GRENADE_MODEL )
+				mdl.EnableDraw()
+				wasVisible = true
 
-			arrow.DisableRenderWithViewModelsNoZoom()
-			arrow.EnableRenderWithCockpit()
-			arrow.EnableRenderWithHud()
-			mdl.DisableRenderWithViewModelsNoZoom()
-			mdl.EnableRenderWithCockpit()
-			mdl.EnableRenderWithHud()
+				arrow.kv.rendercolor = GetKeyColor( COLORID_HUD_INDICATOR_ARROW )
+				mdl.kv.rendercolor   = GetKeyColor( COLORID_HUD_INDICATOR_GRENADE_MODEL )
+
+				arrow.DisableRenderWithViewModelsNoZoom()
+				arrow.EnableRenderWithCockpit()
+				arrow.EnableRenderWithHud()
+				mdl.DisableRenderWithViewModelsNoZoom()
+				mdl.EnableRenderWithCockpit()
+				mdl.EnableRenderWithHud()
+
+				
+				if ( arrow.GetParent() == null )
+					arrow.SetParent( cockpit, "CAMERA_BASE", true )
+			}
 
 			vector damageArrowAngles = AnglesInverse( player.EyeAngles() )
 			vector vecToDamage       = ( grenade.GetOrigin() + visualOffset ) - (player.EyePosition() + (player.GetViewVector() * 20.0))
 
-			
-			if ( arrow.GetParent() == null )
-				arrow.SetParent( cockpit, "CAMERA_BASE", true )
-
 			arrow.SetAttachOffsetAngles( damageArrowAngles.AnglesCompose( vecToDamage.VectorToAngles() ) )
+
 
 
 
@@ -686,8 +693,12 @@ void function GrenadeArrowThink( entity player, entity grenade, float damageRadi
 		}
 		else
 		{
-			mdl.DisableDraw()
-			arrow.DisableDraw()
+			if ( wasVisible )
+			{
+				mdl.DisableDraw()
+				arrow.DisableDraw()
+				wasVisible = false
+			}
 
 
 
@@ -742,10 +753,6 @@ asset function GetIndicatorModel( entity grenade )
 				case eThreatIndicatorID.GRENADE_INDICATOR_CLUSTER_BOMB_MODEL:
 					return GRENADE_INDICATOR_CLUSTER_BOMB_MODEL
 					break
-
-				case eThreatIndicatorID.GRENADE_INDICATOR_SKULL_MODEL:
-					return GRENADE_INDICATOR_SKULL_MODEL
-					break
 			}
 		}
 	}
@@ -756,12 +763,10 @@ asset function GetIndicatorModel( entity grenade )
 	if ( grenade.GetScriptName() == SONIC_BLAST_THREAT_TARGETNAME )
 		return GRENADE_INDICATOR_GENERIC
 
-
-		if ( grenade.GetScriptName() == CASTLE_WALL_THREAT_TARGETNAME )
-			return GRENADE_INDICATOR_GENERIC
-		if ( grenade.GetTargetName() == ARMORED_LEAP_IMPACT_ZONE_THREAT_TARGETNAME )
-			return GRENADE_INDICATOR_GENERIC
-
+	if ( grenade.GetScriptName() == CASTLE_WALL_THREAT_TARGETNAME )
+		return GRENADE_INDICATOR_GENERIC
+	if ( grenade.GetTargetName() == ARMORED_LEAP_IMPACT_ZONE_THREAT_TARGETNAME )
+		return GRENADE_INDICATOR_GENERIC
 
 	if ( grenade.GetTargetName() == RIOT_DRILL_DANGERZONE_TARGETNAME )
 		return GRENADE_INDICATOR_GENERIC
@@ -770,15 +775,16 @@ asset function GetIndicatorModel( entity grenade )
 		return GRENADE_INDICATOR_GENERIC
 
 
-
-
-
-
-
+	if ( grenade.GetTargetName() == SHIELD_MINES_THREAT_PROP_TARGETNAME )
+		return GRENADE_INDICATOR_GENERIC
 
 
 	if ( grenade.GetTargetName() == SPIKE_STRIP_CORE_SPIKE_NAME )
 		return GRENADE_INDICATOR_GENERIC
+
+
+
+
 
 
 
@@ -811,6 +817,12 @@ asset function GetIndicatorModel( entity grenade )
 				return GRENADE_INDICATOR_SONAR_MODEL
 				break
 
+
+			case eThreatIndicatorID.GRENADE_INDICATOR_SKULL_MODEL:
+				return GRENADE_INDICATOR_SKULL_MODEL
+				break
+
+
 			case eThreatIndicatorID.GRENADE_INDICATOR_BOMB:
 
 
@@ -842,10 +854,8 @@ vector function GetIndicatorTraceOffset( entity grenade )
 	if ( grenade.GetTargetName() == CREEPING_BOMBARDMENT_TARGETNAME )
 		return <0, 0, 16>
 
-
 	if ( grenade.GetTargetName() == SPIKE_STRIP_CORE_SPIKE_NAME )
 		return <0, 0, 30>
-
 
 	return <0, 0, 0>
 }

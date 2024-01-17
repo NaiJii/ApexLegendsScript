@@ -5,8 +5,8 @@ global function Loadout_CharacterExecution
 global function Loadout_CharacterIntroQuip
 global function Loadout_CharacterKillQuip
 
-
-
+global function PlayIntroQuipThread
+global function PlayKillQuipThread
 
 global function CharacterExecution_IsNotEquippable
 global function CharacterExecution_ShouldHideIfNotEquippable
@@ -18,6 +18,7 @@ global function CharacterExecution_GetAttackerPreviewAnimSeq
 global function CharacterExecution_GetVictimPreviewAnimSeq
 global function CharacterExecution_GetSortOrdinal
 global function CharacterExecution_GetVictimOverrideExecution
+global function CharacterExecution_GetExecutionDependencyType
 global function CharacterClass_GetDefaultSkin
 global function CharacterSkin_GetCharacterFlavor
 global function CharacterSkin_GetBodyModel
@@ -48,8 +49,8 @@ global function CharacterIntroQuip_GetVoiceSoundEvent
 global function CharacterIntroQuip_GetStingSoundEvent
 global function CharacterIntroQuip_GetSortOrdinal
 
-
-
+global function CharacterSkin_Apply
+global function CharacterSkin_WaitForAndApplyFromLoadout
 
 
 
@@ -57,15 +58,15 @@ global function CharacterIntroQuip_GetSortOrdinal
 global function CharacterSkin_ShouldHideIfLocked
 
 
-
-
-
-
 #if DEV
-
-
-
+global function DEV_TestCharacterSkinData
 #endif
+
+
+
+
+
+
 
 
 
@@ -81,6 +82,14 @@ global const int MAX_FAVORITE_SKINS = 8
 
 
 #endif
+
+
+global enum eExecutionDependency
+{
+	NONE,
+	SKIN,
+	MELEE_ITEM
+}
 
 
 
@@ -117,6 +126,7 @@ void function ShCharacterCosmetics_LevelInit()
 
 void function OnItemFlavorRegistered_Character( ItemFlavor characterClass )
 {
+	bool setShouldContainANonGRXItem = CharacterClass_GetIsShippingCharacter( characterClass )
 	
 	{
 		array<ItemFlavor> skinList = RegisterReferencedItemFlavorsFromArray( characterClass, "skins", "flavor" )
@@ -129,7 +139,7 @@ void function OnItemFlavorRegistered_Character( ItemFlavor characterClass )
 		}
 		Assert( characterClass == GetItemFlavorByAsset( CHARACTER_RANDOM ) || characterClass in fileLevel.defaultSkins, "No default skin found for: " + string(ItemFlavor_GetAsset( characterClass )) )
 
-		MakeItemFlavorSet( skinList, fileLevel.cosmeticFlavorSortOrdinalMap )
+		MakeItemFlavorSet( skinList, fileLevel.cosmeticFlavorSortOrdinalMap, setShouldContainANonGRXItem )
 
 		LoadoutEntry entry = RegisterLoadoutSlot( eLoadoutEntryType.ITEM_FLAVOR, "character_skin_for_" + ItemFlavor_GetGUIDString( characterClass ), eLoadoutEntryClass.CHARACTER )
 		entry.category     = eLoadoutCategory.CHARACTER_SKINS
@@ -153,12 +163,12 @@ void function OnItemFlavorRegistered_Character( ItemFlavor characterClass )
 		entry.networkTo                 = eLoadoutNetworking.PLAYER_GLOBAL
 		entry.networkVarName            = "CharacterSkin"
 
-
-
-
-
-
-
+			if ( IsLobby() )
+			{
+				AddCallback_ItemFlavorLoadoutSlotDidChange_AnyPlayer( entry, void function( EHI playerEHI, ItemFlavor skin ) {
+					UpdateMenuCharacterModel( FromEHI( playerEHI ) )
+				} )
+			}
 
 		fileLevel.loadoutCharacterSkinSlotMap[characterClass] <- entry
 	}
@@ -167,7 +177,7 @@ void function OnItemFlavorRegistered_Character( ItemFlavor characterClass )
 	{
 		array<ItemFlavor> executionsList = RegisterReferencedItemFlavorsFromArray( characterClass, "executions", "flavor" )
 
-		MakeItemFlavorSet( executionsList, fileLevel.cosmeticFlavorSortOrdinalMap )
+		MakeItemFlavorSet( executionsList, fileLevel.cosmeticFlavorSortOrdinalMap, setShouldContainANonGRXItem )
 
 		LoadoutEntry entry = RegisterLoadoutSlot( eLoadoutEntryType.ITEM_FLAVOR, "character_execution_for_" + ItemFlavor_GetGUIDString( characterClass ), eLoadoutEntryClass.CHARACTER )
 		entry.category     = eLoadoutCategory.CHARACTER_EXECUTIONS
@@ -186,7 +196,10 @@ void function OnItemFlavorRegistered_Character( ItemFlavor characterClass )
 
 			if ( ItemFlavor_GetQuality( execution ) == eRarityTier.MYTHIC && Mythics_IsCustomExecutionInMythicBundle( execution ) )
 			{
-				ItemFlavor character = LoadoutSlot_GetItemFlavor( playerEHI, Loadout_Character() )
+				if ( shouldIgnoreGRX )
+					return true
+
+				ItemFlavor character = Mythics_GetCharacterForSkin( Mythics_GetCharacterSkinForCustomExecution( execution ) )
 				ItemFlavor skin = LoadoutSlot_GetItemFlavor( playerEHI, Loadout_CharacterSkin( character ) )
 
 				if ( Mythics_IsItemFlavorMythicSkin( skin ) )
@@ -212,7 +225,7 @@ void function OnItemFlavorRegistered_Character( ItemFlavor characterClass )
 	
 	{
 		array<ItemFlavor> quipList = RegisterReferencedItemFlavorsFromArray( characterClass, "introQuips", "flavor" )
-		MakeItemFlavorSet( quipList, fileLevel.cosmeticFlavorSortOrdinalMap )
+		MakeItemFlavorSet( quipList, fileLevel.cosmeticFlavorSortOrdinalMap, setShouldContainANonGRXItem )
 
 		LoadoutEntry entry = RegisterLoadoutSlot( eLoadoutEntryType.ITEM_FLAVOR, "character_intro_quip_for_" + ItemFlavor_GetGUIDString( characterClass ), eLoadoutEntryClass.CHARACTER )
 		entry.category     = eLoadoutCategory.CHARACTER_INTRO_QUIPS
@@ -237,7 +250,7 @@ void function OnItemFlavorRegistered_Character( ItemFlavor characterClass )
 	
 	{
 		array<ItemFlavor> quipList = RegisterReferencedItemFlavorsFromArray( characterClass, "killQuips", "flavor" )
-		MakeItemFlavorSet( quipList, fileLevel.cosmeticFlavorSortOrdinalMap )
+		MakeItemFlavorSet( quipList, fileLevel.cosmeticFlavorSortOrdinalMap, setShouldContainANonGRXItem )
 
 		LoadoutEntry entry = RegisterLoadoutSlot( eLoadoutEntryType.ITEM_FLAVOR, "character_kill_quip_for_" + ItemFlavor_GetGUIDString( characterClass ), eLoadoutEntryClass.CHARACTER )
 		entry.category     = eLoadoutCategory.CHARACTER_KILL_QUIPS
@@ -260,16 +273,17 @@ void function OnItemFlavorRegistered_Character( ItemFlavor characterClass )
 
 	{
 		array<ItemFlavor> quipList = RegisterReferencedItemFlavorsFromArray( characterClass, "emoteIcons", "flavor" )
-		MakeItemFlavorSet( quipList, fileLevel.cosmeticFlavorSortOrdinalMap )
+		MakeItemFlavorSet( quipList, fileLevel.cosmeticFlavorSortOrdinalMap, false ) 
 		allEmotes.extend( quipList )
 	}
 
-	array<ItemFlavor> emotesList = RegisterReferencedItemFlavorsFromArray( characterClass, "emotes", "flavor" )
-	MakeItemFlavorSet( emotesList, fileLevel.cosmeticFlavorSortOrdinalMap )
-	allEmotes.extend( emotesList )
-
-	
-	RegisterEquippableQuipsForCharacter( characterClass, allEmotes, emotesList )
+	{
+		array<ItemFlavor> emotesList = RegisterReferencedItemFlavorsFromArray( characterClass, "emotes", "flavor" )
+		MakeItemFlavorSet( emotesList, fileLevel.cosmeticFlavorSortOrdinalMap, setShouldContainANonGRXItem )
+		allEmotes.extend( emotesList )
+		
+		RegisterEquippableQuipsForCharacter( characterClass, allEmotes, emotesList )
+	}
 
 	
 	RegisterSkydiveEmotesForCharacter( characterClass )
@@ -283,11 +297,12 @@ void function OnItemFlavorRegistered_Character( ItemFlavor characterClass )
 void function SetupCharacterSkin( ItemFlavor skin )
 {
 
-
-
-
-
-
+		if ( !ItemFlavor_IsTheFavoriteSentinel( skin ) )
+		{
+			PrecacheSkinName( CharacterSkin_GetSkinName( skin ) )
+			PrecacheOnDemandLoadModel( ODL_SKINS, CharacterSkin_GetPakFile( skin ), CharacterSkin_GetBodyModel( skin ), CharacterSkin_GetLoadingBodyModel( skin ) )
+			PrecacheOnDemandLoadModel( ODL_SKINS, CharacterSkin_GetPakFile( skin ), CharacterSkin_GetArmsModel( skin ), CharacterSkin_GetLoadingArmsModel( skin ) )
+		}
 
 }
 
@@ -323,72 +338,72 @@ LoadoutEntry function Loadout_CharacterKillQuip( ItemFlavor characterClass )
 
 
 
+void function PlayIntroQuipThread( entity emitter, EHI playerEHI, entity exceptionPlayer = null )
+{
+	EndSignal( emitter, "OnDestroy" )
 
+		Timeout timeout = BeginTimeout( 4.0 )
+		EndSignal( timeout, "Timeout" )
 
+	ItemFlavor character = LoadoutSlot_WaitForItemFlavor( playerEHI, Loadout_Character() )
+	ItemFlavor quip      = LoadoutSlot_WaitForItemFlavor( playerEHI, Loadout_CharacterIntroQuip( character ) )
 
+		CancelTimeoutIfAlive( timeout )
 
 
+	string quipAlias = CharacterIntroQuip_GetVoiceSoundEvent( quip )
+	PlayQuip( quipAlias, emitter, playerEHI, exceptionPlayer )
+}
 
 
 
 
+void function PlayKillQuipThread( entity emitter, EHI playerEHI, entity exceptionPlayer = null, float delay = 0.0 )
+{
+	EndSignal( emitter, "OnDestroy" )
 
+	wait delay
 
 
+		Timeout timeout = BeginTimeout( 4.0 )
+		EndSignal( timeout, "Timeout" )
 
+	ItemFlavor character = LoadoutSlot_WaitForItemFlavor( playerEHI, Loadout_Character() )
+	ItemFlavor quip      = LoadoutSlot_WaitForItemFlavor( playerEHI, Loadout_CharacterKillQuip( character ) )
 
+		CancelTimeoutIfAlive( timeout )
 
 
+	string quipAlias = CharacterKillQuip_GetVictimVoiceSoundEvent( quip )
+#if DEV
+		entity player = FromEHI( playerEHI )
+		printt( format( "%s(): Kill Quip for %s using quip %s == %s", FUNC_NAME(), string( player ), string( quip ), quipAlias ) )
+#endif
+	PlayQuip( quipAlias, emitter, playerEHI, exceptionPlayer )
+}
 
 
 
 
+void function PlayQuip( string quipAlias, entity emitter, EHI playerEHI, entity exceptionPlayer )
+{
+	Assert( IsValid( emitter ) )
+	if ( !IsValid( emitter ) )
+		return
 
+	if ( quipAlias != "" )
+	{
 
 
 
 
 
 
+			var quipHandle = EmitSoundOnEntity( emitter, quipAlias )
+			SetPlayThroughKillReplay( quipHandle )
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+	}
+}
 
 
 
@@ -445,16 +460,8 @@ string function CharacterSkin_GetPakFile( ItemFlavor flavor )
 	Assert( ItemFlavor_GetType( flavor ) == eItemType.character_skin )
 
 	
-	string forcedPak = GetConVarString( "r_skin_forced_pak_file" )
-	if ( forcedPak != "" )
-		return forcedPak
-
-	
 	string pak = string(GetGlobalSettingsAsset( ItemFlavor_GetAsset( flavor ), "pak" ))
-	if ( pak != "" )
-		return pak
-
-	return "root_lgnd_skins.rpak"
+	return pak
 }
 
 int function CharacterSkin_GetCamoIndex( ItemFlavor flavor )
@@ -466,6 +473,44 @@ int function CharacterSkin_GetCamoIndex( ItemFlavor flavor )
 
 
 
+void function CharacterSkin_Apply( entity ent, ItemFlavor skin )
+{
+	Assert( ItemFlavor_GetType( skin ) == eItemType.character_skin )
+
+	if ( IsFiringRangeGameMode() )
+	{
+		printt( "FiringRangeDebug: ApplyAppropriateCharacterSkin called for " + ent )
+	}
+
+	asset bodyModel = CharacterSkin_GetBodyModel( skin )
+	asset armsModel = CharacterSkin_GetArmsModel( skin )
+
+	ent.SetSkin( 0 ) 
+	ent.SetModel( bodyModel )
+
+	int skinIndex = ent.GetSkinIndexByName( CharacterSkin_GetSkinName( skin ) )
+	int camoIndex = CharacterSkin_GetCamoIndex( skin )
+
+	if ( skinIndex == -1 )
+	{
+		skinIndex = 0
+		camoIndex = 0
+	}
+
+	ent.SetSkin( skinIndex )
+	ent.SetCamo( camoIndex )
+
+	if ( bodyModel == $"mdl/humans/class/medium/pilot_medium_bloodhound.rmdl" )
+	{
+		foreach ( entity child in ent.GetChildren() )
+		{
+			if ( child.GetModelName() == BLOODHOUND_BIRD_MDL )
+			{
+				string characterSkinName = CharacterSkin_GetSkinName( skin )
+				child.SetSkin ( characterSkinName == "bloodhound_epicp_v21_aether" ? 2 : 0 )
+			}
+		}
+	}
 
 
 
@@ -474,60 +519,23 @@ int function CharacterSkin_GetCamoIndex( ItemFlavor flavor )
 
 
 
+}
 
 
 
 
+void function CharacterSkin_WaitForAndApplyFromLoadout( entity player, entity targetEnt )
+{
+	ItemFlavor character = LoadoutSlot_WaitForItemFlavor( ToEHI( player ), Loadout_Character() )
+	if ( !IsValid( player ) || !IsValid( targetEnt ) )
+		return
 
+	ItemFlavor characterSkin = LoadoutSlot_WaitForItemFlavor( ToEHI( player ), Loadout_CharacterSkin( character ) )
+	if ( !IsValid( player ) || !IsValid( targetEnt ) )
+		return
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+	CharacterSkin_Apply( targetEnt, characterSkin )
+}
 
 
 
@@ -806,6 +814,15 @@ ItemFlavor ornull function CharacterExecution_GetVictimOverrideExecution( ItemFl
 }
 
 
+int function CharacterExecution_GetExecutionDependencyType( ItemFlavor characterExecution )
+{
+	Assert( ItemFlavor_GetType( characterExecution ) == eItemType.character_execution )
+
+	int executionDependency = GetGlobalSettingsInt( ItemFlavor_GetAsset( characterExecution ), "executionDependency" )
+	return executionDependency
+}
+
+
 bool function CharacterKillQuip_IsTheEmpty( ItemFlavor flavor )
 {
 	Assert( ItemFlavor_GetType( flavor ) == eItemType.gladiator_card_kill_quip )
@@ -924,40 +941,40 @@ string function HoloSpray_GetStoryBlurbBodyText( ItemFlavor flavor )
 	return GetGlobalSettingsString( ItemFlavor_GetAsset( flavor ), "customSkinMenuBlurb" )
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 #if DEV
+void function DEV_TestCharacterSkinData()
+{
+	entity model = CreateClientSidePropDynamic( <0, 0, 0>, <0, 0, 0>, $"mdl/dev/empty_model.rmdl" )
 
+	foreach ( character in GetAllCharacters() )
+	{
+		array<ItemFlavor> characterSkins = GetValidItemFlavorsForLoadoutSlot( LocalClientEHI(), Loadout_CharacterSkin( character ) )
 
+		foreach ( skin in characterSkins )
+		{
+			printt( string(ItemFlavor_GetAsset( skin )), "skinName:", CharacterSkin_GetSkinName( skin ) )
+			CharacterSkin_Apply( model, skin )
+		}
+	}
 
-
-
-
-
-
-
-
-
-
-
-
+	model.Destroy()
+}
 #endif
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

@@ -3,9 +3,6 @@ global function LaunchMP
 global function AttemptLaunch
 global function GetUserSignInState
 global function UpdateSignedInState
-
-
-
 global function SetLaunchingState
 global function GetLaunchingState
 global function CanAutoRetryConnect
@@ -21,9 +18,6 @@ struct
 	var titleArt
 	var versionDisplay
 	var signedInDisplay
-
-
-
 	bool canAutoRetryConnect = true
 
 
@@ -57,17 +51,12 @@ void function InitMainMenu( var newMenuArg )
 	RuiSetImage( titleArtRui, "basicImage", $"ui/menu/title_screen/title_art" )
 
 	var subtitleRui = Hud_GetRui( Hud_GetChild( file.menu, "Subtitle" ) )
-	RuiSetString( subtitleRui, "subtitleText", Localize( "#BP_S18_NAME").toupper() )
+	RuiSetString( subtitleRui, "subtitleText", Localize( "#BP_S19_NAME").toupper() )
 	if ( GetLanguage() == "polish" )
 		RuiSetBool( subtitleRui, "useAltFont", true )
 
 	file.versionDisplay = Hud_GetChild( menu, "VersionDisplay" )
 	file.signedInDisplay = Hud_GetChild( menu, "SignInDisplay" )
-
-
-
-
-
 
 
 
@@ -176,44 +165,6 @@ void function UpdateSignedInState()
 
 	Hud_SetText( file.signedInDisplay, "" )
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 void function SetLaunchingState( int val )

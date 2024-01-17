@@ -67,6 +67,11 @@ vector function RTKMutator_ScaleVector( vector input, float x )
 	return input * x
 }
 
+vector function RTKMutator_VectorMultiplyVector( vector input, vector a )
+{
+	return < input.x * a.x, input.y * a.y, input.z * a.z >
+}
+
 vector function RTKMutator_LerpVector( float input, vector a, vector b )
 {
 	return a + ( ( b - a ) * input )
@@ -93,6 +98,11 @@ vector function RTKMutator_PickVectorFromTwo( int input, vector option0, vector 
 }
 
 float function RTKMutator_PickFloatFromTwo( int input, float option0, float option1 )
+{
+	return input == 1 ? option1 : option0
+}
+
+int function RTKMutator_PickIntFromTwo( int input, int option0, int option1 )
 {
 	return input == 1 ? option1 : option0
 }
@@ -126,4 +136,9 @@ vector function RTKMutator_PickVectorFromThree( int input, vector param0, vector
 	Warning( "RTKMutator_PickVectorFromThree : Invalid index" )
 	return < 0,0,0 >
 	
+}
+
+int function RTKMutator_Minus( int input )
+{
+	return -input
 }

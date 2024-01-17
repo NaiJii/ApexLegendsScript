@@ -100,6 +100,7 @@ void function OpenGiftingDialog( GRXScriptOffer offer )
 	AdvanceMenu( file.menu )
 	RunClientScript( "DisableModelTurn" )
 	RegisterButtonPressedCallback( BUTTON_Y, FocusSearchBar_OnClick )
+	HudElem_SetRuiArg( file.dialogContent, "quality", GetQualityDisplayFromOffer( offer ) )
 	HudElem_SetRuiArg( file.dialogContent, "qualityText", GetFormatedQualityStringFromOffer( offer ) )
 	HudElem_SetRuiArg( file.dialogContent, "isBattlePass",  ItemFlavor_IsBattlepass( offer.output.flavors[0] ) )
 
@@ -148,6 +149,10 @@ void function OpenGiftingDialog( GRXScriptOffer offer )
 	UpdateSearchBar_OnInputChanged( IsControllerModeActive() )
 	FriendName_OnChanged( null )
 	Gifting_MenuUpdate()
+
+#if PC_PROG_NX_UI
+	AddUICallback_NXOperationModeChanged( OnNxOperationModeChanged )
+#endif
 }
 
 void function FriendButton_Init( var button, GiftingFriend friend )
@@ -222,44 +227,24 @@ string function GetFormatedQualityStringFromOffer( GRXScriptOffer offer )
 	string formatedString = ""
 
 	if ( ItemFlavor_IsBattlepass( offer.output.flavors[0] ) )
-		return "`1" + Localize( ItemQuality_GetBattlePassQualityName( offer.output.flavors[0] ) )
+		return Localize( ItemQuality_GetBattlePassQualityName( offer.output.flavors[0] ) )
 
-	table<int,int> qualityCounter = { [eRarityTier.LEGENDARY] = 0 , [eRarityTier.EPIC] = 0 , [eRarityTier.RARE] = 0 }
+	return Localize ( ItemQuality_GetQualityName( GetQualityDisplayFromOffer( offer ) ) )
+}
+
+int function GetQualityDisplayFromOffer( GRXScriptOffer offer )
+{
 	int quality = 0
-
-	foreach ( ItemFlavor outputFlav in offer.output.flavors )
+	if ( ItemFlavor_IsBattlepass( offer.output.flavors[0] ) )
 	{
-		quality = ItemFlavor_GetQuality( outputFlav, 0 )
-		if ( quality == eRarityTier.COMMON )
-			continue
-		Assert( quality < 4, format("Attempted to gift an item with unsupported quality enum %i.\nOffer Alias: %s", quality, offer.offerAlias ) )
-		qualityCounter[quality] = qualityCounter[quality] + 1
+		quality = eRarityTier.COMMON
 	}
-
-	for ( int i = 3; i > 0; i-- )
+	else
 	{
-		int itemQuantity = qualityCounter[i]
-		if ( itemQuantity == 0 )
-			continue
-
-		string commaSeparator = ""
-
-		if ( i - 1 > 0 )
-			if ( qualityCounter[i - 1] != 0 )
-				commaSeparator = ", "
-
-		if ( i - 2 > 0 )
-			if ( qualityCounter[i - 2] != 0 )
-				commaSeparator = ", "
-
-		string quantityDisplay = string( itemQuantity ) + " "
-		if ( itemQuantity == 1 )
-			quantityDisplay = ""
-
-		formatedString += ruiQualityPrefix[i] + quantityDisplay + Localize ( ItemQuality_GetQualityName( i ) ) + commaSeparator
+		foreach ( ItemFlavor outputFlav in offer.output.flavors )
+			quality = maxint( quality, ItemFlavor_GetQuality( outputFlav, 0 ) )
 	}
-
-	return formatedString
+	return quality
 }
 
 string function GetOfferDiscountPct( GRXScriptOffer offer )
@@ -312,9 +297,7 @@ void function GiftPurchase_OnActive( var button )
 	}
 
 	GRXScriptOffer offer = file.elegibleFriendOffer
-	if ( GRXOffer_ContainsOnlySinglePack( offer ) )
-		HandleGiftPurchaseOperation( offer )
-	else if ( GRXOffer_ContainsPack( offer ) )
+	if ( GRXOffer_ContainsPack( offer ) && !IsUserAwaitingForConfirmation() )
 		OpenPurchaseConfirmationDialog()
 	else
 		HandleGiftPurchaseOperation( offer )
@@ -464,6 +447,8 @@ void function UpdateEligibilityDisplay( GRXGetOfferInfo selectedOfferInfo )
 		RuiSetString( dialogRui, "friendSelectText", Localize( "#GIFT_DIALOG_SELECT_ANOTHER_FRIEND" ) )
 		RuiSetString( buttonRui, "statusText", Localize( "#GIFT_NOT_ELEGIBLE" ) )
 		RuiSetInt( buttonRui, "status", eFriendGiftStatus.NON_ELIGIBLE )
+
+		Hud_SetLocked( file.purchaseButton, true )
 	}
 }
 
@@ -622,10 +607,10 @@ array<ItemFlavorBag> function GetBagFromOfferArrayPrice( array< array< int > > p
 
 	foreach ( int priceIdx, array<int> currencyArray in prices )
 	{
-		if ( currencyArray[GRX_CURRENCY_PREMIUM] != 0 )
+		if ( currencyArray[GRX_CURRENCY_PREMIUM] != -1 )
 			quantity = minint( quantity, currencyArray[GRX_CURRENCY_PREMIUM] )
 	}
-	Assert( 0 < quantity && quantity < INT_MAX, "Price quantity is Invalid." )
+	Assert( -1 < quantity && quantity < INT_MAX, "Price quantity is Invalid." )
 
 	ItemFlavorBag price
 	array<ItemFlavorBag> bagPrices
@@ -643,14 +628,35 @@ void function GiftingMenu_OnClose()
 	RunClientScript( "EnableModelTurn" )
 	EnableFooterButtons( true )
 	file.blockInput = false
+
+#if PC_PROG_NX_UI
+	RemoveUICallback_NXOperationModeChanged( OnNxOperationModeChanged )
+#endif
 }
 
 void function FriendDataReferenceReset()
 {
 	file.isProcessingSelection = false
+
 	if ( file.actionButton != null )
+	{
 		HudElem_SetRuiArg( file.actionButton, "isProcessing", file.isProcessingSelection )
-	HudElem_SetRuiArg( file.dialogContent, "friendSelectText", Localize( "#GIFT_DIALOG_SELECT_FRIEND" ) )
+		HudElem_SetRuiArg( file.dialogContent, "friendSelectText", Localize( "#GIFT_DIALOG_SELECT_FRIEND" ) )
+
+		GiftingFriend ornull friend = file.actionFriend
+		expect GiftingFriend( friend )
+
+		if ( friend.activePresence.online )
+		{
+			HudElem_SetRuiArg( file.actionButton, "statusText", "#PRESENSE_ONLINE" )
+			HudElem_SetRuiArg( file.actionButton, "status", eFriendGiftStatus.ONLINE )
+		}
+		else
+		{
+			HudElem_SetRuiArg( file.actionButton, "statusText", "#PRESENSE_OFFLINE" )
+			HudElem_SetRuiArg( file.actionButton, "status", eFriendGiftStatus.OFFLINE )
+		}
+	}
 
 	if ( file.originalPriceStr != "" )
 	{
@@ -835,6 +841,13 @@ void function UICodeCallback_GiftSentNotificationHandler( bool success )
 	EmitUISound( purchaseSound )
 	thread Delayed_CloseMenuAfterPurchase()
 }
+
+#if PC_PROG_NX_UI
+void function OnNxOperationModeChanged()
+{
+	UpdateSearchBar_OnInputChanged( IsControllerModeActive() )
+}
+#endif
 
 
 void function StartTimeoutGiftDialog_Thread()

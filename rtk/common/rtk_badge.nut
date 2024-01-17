@@ -5,7 +5,8 @@ global function RTKBadge_OnDestroy
 
 global struct RTKBadge_Properties
 {
-	asset badgeRuiAsset
+	asset badgeRuiAsset 
+	asset imageAsset 
 	int tier
 }
 
@@ -17,6 +18,7 @@ void function RTKBadge_InitMetaData( string behaviorType, string structType )
 void function RTKBadge_OnInitialize( rtk_behavior self )
 {
 	self.AddPropertyCallback( "badgeRuiAsset", UpdateBadgeRuiAsset )
+	self.AddPropertyCallback( "imageAsset", UpdateBadgeRuiAsset )
 
 	UpdateBadgeRuiAsset( self )
 }
@@ -24,9 +26,14 @@ void function RTKBadge_OnInitialize( rtk_behavior self )
 void function RTKBadge_OnDrawBegin( rtk_behavior self )
 {
 	rtk_panel panel = self.GetPanel()
+	asset imageAsset = expect asset( self.rtkprops.imageAsset )
 
 	if ( panel.HasRui() )
+	{
 		panel.SetRuiArgInt( "tier", expect int( self.rtkprops.tier ) )
+		if ( imageAsset != "" ) 
+			panel.SetRuiArgImage( "img", imageAsset )
+	}
 }
 
 void function RTKBadge_OnDestroy( rtk_behavior self )

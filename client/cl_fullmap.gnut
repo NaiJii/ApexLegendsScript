@@ -3,18 +3,26 @@ global function Fullmap_SetupScoreboard
 
 global function AddMinimapLabel
 global function SURVIVAL_AddMinimapLevelLabel
+global function Survival_ShouldChangeTeamUI
+global function Survival_GetTeamName
+global function Survival_GetTeamIcon
+
+global function FullMap_GetMapNormalizedAimCoordinate
+global function FullMap_ConvertNormalizedPosToWorldPos
 
 global function FullMap_CommonAdd
 global function FullMap_CommonTrackEntOrigin
 global function FullMap_PingLocation
 global function FullMap_PingEntity
 global function FullMap_SetDeathFieldRadius
+global function FullMap_SetPlayerColorOverride
 global function FullMap_UpdateTopologies
 global function FullMap_UpdateAimPos
 global function FullMap_AddEnemyLocation
 global function FullMap_AddIconAtPos
 global function FullMap_AddRuiAtPos
 global function FullMap_PlayCryptoPulseSequence
+global function FullMap_AddHuntPreyLocation
 
 global function Fullmap_ClearInWorldMinimaps
 global function Fullmap_ClearInputContext
@@ -110,6 +118,8 @@ struct
 	float  fullmapZoomFactor = 1.0
 	float  moveInputPrevTime = 0.0
 
+	float pingInputPrevTime = 0.0
+
 	array<MinimapLabelStruct> 	minimapLabels
 	table<EHI, var> 			fullmapPlayerItems
 
@@ -152,7 +162,9 @@ void function Fullmap_SetupScoreboard()
 
 	Teams_AddCallback_ScoreboardData( Survival_GetScoreboardData )
 	Teams_AddCallback_Header( Survival_ScoreboardUpdateHeader )
-	Teams_AddCallback_GetTeamColor( Survival_ScoreboardGetTeamColor )
+	Teams_AddCallback_GetTeamColor( Survival_GetTeamColor )
+	Teams_AddCallback_GetTeamName( Survival_GetTeamName )
+	Teams_AddCallback_GetTeamIcon( Survival_GetTeamIcon )
 	Teams_AddCallback_PlayerScores( Survival_GetPlayerScores )
 	Teams_AddCallback_SortScoreboardPlayers( Survival_SortPlayersByScore )
 }
@@ -277,23 +289,95 @@ void function Survival_ScoreboardUpdateHeader( var headerRui, var frameRui, int 
 
 
 
- vector function Survival_ScoreboardGetTeamColor( int team )
+bool function Survival_ShouldChangeTeamUI()
+{
+
+	 if ( IsShadowArmyGamemode() )
+	 	return true
+
+
+	if( WinterExpress_IsModeEnabled() )
+		return true
+
+	return false
+}
+
+
+
+ vector function Survival_GetTeamColor( int team )
  {
-	 bool isWinterExpress = false
-	 int teamIndex = Squads_GetSquadUIIndex( team )
+	 if( AllianceProximity_IsUsingAlliances() )
+	 {
 
-	 vector color  = SrgbToLinear( GetSkydiveSmokeColorForTeam( teamIndex + TEAM_IMC ) / 255.0 )
+			 if ( IsRevTakeover() )
+			 {
+				 if( team != SHADOWARMY_REVENANT_ALLIANCE )
+				 {
+					 return SrgbToLinear( GetKeyColor( COLORID_ALLIANCE_0 ) / 255.0 )
+				 }
+				 else
+				 {
+					 return SrgbToLinear( GetKeyColor( COLORID_ALLIANCE_1 ) / 255.0 )
+				 }
+			 }
 
 
-		 isWinterExpress = WinterExpress_IsModeEnabled()
+		 return SrgbToLinear( GetSkydiveSmokeColorForTeam( team + TEAM_IMC ) / 255.0 )
+	 }
+	 else
+	 {
+
+			 if( WinterExpress_IsModeEnabled() )
+			 {
+				 return Squads_GetSquadColor( Squads_GetSquadUIIndex( team ) )
+			 }
 
 
-		if( isWinterExpress )
-			color =  Squads_GetSquadColor( teamIndex )
+		 int teamIndex = Squads_GetSquadUIIndex( team )
 
+		 return SrgbToLinear( GetSkydiveSmokeColorForTeam( teamIndex + TEAM_IMC ) / 255.0 )
+	 }
 
-	return color
+	 unreachable
  }
+
+
+
+string function Survival_GetTeamName( int team )
+{
+	string teamName = ""
+
+		if ( IsRevTakeover() )
+		{
+			if( team == SHADOWARMY_REVENANT_ALLIANCE )
+				teamName = "#SHADOW_ARMY_TEAM_REV"
+			else
+				teamName = "#SHADOW_ARMY_TEAM_LEGENDS"
+		}
+
+
+	return teamName
+}
+
+
+
+asset function Survival_GetTeamIcon( int team )
+{
+	asset teamIcon = $""
+
+
+		if ( IsRevTakeover() )
+		{
+			if( team == SHADOWARMY_REVENANT_ALLIANCE )
+				teamIcon = $"rui/menu/buttons/battlepass/character_skin_revenant"
+			else
+				teamIcon = $"rui/menu/buttons/battlepass/character_skin_loba"
+		}
+
+
+	return teamIcon
+}
+
 
 
 void function InitFullmap()
@@ -554,10 +638,18 @@ var function FullMap_AddEnemyLocation( entity enemy )
 
 	RuiSetFloat3( rui, "objectPos", enemy.GetOrigin() )
 	RuiSetFloat3( rui, "objectAngles", ( enemy.GetAngles() + <0, -90, 0> ) )
-	RuiSetFloat3( rui, "objColor", GetKeyColor( COLORID_MINIMAP_ENEMY_REF ) * ( 1.0 / 255.0 ) )
 	RuiSetFloat( rui, "objectSize", 5.0 )
 	RuiSetBool( rui, "doAnnounceEffect", true )
 	RuiSetImage( rui, "iconImage", $"rui/hud/minimap/compass_icon_player" )
+
+	
+	RuiSetFloat3( rui, "objColor", GetKeyColor( COLORID_MINIMAP_ENEMY_REF ) * ( 1.0 / 255.0 ) )
+
+		if ( IsRevTakeover() )
+		{
+			RuiSetFloat3( rui, "objColor", Teams_GetTeamColor( enemy.GetTeam() ) )
+		}
+
 
 	Fullmap_AddRui( rui )
 	return rui
@@ -604,6 +696,21 @@ var function FullMap_AddCryptoRingPulse( vector pulseOrg )
 
 	Fullmap_AddRui( rui )
 
+	return rui
+}
+
+var function FullMap_AddHuntPreyLocation( entity enemy )
+{
+	var rui = FullMap_CommonAdd( $"ui/in_world_minimap_square_simple.rpak" )
+
+	RuiSetFloat3( rui, "objectPos", enemy.GetOrigin() )
+	RuiSetFloat3( rui, "objectAngles", ( enemy.GetAngles() + <0, -90, 0> ) )
+	RuiSetFloat3( rui, "objColor", GetKeyColor( COLORID_HUD_INDICATOR_ARROW ) * ( 1.0 / 255.0 ) )
+	RuiSetFloat( rui, "objectSize", 10.0 )
+	RuiSetBool( rui, "doAnnounceEffect", true )
+	RuiSetImage( rui, "iconImage", $"rui/hud/minimap/compass_icon_player" )
+
+	Fullmap_AddRui( rui )
 	return rui
 }
 
@@ -792,6 +899,21 @@ void function FullMap_SetDeathFieldRadius( float radius )
 }
 
 
+void function FullMap_SetPlayerColorOverride( entity player, vector color )
+{
+	EHI ehi = ToEHI( player )
+
+	var rui = null
+	if( ehi in file.fullmapPlayerItems )
+		rui = file.fullmapPlayerItems[ehi]
+
+	if( rui == null )
+		return
+
+	RuiSetFloat3( rui, "iconColorOverride", color  )
+}
+
+
 void function AddInWorldMinimapObjectInternal( entity ent, var screen, asset ruiAsset = FULLMAP_OBJECT_RUI, asset defaultIcon = $"", asset clampedDefaultIcon = $"", vector iconScale = <1.0, 1.0, 0.0>, vector iconColor = <1, 1, 1>, void functionref(var,entity) func = null )
 {
 	entity viewPlayer  = GetLocalViewPlayer()
@@ -876,6 +998,8 @@ void function AddInWorldMinimapObjectInternal( entity ent, var screen, asset rui
 		RuiTrackFloat3( rui, "objectAngles", ent, RUI_TRACK_CAMANGLES_FOLLOW )
 
 		RuiSetString( rui, "playerName", viewerIsSpectator ? ent.GetPlayerNameWithClanTag() : "" )
+
+		
 		if ( isFriendlyAlly )
 			RuiSetFloat3( rui, "iconColorOverride", (GetKeyColor( COLORID_FRIENDLY ) / 255.0)  )
 
@@ -903,6 +1027,10 @@ void function AddInWorldMinimapObjectInternal( entity ent, var screen, asset rui
 	OnThreadEnd(
 		function() : ( rui, ent )
 		{
+			EHI ehi = ToEHI( ent )
+			if ( ehi in file.fullmapPlayerItems )
+				file.fullmapPlayerItems[ehi] = null
+
 			Fullmap_RemoveRui( rui )
 			RuiDestroy( rui )
 		}
@@ -917,10 +1045,18 @@ void function AddInWorldMinimapObjectInternal( entity ent, var screen, asset rui
 	{
 		while ( IsValid( ent ) )
 		{
-			WaitSignal( ent, "SettingsChanged", "OnDeath" )
-			RuiSetFloat2( rui, "iconScale", ent.IsTitan() ? <1.0, 1.0, 0.0> : <2.0, 2.0, 0.0> )
-			if ( isFriendlyAlly && !ent.IsTitan() )
-				RuiSetFloat2( rui, "iconScale", <1.0, 1.0, 0.0> )
+			
+			viewPlayer = GetLocalViewPlayer()
+			isFriendlyAlly = ent.GetTeam() != viewPlayer.GetTeam() && IsFriendlyTeam( ent.GetTeam(), viewPlayer.GetTeam() )
+
+			
+			iconScale = <2.0, 2.0, 0.0>
+			if ( ent.IsTitan() || isFriendlyAlly )
+				iconScale = <1.0, 1.0, 0.0>
+
+			RuiSetFloat2( rui, "iconScale", iconScale )
+
+			wait 0.5
 		}
 	}
 	else
@@ -1167,7 +1303,7 @@ void function ChangeFullMapZoomFactor( float delta )
 		return
 	}
 
-	vector oldAimPos = GetMapNormalizedAimCoordinate()
+	vector oldAimPos = FullMap_GetMapNormalizedAimCoordinate()
 
 	file.fullmapZoomFactor *= pow( 1.5, delta )
 
@@ -1181,7 +1317,7 @@ void function ChangeFullMapZoomFactor( float delta )
 
 	SetBigMapZoomScale( file.fullmapZoomFactor )
 
-	vector newAimPos = GetMapNormalizedAimCoordinate()
+	vector newAimPos = FullMap_GetMapNormalizedAimCoordinate()
 
 	vector zoomDelta = oldAimPos - newAimPos
 
@@ -1462,7 +1598,7 @@ vector function NormalizeWorldPos( vector pos, float zoomFactor = 1.0 )
 	return normalizedPos
 }
 
-vector function ConvertNormalizedPosToWorldPos( vector normalizedPos, float zoomFactor = 1.0 )
+vector function FullMap_ConvertNormalizedPosToWorldPos( vector normalizedPos, float zoomFactor = 1.0 )
 {
 	vector fixedPos     = <normalizedPos.x, -1 * normalizedPos.y, 0> / zoomFactor
 	float mapScaleTweak = max( file.mapScale * OVERVIEW_MAP_SIZE, 1 )
@@ -1477,14 +1613,14 @@ bool function Fullmap_HandleViewInput( float x, float y )
 
 	
 
-	vector oldAimPos = GetMapNormalizedAimCoordinate()
+	vector oldAimPos = FullMap_GetMapNormalizedAimCoordinate()
 
 	file.fullmapAimPos += <x, -y, 0> * 0.001
 	vector desiredFullMapPos = file.fullmapAimPos
 
 	if ( InputIsButtonDown( MOUSE_RIGHT ) )
 	{
-		vector newAimPos = GetMapNormalizedAimCoordinate()
+		vector newAimPos = FullMap_GetMapNormalizedAimCoordinate()
 
 		vector delta = oldAimPos - newAimPos
 
@@ -1562,7 +1698,7 @@ void function Fullmap_HandleAimInput_Common()
 	foreach( aimTargetCallback, actionCallback in file.fullMapAimTargetCallbacks )
 	{
 		AimTargetStruct possibleTarget
-		possibleTarget.highlightedEntity = aimTargetCallback( ConvertNormalizedPosToWorldPos( GetMapNormalizedAimCoordinate() ), adjustedRange )
+		possibleTarget.highlightedEntity = aimTargetCallback( FullMap_ConvertNormalizedPosToWorldPos( FullMap_GetMapNormalizedAimCoordinate() ), adjustedRange )
 		if ( IsValid( possibleTarget.highlightedEntity ) )
 		{
 			possibleTarget.actionFunc = actionCallback
@@ -1593,7 +1729,7 @@ bool function Fullmap_HandleKeyInput( int key )
 		{
 			case BUTTON_A:
 			case MOUSE_LEFT:
-				vector worldPos = ConvertNormalizedPosToWorldPos( GetMapNormalizedAimCoordinate() )
+				vector worldPos = FullMap_ConvertNormalizedPosToWorldPos( FullMap_GetMapNormalizedAimCoordinate() )
 				GetLocalClientPlayer().ClientCommand( format( "GoToMapPoint %.3f %.3f %.3f", worldPos.x, worldPos.y, worldPos.z ) )
 				ScreenFlash( 0.0, 0.0, 0.0, 0.1, 0.5 )
 				EmitSoundOnEntity( GetLocalViewPlayer(), "dropship_mp_epilogue_warpout" )
@@ -1602,7 +1738,7 @@ bool function Fullmap_HandleKeyInput( int key )
 
 			case BUTTON_B:
 			case MOUSE_RIGHT:
-				vector worldPos = ConvertNormalizedPosToWorldPos( GetMapNormalizedAimCoordinate() )
+				vector worldPos = FullMap_ConvertNormalizedPosToWorldPos( FullMap_GetMapNormalizedAimCoordinate() )
 				GetLocalClientPlayer().ClientCommand( format( "UpdateCirclePos %.3f %.3f %.3f", worldPos.x, worldPos.y, worldPos.z ) )
 				delaythread( 0.25 ) HideScoreboard()
 				return true
@@ -1619,7 +1755,7 @@ bool function Fullmap_HandleKeyInput( int key )
 			{
 				case BUTTON_A:
 				case MOUSE_LEFT:
-					vector worldPos = ConvertNormalizedPosToWorldPos( GetMapNormalizedAimCoordinate() )
+					vector worldPos = FullMap_ConvertNormalizedPosToWorldPos( FullMap_GetMapNormalizedAimCoordinate() )
 					Remote_ServerCallFunction( "ClientCallback_TPPromptGoToMapPoint", worldPos.x, worldPos.y )
 					ScreenFlash( 0.0, 0.0, 0.0, 0.1, 0.5 )
 					EmitSoundOnEntity( GetLocalViewPlayer(), "dropship_mp_epilogue_warpout" )
@@ -1707,6 +1843,17 @@ bool function Fullmap_HandleKeyInput( int key )
 
 	if ( (!IsControllerModeActive() && ButtonIsBoundToPing( key )) || pressedPing )
 	{
+		bool attemptedDoublePing = false
+
+		float deltaTime = Time() - file.pingInputPrevTime
+		file.pingInputPrevTime = Time()
+
+		if ( deltaTime < 0.35  && DoubleTapEnemyPingEnabled() )
+		{
+			attemptedDoublePing = true
+			CancelLatestWaypoint( GetLocalClientPlayer() )
+		}
+
 		if ( IsValid( file.mapAimTarget.highlightedEntity ) )
 		{
 			swallowInput = file.mapAimTarget.actionFunc( file.mapAimTarget.highlightedEntity )
@@ -1715,8 +1862,16 @@ bool function Fullmap_HandleKeyInput( int key )
 		{
 			if( !Control_IsModeEnabled() ) 
 			{
-				vector worldPos = ConvertNormalizedPosToWorldPos( GetMapNormalizedAimCoordinate() )
-				Ping_SetMapWaypoint( GetLocalClientPlayer(), worldPos )
+				vector worldPos = FullMap_ConvertNormalizedPosToWorldPos( FullMap_GetMapNormalizedAimCoordinate() )
+				if ( !attemptedDoublePing )
+				{
+
+					Ping_SetMapWaypoint( GetLocalClientPlayer(), worldPos )
+				}
+				else
+				{
+					Ping_SetMapWaypoint( GetLocalClientPlayer(), worldPos, true )
+				}
 			}
 			swallowInput = true
 		}
@@ -1751,7 +1906,7 @@ vector function SmoothInput( vector vecIn )
 }
 
 
-vector function GetMapNormalizedAimCoordinate()
+vector function FullMap_GetMapNormalizedAimCoordinate()
 {
 	float zoomScreenWidth = 1.0 / file.fullmapZoomFactor
 
@@ -1763,7 +1918,7 @@ vector function GetMapNormalizedAimCoordinate()
 
 entity function GetPlayerUnderAim()
 {
-	vector worldPos = ConvertNormalizedPosToWorldPos( GetMapNormalizedAimCoordinate() )
+	vector worldPos = FullMap_ConvertNormalizedPosToWorldPos( FullMap_GetMapNormalizedAimCoordinate() )
 	
 
 	array<entity> playerArray = GetPlayerArray_Alive()

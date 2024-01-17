@@ -1,7 +1,7 @@
 global function Perk_MunitionsDrop_Init
 
 
-
+global function ServerToClient_DisplayMunitionsDropMessage
 
 
 
@@ -22,13 +22,32 @@ void function Perk_MunitionsDrop_Init()
 	PerkInfo munitionsDrop
 	munitionsDrop.perkId          = ePerkIndex.MUNITIONS_DROP
 
-
-
+		munitionsDrop.activateCallback = OnActivate_PerkMunitionsDrop
+		munitionsDrop.deactivateCallback = null
 
 	Perks_RegisterClassPerk( munitionsDrop )
 
 	Remote_RegisterClientFunction( "ServerToClient_DisplayMunitionsDropMessage" )
 	RegisterSignal( "Update_TrackRespawnBeacons" )
+
+
+
+
+
+
+}
+
+
+void function OnActivate_PerkMunitionsDrop( entity player, string characterName )
+{
+
+
+
+
+
+
+
+
 
 
 
@@ -201,33 +220,14 @@ void function Perk_MunitionsDrop_Init()
 
 
 
+void function ServerToClient_DisplayMunitionsDropMessage()
+{
+	entity player = GetLocalViewPlayer()
 
+	if ( !IsValid( player ) )
+		return
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+	AddPlayerHint( 2.0, 0.25, $"", "#MUNITIONS_DROP_HINT" )
+}
 
 

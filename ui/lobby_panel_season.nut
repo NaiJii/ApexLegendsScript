@@ -17,6 +17,7 @@ struct
 	bool wasWhatsNewEventActive = false
 
 		bool wasEventShopActive = false
+		bool wasMilestoneEventActive = false
 
 
 	bool isFirstSessionOpen = true
@@ -143,8 +144,10 @@ void function OnGRXSeasonUpdate()
 		bool hasThemedShopCalevent              = ( activeThemedShopEvent != null )
 
 
-			ItemFlavor ornull activeEventShop 		= GetActiveEventShop( GetUnixTimestamp() )
+			ItemFlavor ornull activeEventShop 		= EventShop_GetCurrentActiveEventShop()
 			bool haveActiveEventShop          		= activeEventShop != null
+			ItemFlavor ornull milestoneEvent 		= GetActiveMilestoneEvent( GetUnixTimestamp() )
+			bool haveActiveMilestoneEvent        	= milestoneEvent != null
 
 
 		bool haveActiveWhatsNewEvent			= false
@@ -164,9 +167,8 @@ void function OnGRXSeasonUpdate()
 				if ( Hud_GetHudName( nestedPanel ) == "CollectionEventPanel" && !haveActiveCollectionEvent )
 					continue
 
-					if ( Hud_GetHudName( nestedPanel ) == "RTKEventsPanel" && !haveActiveEventShop )
+					if ( Hud_GetHudName( nestedPanel ) == "RTKEventsPanel" && (!haveActiveEventShop && !haveActiveMilestoneEvent) )
 						continue
-
 
 				if ( Hud_GetHudName( nestedPanel ) == "ThemedShopPanel" && !haveActiveThemedShopEvent )
 					continue
@@ -194,6 +196,8 @@ void function OnGRXSeasonUpdate()
 			file.wasWhatsNewEventActive = haveActiveWhatsNewEvent
 
 				file.wasEventShopActive = haveActiveEventShop
+				file.wasMilestoneEventActive = haveActiveMilestoneEvent
+
 
 		}
 		SetTabNavigationEnabled( file.panel, true )
@@ -254,13 +258,21 @@ void function OnGRXSeasonUpdate()
 
 				else if ( Hud_GetHudName( tabDef.panel ) == "RTKEventsPanel" )
 				{
-					showTab = haveActiveEventShop
+					showTab = haveActiveEventShop || haveActiveMilestoneEvent
 					enableTab = true
-					if ( haveActiveEventShop )
+					if ( haveActiveMilestoneEvent )
 					{
-						expect ItemFlavor(activeEventShop)
-
+						tabDef.title = "#MILESTONE_EVENT_TAB_TITLE"
+					}
+					else if ( haveActiveEventShop )
+					{
 						tabDef.title = "#EVENTS_EVENT_SHOP"
+					}
+
+					if ( !MilestoneEvent_IsEnabled() )
+					{
+						showTab = false
+						enableTab = false
 					}
 				}
 

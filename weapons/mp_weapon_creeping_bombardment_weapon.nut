@@ -2,7 +2,7 @@ global function MpWeaponGrenadeCreepingBombardmentWeapon_Init
 global function OnProjectileCollision_WeaponCreepingBombardmentWeapon
 
 const asset CREEPING_BOMBARDMENT_WEAPON_SMOKESCREEN_FX = $"P_smokescreen_FD"
-const asset CREEPING_BOMBARDMENT_SMOKE_FX = $"P_bBomb_smoke"
+const asset CREEPING_BOMBARDMENT_SMOKE_FX = $"P_bBomb_smoke"   
 
 const float CREEPING_BOMBARDMENT_WEAPON_SMOKESCREEN_DURATION = 15.0
 
@@ -39,7 +39,7 @@ void function MpWeaponGrenadeCreepingBombardmentWeapon_Init()
 
 
 	PrecacheParticleSystem( CREEPING_BOMBARDMENT_WEAPON_SMOKESCREEN_FX )
-	PrecacheParticleSystem( CREEPING_BOMBARDMENT_SMOKE_FX )
+
 
 	PrecacheModel( CREEPING_BOMBARDMENT_WEAPON_BOMB_MODEL )
 }

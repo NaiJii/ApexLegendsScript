@@ -3,11 +3,6 @@ global function MpAbilityExectioner_Init
 global function PassiveRevenantRework_OnPassiveChanged
 global function PassiveExecutioner_EntityShouldBeHighlighted
 
-
-global function ServerToClient_HighlightEnemy
-global function ServerToClient_StopHighlightEnemy
-
-
 const float EXECUTIONER_WATCH_RANGE = 30 * METERS_TO_INCHES
 const int EXECUTIONER_HEALTH_THRESHOLD = 40
 
@@ -67,9 +62,6 @@ void function MpAbilityExectioner_Init()
 	RegisterSignal( "StopWatchingExecutionerVictim" )
 	AddCallback_OnPassiveChanged( ePassives.PAS_REVENANT_REWORK, PassiveRevenantRework_OnPassiveChanged )
 
-	Remote_RegisterClientFunction( "ServerToClient_HighlightEnemy", "entity" )
-	Remote_RegisterClientFunction( "ServerToClient_StopHighlightEnemy", "entity" )
-
 	
 	file.highlightRange = GetCurrentPlaylistVarFloat( "assassins_instinct_highlight_range", EXECUTIONER_WATCH_RANGE )
 	file.highlightHealthThreshold = GetCurrentPlaylistVarInt( "assassins_instinct_highlight_health_threshold", EXECUTIONER_HEALTH_THRESHOLD )
@@ -84,6 +76,10 @@ void function MpAbilityExectioner_Init()
 
 
 
+
+		StatusEffect_RegisterEnabledCallback( eStatusEffect.assassins_instinct, AssassinsInstinct_OnBeginHighlight )
+		StatusEffect_RegisterDisabledCallback( eStatusEffect.assassins_instinct, AssassinsInstinct_OnEndHighlight )
+
 }
 
 void function PassiveRevenantRework_OnPassiveChanged( entity player, int passive, bool didHave, bool nowHas )
@@ -93,6 +89,11 @@ void function PassiveRevenantRework_OnPassiveChanged( entity player, int passive
 
 	if ( nowHas )
 	{
+
+
+
+
+
 
 
 
@@ -112,6 +113,13 @@ void function PassiveRevenantRework_OnPassiveChanged( entity player, int passive
 
 	}
 }
+
+
+
+
+
+
+
 
 
 
@@ -506,36 +514,34 @@ int function GetEntityShieldValue( entity ent )
 }
 
 
-void function ServerToClient_HighlightEnemy( entity target )
+void function AssassinsInstinct_OnBeginHighlight( entity highlightTarget, int statusEffect, bool actuallyChanged )
 {
-	entity player = GetLocalViewPlayer()
-
-	if( !IsValid( player ) || !IsValid( target ) )
+	if( !IsValid( highlightTarget ) )
 		return
 
-	if( file.currentHighlightTargets.contains( target ) )
+	if( file.currentHighlightTargets.contains( highlightTarget ) )
 		return
 
-	thread PassiveExecutioner_HighlightThink( player, target )
+	thread AssassinsInstinct_HighlightThink( highlightTarget )
 
-	file.currentHighlightTargets.append( target )
+	file.currentHighlightTargets.append( highlightTarget )
 }
 
-void function ServerToClient_StopHighlightEnemy( entity target )
+void function AssassinsInstinct_OnEndHighlight( entity highlightTarget, int statusEffect, bool actuallyChanged )
 {
-	if( !IsValid( target ) )
+	if( !IsValid( highlightTarget ) )
 		return
 
-	target.Signal( "StopWatchingExecutionerVictim" )
+	highlightTarget.Signal( "StopWatchingExecutionerVictim" )
 }
 
-void function PassiveExecutioner_HighlightThink( entity player, entity targetPlayer )
+void function AssassinsInstinct_HighlightThink( entity targetPlayer )
 {
-	if ( !IsValid( player ) || !IsValid( targetPlayer ) )
+	if ( !IsValid( targetPlayer ) )
 		return
 
+	targetPlayer.EndSignal( "EndExecutionerPassive" )
 	EndSignal( targetPlayer, "OnDeath", "OnDestroy", "StopWatchingExecutionerVictim" )
-	player.EndSignal( "EndExecutionerPassive" )
 
 	ManageHighlightEntity( targetPlayer )
 

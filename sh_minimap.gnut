@@ -2,6 +2,7 @@ untyped
 
 global function MinimapShared_Init
 global function GetMinimapMaterial
+global function MiniMapIsDisabled
 
 const MINIMAP_MINION_SCALE = 0.035
 const MINIMAP_MINION_SCALE_COOP = 0.021
@@ -54,8 +55,8 @@ global enum eMinimapObject_prop_script
 
 
 
-	SPIKE_STRIP,
 
+	SPIKE_STRIP,
 	DEPLOYABLE_MEDIC,
 	PHASE_GATE,
 
@@ -172,6 +173,13 @@ global enum eMinimapObject_prop_script
 
 
 
+
+
+
+
+
+
+
 	COUNT
 }
 
@@ -181,6 +189,9 @@ global enum eMinimapObject_npc
 	AI_TDM_AI,
 	AI_PVEOBJECTIVE,
 	FD_TURRET,
+
+		LOOT_TICK_GH,
+
 	COUNT
 }
 
@@ -314,3 +325,9 @@ void function UpdatePlayerMinimapMaterials( entity player )
 
 
 
+bool function MiniMapIsDisabled()
+{
+	if ( GetCurrentPlaylistVarBool( "disable_minimap", false ) )
+		return true
+	return false
+}

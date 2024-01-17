@@ -1,7 +1,6 @@
 global function OnWeaponActivate_weapon_r97
 global function OnWeaponDeactivate_weapon_r97
 global function OnWeaponPrimaryAttack_weapon_r97
-global function OnWeaponReload_weapon_r97
 global function OnProjectileCollision_weapon_r97
 
 void function OnWeaponActivate_weapon_r97( entity weapon )
@@ -32,14 +31,6 @@ var function OnWeaponPrimaryAttack_weapon_r97( entity weapon, WeaponPrimaryAttac
 
 
 void function OnProjectileCollision_weapon_r97( entity projectile, vector pos, vector normal, entity hitEnt, int hitBox, bool isCritical, bool isPassthrough )
-{
-
-
-
-}
-
-
-void function OnWeaponReload_weapon_r97( entity weapon, int milestoneIndex )
 {
 
 

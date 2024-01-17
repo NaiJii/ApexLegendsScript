@@ -7,6 +7,7 @@ global function Mythics_SkinHasCustomExecution
 global function Mythics_IsCustomExecutionUnlocked
 global function Mythics_ShouldForceCustomExecution
 global function Mythics_GetChallengeForCharacter
+global function Mythics_IsItemFlavorMythic
 global function Mythics_IsItemFlavorMythicSkin
 global function Mythics_GetSkinTierForCharacter
 global function Mythics_GetItemTierForSkin
@@ -27,8 +28,15 @@ global function Mythics_GetCustomSkydivetrailForCharacterOrSkin
 global function Mythics_IsExecutionUsableOnTier1AndTier2
 
 
-global function Mythics_ToggleTrackChallenge
-global function Mythics_UpdateTrackingButton
+
+
+
+
+
+
+
+
+
 
 struct FileStruct_LifetimeLevel
 {
@@ -42,8 +50,16 @@ struct FileStruct_LifetimeLevel
 	table< int, array< asset > > charactersGUIDToStoreImages
 	table< int, string > charactersGUIDToSkinBaseName
 	ItemFlavor ornull currentChallenge
+	table< entity, array< ItemFlavor > > mythicBoostedChallenges
 }
 FileStruct_LifetimeLevel& fileLevel
+
+global struct Mythic_ChallengeProgress
+{
+	ItemFlavor& challenge
+	int challengeProgress
+	int statMarker
+}
 
 const int CHALLENGE_SORT_ORDINAL = 0 
 const int FINAL_TIER = 3
@@ -89,7 +105,8 @@ void function RegisterMythicBundlesForCharacter( ItemFlavor characterClass )
 			if ( skydivetrailAsset != $"" )
 			{
 				SettingsAssetGUID skydiveGUID = GetUniqueIdForSettingsAsset( skydivetrailAsset )
-				if ( IsValidItemFlavorGUID( skydiveGUID ) )
+				ItemFlavor ornull skydiveFlavOrNull = RegisterItemFlavorFromSettingsAsset( skydivetrailAsset )
+				if ( skydiveFlavOrNull != null && IsValidItemFlavorGUID( skydiveGUID ) )
 					fileLevel.mythicSkinsGUIDToCustomSkydivetrailGUID[ preRegGUID ] <- skydiveGUID
 			}
 		}
@@ -230,9 +247,9 @@ ItemFlavor function Mythics_GetCharacterSkinForCustomExecution( ItemFlavor execu
 	Assert( ItemFlavor_GetType( execution ) == eItemType.character_execution )
 	Assert( Mythics_IsCustomExecutionInMythicBundle( execution ) )
 
-	int characterGUID = fileLevel.customExecutionGUIDToMythicSkinsGUID[ execution.guid ]
+	int characterSkinGUID = fileLevel.customExecutionGUIDToMythicSkinsGUID[ execution.guid ]
 
-	return GetItemFlavorByGUID( characterGUID )
+	return GetItemFlavorByGUID( characterSkinGUID )
 }
 
 bool function Mythics_SkinHasCustomSkydivetrail( ItemFlavor skin )
@@ -292,45 +309,50 @@ ItemFlavor function Mythics_GetChallengeForCharacter( ItemFlavor character )
 	return GetItemFlavorByGUID( challengeGUID )
 }
 
+bool function Mythics_IsItemFlavorMythic( ItemFlavor item )
+{
+	return ItemFlavor_GetQuality( item ) == eRarityTier.MYTHIC
+}
+
 bool function Mythics_IsItemFlavorMythicSkin( ItemFlavor item )
 {
 	return ItemFlavor_GetType( item ) == eItemType.character_skin && ItemFlavor_GetQuality( item ) == eRarityTier.MYTHIC
 }
 
 
-void function Mythics_ToggleTrackChallenge( ItemFlavor challenge, var button, bool isSkinPanel = false )
-{
-	fileLevel.currentChallenge = challenge
-	SettingsAssetGUID challengeGUID = ItemFlavor_GetGUID( challenge )
-	var rui = Hud_GetRui( button )
-
-	if ( IsChallengeValidAsFavorite( GetLocalClientPlayer(), challenge ) )
-		Remote_ServerCallFunction( "ClientCallback_ToggleFavoriteChallenge", challengeGUID )
-}
-
-void function Mythics_UpdateTrackingButton()
-{
-	if ( fileLevel.currentChallenge == null )
-		return
-
-	var skinsPanel = GetPanel( "CharacterSkinsPanel" )
-	var celebrationMenu = GetMenu( "LootBoxOpen" )
-
-	var trackChallengeButton = Hud_GetChild( celebrationMenu, "TrackChallengeButton" )
-	var mythicTrackingButton = Hud_GetChild( skinsPanel, "TrackMythicButton" )
-
-	var skinPanelRui = Hud_GetRui( mythicTrackingButton )
-	var celebrationMenuRui = Hud_GetRui( trackChallengeButton )
 
 
-	bool isChallengeTracked = IsFavoriteChallenge( expect ItemFlavor( fileLevel.currentChallenge )  )
 
-	RuiSetString( skinPanelRui, "descText", isChallengeTracked ? "#CHALLENGE_TRACKED"  : "#CHALLENGE_TRACK" )
-	RuiSetString( skinPanelRui, "bigText", isChallengeTracked ? "`1%$rui/hud/check_selected%" : "`1%$rui/borders/key_border%" )
-	HudElem_SetRuiArg( trackChallengeButton, "buttonText", isChallengeTracked ?  "#CHALLENGE_TRACKED" : "#CHALLENGE_TRACK")
-	HudElem_SetRuiArg( trackChallengeButton, "isChallengeTracked", isChallengeTracked )
 
-}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 int function Mythics_GetSkinTierIntForSkin( ItemFlavor skin )
@@ -462,3 +484,106 @@ string function Mythics_GetSkinBaseNameForCharacter( ItemFlavor character )
 	Assert( IsItemFlavorStructValid( character.guid, eValidation.DONT_ASSERT ), eValidation.ASSERT )
 	return fileLevel.charactersGUIDToSkinBaseName[ ItemFlavor_GetGUID( character ) ]
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

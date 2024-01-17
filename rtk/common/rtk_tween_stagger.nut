@@ -1,6 +1,8 @@
 global function RTKTweenStagger_OnUpdate
 global function RTKTweenStagger_OnEnable
 
+global function RTKTweenStagger_AddOnFinishListener
+
 global struct RTKTweenStagger_Properties
 {
 	float delay = 0.1
@@ -11,6 +13,8 @@ global struct RTKTweenStagger_Properties
 	bool useMaxTweenTime = true
 	bool onlyOnForwardNav = true
 	bool initTweensOnEnable = false
+
+	void functionref( ) onFinish = null
 }
 
 struct PrivateData
@@ -19,6 +23,11 @@ struct PrivateData
 	bool hasRun = false
 
 	int childrenChanged = 0
+}
+
+int function RTKTweenStagger_AddOnFinishListener( rtk_behavior self ,  void functionref() handler )
+{
+	return self.AddEventListener( "onFinish", handler )
 }
 
 void function RTKTweenStagger_OnUpdate( rtk_behavior self, float dt )
@@ -44,15 +53,12 @@ void function RTKTweenStagger_OnEnable( rtk_behavior self )
 	PrivateData p
 	self.Private( p )
 
-	p.hasRun = false
+	p.hasRun          = false
 	p.childrenChanged = 0
-	p.totalTime = 0
+	p.totalTime       = 0
 
 	if ( self.PropGetBool( "initTweensOnEnable" ) )
-	{
-		rtk_panel panel = self.GetPanel()
-		SetInitialTweenStateForChildPanels( self, panel )
-	}
+		SetInitialTweenStateForChildPanels( self, self.GetPanel() )
 }
 
 void function AnimatePanel( rtk_behavior self, rtk_panel panel )
@@ -122,6 +128,13 @@ void function AnimatePanel( rtk_behavior self, rtk_panel panel )
 				}
 			}
 
+			if ( childIndex == panel.GetChildCount() - 1 ) 
+			{
+				self.AutoSubscribe( animator, "onAnimationFinished", function ( rtk_behavior animator, string animName ) : ( self ) {
+					self.InvokeEvent( "onFinish" )
+				} )
+			}
+
 			RTKAnimator_PlayAnimation( animator, selfAnimationName )
 		}
 
@@ -170,8 +183,12 @@ void function SetInitialTweenState( rtk_behavior self, rtk_behavior animator )
 			}
 		}
 
-		RTKAnimator_PlayAnimation( animator, self.PropGetString( "animationName" ) )
+		string name = self.PropGetString( "animationName" )
+		if ( RTKAnimator_HasAnimation( animator, name ) )
+			RTKAnimator_PlayAnimation( animator, name )
+
 		RTKAnimator_Pause( animator )
 	}
 }
+
 

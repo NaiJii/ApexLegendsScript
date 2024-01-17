@@ -32,6 +32,10 @@ void function Confirm( var button )
 	file.revertChanges = false
 	Signal( uiGlobal.signalDummy, "EndVideoChangesCountdown" )
 
+	
+	
+	SendPINSettingsEvent()
+
 	foreach ( func in uiGlobal.resolutionChangedCallbacks )
 		func()
 

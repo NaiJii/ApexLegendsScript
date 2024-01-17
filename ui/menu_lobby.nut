@@ -36,9 +36,7 @@ struct
 	bool hasFocusedNews = false
 
 	var postGameButton
-
-
-
+	var progressionModifiersButton
 	var newsButton
 	var newsButtonStatusIcon
 	var socialButton
@@ -150,16 +148,10 @@ void function InitLobbyMenu( var newMenuArg )
 	HudElem_SetRuiArg( postGameButton, "shortcutText", "%[BACK|TAB]%" )
 	Hud_AddEventHandler( postGameButton, UIE_CLICK, PostGameButton_OnActivate )
 
-
-
-
-
-
-
-
-
-
-
+	var progressionModifiersButton = Hud_GetChild( menu, "ProgressionModifiersButton" )
+	file.progressionModifiersButton = progressionModifiersButton
+	HudElem_SetRuiArg( progressionModifiersButton, "icon", $"rui/menu/xp_boost/BoostXP_lrg" )
+	Hud_AddEventHandler( progressionModifiersButton, UIE_CLICK, ProgressionModifiersButton_OnActivate )
 	var newsButton = Hud_GetChild( menu, "NewsButton" )
 	file.newsButton = newsButton
 	file.newsButtonStatusIcon = Hud_GetChild( menu, "NewsButtonStatusIcon" )
@@ -189,10 +181,6 @@ void function InitLobbyMenu( var newMenuArg )
 	HudElem_SetRuiArg( gameMenuButton, "icon", $"rui/menu/lobby/settings_icon" )
 	HudElem_SetRuiArg( gameMenuButton, "shortcutText", "%[START|ESCAPE]%" )
 	Hud_AddEventHandler( gameMenuButton, UIE_CLICK, GameMenuButton_OnActivate )
-
-
-	var bonusXp = Hud_GetChild( menu, "BonusXp" )
-	file.bonusXp = bonusXp
 
 	var socialEventPopup = Hud_GetChild( menu, "SocialPopupPanel" )
 	file.socialEventPopup = socialEventPopup
@@ -250,6 +238,7 @@ void function OnLobbyMenu_Open()
 			TabDef tab = AddTab( file.menu, panel, GetPanelTabTitle( panel ) )
 			tab.isBannerLogoSmall = true
 			SetTabBaseWidth( tab, 180 )
+			tab.new = HasNewPersonalisedOffers()
 		}
 		{
 			var panel = Hud_GetChild( file.menu, "ClubLandingPanel" )
@@ -359,9 +348,6 @@ void function Lobby_OnTabChanged()
 		return
 
 	UpdateCornerButtons()
-
-	UpdateBonusXP()
-
 }
 
 void function OnLobbyMenu_GetTopLevel()
@@ -493,61 +479,12 @@ void function LobbyMenuUpdateLowFrequencyElements()
 	{
 		UpdateCornerButtons()
 		UpdatePromoToast()
+		SetPanelTabNew( GetPanel( "StorePanel" ), HasNewPersonalisedOffers() )
 
-		UpdateBonusXP()
-
+		Boost_LowFreqUpdate()
+		UpdateProgressionModifiersButton()
 		wait 1.0
 	}
-}
-
-void function UpdateBonusXP()
-{
-	float boostCount = 0.0
-	Party party = GetParty()
-
-	foreach ( member in party.members )
-	{
-		boostCount += Clamp(member.boostCount * 0.1, 0.0, 3.0)
-	}
-
-	int rarity = 3
-	int boostPercentage =  int(boostCount * 100)
-	bool isVisible = boostCount > 0
-
-	if ( isVisible )
-	{
-		ToolTipData bonusXpTooltip
-		bonusXpTooltip.titleText = Localize( "#BONUS_XP_TITLE" )
-		bonusXpTooltip.rarity    = 3
-		bonusXpTooltip.descText  = Localize( "#BONUS_XP_DESC", boostPercentage )
-		Hud_SetToolTipData( file.bonusXp, bonusXpTooltip )
-	}
-	else
-	{
-		Hud_ClearToolTipData(file.bonusXp)
-	}
-
-
-	var rui = Hud_GetRui( file.bonusXp )
-	RuiSetBool( rui, "isVisible", isVisible )
-
-	if ( !file.hasFocusedNews && file.hasNewGifts )
-	{
-		Hud_SetVisible( file.bonusXp, false )
-		RuiSetBool( rui, "hasPromoPopup", true )
-	}
-	else
-	{
-		RuiSetBool( rui, "hasPromoPopup", false )
-		RuiSetInt( rui, "rarity", rarity )
-		RuiSetInt( rui, "boostPercentage", boostPercentage )
-	}
-
-
-	var playPanel           = GetPanel( "PlayPanel" )
-	bool isPlayPanelActive  = IsTabPanelActive( playPanel )
-
-	Hud_SetVisible( file.bonusXp, isVisible && isPlayPanelActive )
 }
 
 void function UpdatePromoToast()
@@ -592,6 +529,26 @@ void function UpdatePromoToast()
 	RuiSetColorAlpha( rui, "seasonColor", GetSeasonStyle().seasonColor, 1 )
 }
 
+bool function IsSameVendorPlatform( string hardware1, string hardware2 )
+{
+	if ( hardware1 != hardware2 )
+	{
+		if( hardware1 == "PS4" || hardware1 == "PS5" ) 
+		{
+			if( hardware2 == "PS4" || hardware2 == "PS5" )
+				return true
+		}
+		else if( hardware1 == "X1" || hardware1 == "XB5" )
+		{
+			if( hardware2 == "X1" || hardware2 == "XB5" )
+				return true
+		}
+
+		return false
+	}
+	return true
+}
+
 void function HandleCrossplayPartyInvalid()
 {
 	
@@ -609,14 +566,13 @@ void function HandleCrossplayPartyInvalid()
 	Party myParty     = GetParty()
 	foreach ( p in myParty.members )
 	{
-		if ( hardware != p.hardware )
+		if ( !IsSameVendorPlatform( hardware , p.hardware  ) )
 		{
 			LeaveParty()
 
 			ConfirmDialogData data
 			data.headerText = "#CROSSPLAY_DIALOG_INVALID_PARTY_HEADER"
 			data.messageText = Localize( "#CROSSPLAY_DIALOG_INVALID_PARTY_MSG" )
-
 			OpenOKDialogFromData( data )
 			break
 		}
@@ -677,7 +633,34 @@ void function TrackPlaylistRotation()
 		{
 			Lobby_UpdateSelectedPlaylistUsingUISlot( selectedPlaylist )
 		}
+
+
+
 	}
+}
+
+void function UpdateProgressionModifiersButton()
+{
+	if ( GetActiveMenu() != file.menu )
+		return
+
+	BoostTable boosts = Boost_GetActiveBoosts( GetLocalClientPlayer() )
+	int boostCount = boosts.len() + 2 
+	if ( boostCount > 0 )
+	{
+		ToolTipData tooltip
+		tooltip.descText  = boostCount > 1 ? Localize( "#PROGRESSION_MODIFIERS_TOOLTIP_PLURAL", boostCount ) : Localize( "#PROGRESSION_MODIFIERS_TOOLTIP", boostCount )
+		Hud_SetToolTipData( file.progressionModifiersButton, tooltip )
+	}
+	else
+	{
+		Hud_ClearToolTipData( file.progressionModifiersButton )
+	}
+
+	var rui = Hud_GetRui( file.progressionModifiersButton )
+
+	RuiSetColorAlpha( rui, "seasonColor", GetSeasonStyle().seasonColor, 1 )
+	RuiSetBool( rui, "isNew", Boost_UI_HasNewBoosts() )
 }
 
 void function UpdateCornerButtons()
@@ -696,9 +679,7 @@ void function UpdateCornerButtons()
 	Hud_SetVisible( file.newsButtonStatusIcon, isPlayPanelActive )
 	Hud_SetVisible( file.socialButton, isPlayPanelActive )
 	Hud_SetVisible( file.gameMenuButton, isPlayPanelActive )
-
-
-
+	Hud_SetVisible( file.progressionModifiersButton, isPlayPanelActive )
 
 	var accessibilityHint = Hud_GetChild( playPanel, "AccessibilityHint" )
 	Hud_SetVisible( accessibilityHint, isPlayPanelActive && IsAccessibilityChatHintEnabled() && !VoiceIsRestricted() && (GetPartySize() > 1) )
@@ -718,9 +699,6 @@ void function UpdateCornerButtons()
 		Hud_ReturnToBaseSize( file.socialButton )
 		InitButtonRCP( file.socialButton )
 	}
-
-
-	Hud_SetPinSibling(file.bonusXp, "PostGameButton")
 
 	string str = (( IsNetGraphEnabled() && isPlayPanelActive ) ? Localize( "#NETGRAPH_SERVERID", GetServerDebugId() ) : "")
 	Hud_SetText( file.serverDebugID, str )
@@ -786,10 +764,10 @@ void function SeasonTab_OnActivate( var button )
 	JumpToSeasonTab()
 }
 
-
-
-
-
+void function ProgressionModifiersButton_OnActivate( var button )
+{
+	OpenProgressionModifiersMenu()
+}
 
 void function NewsButton_OnActivate( var button )
 {
@@ -926,7 +904,11 @@ void function PostGameFlow()
 
 
 
-	bool showRankedSummary = GetPersistentVarAsInt( "showRankedSummary" ) != 0
+
+	bool showRankedSummary = Ranked_GetXProgMergedPersistenceData( GetLocalClientPlayer(), RANKED_SHOW_RANKED_SUMMARY_PERSISTENCE_VAR_NAME ) != 0
+
+
+
 	bool isFirstTime       = GetPersistentVarAsInt( "showGameSummary" ) != 0
 
 		bool showOrientationMatchDialog = GetPersistentVarAsInt( "showOrientationMatchGraduationDialog" ) != 0
@@ -1014,6 +996,10 @@ void function KeyEscape_OnActivate( var button )
 void function ButtonX_OnActivate( var button )
 {
 	DispatchLobbyPopupInput( BUTTON_X )
+
+
+
+
 }
 
 
@@ -1044,6 +1030,10 @@ void function KeyN_OnActivate( var button )
 void function KeyB_OnActivate( var button )
 {
 	DispatchLobbyPopupInput( KEY_B )
+
+
+
+
 }
 
 

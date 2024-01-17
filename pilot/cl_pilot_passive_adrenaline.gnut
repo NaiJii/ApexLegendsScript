@@ -8,9 +8,9 @@ const string DEFAULT_ADRENALINE_COLOR_CORR = "materials/correction/adrenaline_pa
 
 
 
-
-
-
+const asset CONDUIT_ADRENALINE_SCREEN_FX = $"P_con_passive_boost"
+const asset CONDUIT_ADRENALINE_RUI = $"ui/passive_conduit_triggered.rpak"
+const string CONDUIT_ADRENALINE_SOUND_START 	= "Conduit_Pass_Alert_1p"
 
 
 
@@ -28,7 +28,7 @@ void function CLPassiveAdrenaline_Init()
 	file.colorCorrection = ColorCorrection_Register( DEFAULT_ADRENALINE_COLOR_CORR )
 
 
-
+		PrecacheParticleSystem( CONDUIT_ADRENALINE_SCREEN_FX )
 
 
 	RegisterSignal( PAS_ADRENALINE_STOP_SIGNAL )
@@ -51,11 +51,12 @@ void function PassiveAdrenaline_StartVisualEffect( entity ent, int statusEffect,
 	int screenEffectID = file.ScreenFxId
 	asset adrenalineRui = DEFAULT_ADRENALINE_RUI
 
-
-
-
-
-
+	if ( viewPlayer.HasPassive( ePassives.PAS_CONDUIT ) )
+	{
+		soundName =  CONDUIT_ADRENALINE_SOUND_START
+		screenEffectID =  GetParticleSystemIndex( CONDUIT_ADRENALINE_SCREEN_FX)
+		adrenalineRui = CONDUIT_ADRENALINE_RUI
+	}
 
 
 	EmitSoundOnEntity( viewPlayer, soundName )

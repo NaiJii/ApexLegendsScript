@@ -382,7 +382,7 @@ void function Armor_ShieldRegen_OnGameState_Ending()
 			printf("Armor_ShieldRegen_OnGameState_Ending()")
 #endif
 
-	if ( file.armorShieldRegenRui != null )
+	if ( file.armorShieldRegenRui == null )
 		return
 
 	RuiDestroyIfAlive( file.armorShieldRegenRui )
@@ -422,7 +422,7 @@ void function ShieldRegen_RegenTriggerNotice_Thread( bool skipDelay )
 #endif
 
 	entity player = GetLocalClientPlayer()
-	if ( !IsValid( player ) )
+	if ( !IsValid( player ) || !IsValid(file.armorShieldRegenRui))
 		return
 
 	player.EndSignal( "OnDestroy" )

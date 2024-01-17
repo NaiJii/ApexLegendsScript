@@ -43,10 +43,6 @@ void function ShowNotificationForABit( string titleText, string messageText )
 	RuiSetString( file.notificationBoxRui, "titleText", titleText )
 	RuiSetString( file.notificationBoxRui, "messageText", messageText )
 
-
-
-
-
 	Hud_Show( file.menu )
 
 	OnThreadEnd(

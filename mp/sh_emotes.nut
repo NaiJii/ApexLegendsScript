@@ -20,8 +20,6 @@ global function CheckPlayerCanEmote
 
 
 
-
-
 global function RequestCharacterEmote
 global function ServerCallback_PlayerPerformPodiumScreenEmote
 global function ServerCallback_PlayerPerformPodiumScreenFlourish
@@ -94,8 +92,13 @@ const string EMOTE_PIN_ACTION_INTERRUPT 			= "interrupted"
 
 
 
-const float SPAWNEDPROP_MOVEDIST_DEFAULT = 7874.02
-const float SPAWNEDPROP_MOVESPEED_DEFAULT = 39.37
+
+
+
+
+
+
+
 
 
 
@@ -202,8 +205,6 @@ struct
 
 
 
-
-
 		string							lastUsedEmoteAttachment
 		table< entity, bool >			characterPodiumModelIsEmoting
 
@@ -239,6 +240,9 @@ void function ShEmotes_Init()
 
 	Remote_RegisterServerFunction( CMD_REQUEST_EMOTE_START, "int", INT_MIN, INT_MAX )
 	Remote_RegisterServerFunction( CMD_REQUEST_EMOTE_STOP )
+
+
+
 
 
 
@@ -444,6 +448,10 @@ void function OnItemFlavorRegistered_Character( ItemFlavor characterClass )
 
 
 
+
+
+
+
 void function OnPodiumCharacterModelSpawned( entity characterModel, ItemFlavor character, int eHandle )
 {
 	file.characterPodiumModelIsEmoting[ characterModel ] <- false
@@ -472,7 +480,7 @@ bool function CanLocalClientPerformPodiumScreenEmote()
 	EHI playerEHI = LocalClientEHI()
 	ItemFlavor character = LoadoutSlot_GetItemFlavor( playerEHI, Loadout_Character() )
 
-	if ( ItemFlavor_GetQuipArrayForCharacter( character, true ).len() == 0 && ItemFlavor_GetFavoredQuipArrayForCharacter( character, true ).len() == 0 )
+	if ( ItemFlavor_GetQuipArrayForCharacter( localClientPlayer, character, true ).len() == 0 && ItemFlavor_GetFavoredQuipArrayForCharacter( character, true ).len() == 0 )
 		return false
 
 	if ( IsEmoteEnabledForPodiumScreen() )
@@ -1153,9 +1161,11 @@ void function ModelPerformEmote( entity model, ItemFlavor item, entity mover, bo
 	if ( IsEmoteEnabledForPodiumScreen() && !CanLocalClientPerformPodiumScreenEmote() )
 		RuiSetBool( GetPodiumSequenceRui(), "emoteAvailable", false )
 
-	bool isLocalPlayerModel = ( GetPodiumScreenCharacterModelForEHI( LocalClientEHI() ) == model )
+	EHI lcPlayer 			= LocalClientEHI()
+	bool isLocalPlayerModel = ( GetPodiumScreenCharacterModelForEHI( lcPlayer ) == model )
+	ItemFlavor character    = LoadoutSlot_GetItemFlavor( lcPlayer, Loadout_Character() )
 
-	string anim3p     = CharacterQuip_GetAnim3p( item )
+	string anim3p     = CharacterQuip_GetAnim3p( item, character )
 	string loopAnim3p = CharacterQuip_GetAnimLoop3p( item )
 
 	bool usesLoop = loopAnim3p != ""
@@ -1779,6 +1789,10 @@ void function ModelPerformEmote( entity model, ItemFlavor item, entity mover, bo
 
 
 
+
+
+
+
 bool function IsPlayerMovingTooQuicklyForEmote( entity player )
 {
 	vector playerVel = player.GetVelocity()
@@ -1797,6 +1811,53 @@ float function DEV_CharacterEmote_GetCustomAnimSequenceTime( string animName )
 
 	unreachable
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

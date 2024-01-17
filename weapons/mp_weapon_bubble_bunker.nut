@@ -41,6 +41,13 @@ const asset BUBBLE_BUNKER_SHIELD_PROJECTILE = $"mdl/props/gibraltar_bubbleshield
 
 
 
+
+
+
+
+
+
+
 const string BUBBLE_BUNKER_SOUND_ENDING = "Gibraltar_BubbleShield_Ending"
 const string BUBBLE_BUNKER_SOUND_FINISH = "Gibraltar_BubbleShield_Deactivate"
 
@@ -95,6 +102,13 @@ void function MpWeaponBubbleBunker_Init()
 
 
 
+
+
+
+
+
+
+
 	
 	
 
@@ -130,12 +144,42 @@ void function MpWeaponBubbleBunker_Init()
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+float function BubbleBunker_GetThrowPower( entity player )
+{
+	float result = BUBBLE_BUNKER_THROW_POWER
+
+
+
+
+
+
+
+
+
+
+
+
+	return result
+}
+
 var function OnWeaponTossReleaseAnimEvent_WeaponBubbleBunker( entity weapon, WeaponPrimaryAttackParams attackParams )
 {
 	int ammoReq = weapon.GetAmmoPerShot()
 	weapon.EmitWeaponSound_1p3p( GetGrenadeThrowSound_1p( weapon ), GetGrenadeThrowSound_3p( weapon ) )
 
-	entity deployable = ThrowDeployable( weapon, attackParams, BUBBLE_BUNKER_THROW_POWER, OnBubbleBunkerPlanted, null, null )
+	entity deployable = ThrowDeployable( weapon, attackParams, BubbleBunker_GetThrowPower( weapon.GetOwner() ), OnBubbleBunkerPlanted, null, null )
 	if ( deployable )
 	{
 		entity player = weapon.GetWeaponOwner()
@@ -238,6 +282,39 @@ void function OnBubbleBunkerPlanted( entity projectile, DeployableCollisionParam
 
 
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

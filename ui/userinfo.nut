@@ -39,6 +39,8 @@ void function SetupUserInfoPanelToolTips( int currency1, int currency2, int curr
 	ttd.actionHint2 = FormatAndLocalizeNumber( "1", float( currency2 ), true )
 	ttd.actionHint3 = FormatAndLocalizeNumber( "1", float( currency3 ), true )
 
+	ttd.currencyToolTipData.premiumCurrencyIsNegative = ( currency1 < 0 )
+
 	int nextExpirationAmount = GRX_GetNextCurrencyExpirationAmt()
 	if( nextExpirationAmount > 0 )
 		ttd.descText = Localize( "#CURRENCIES_TOOLTIP_EXPIRATION", nextExpirationAmount, ( GRX_GetNextCurrencyExpirationTime() - GetUnixTimestamp() ) / SECONDS_PER_DAY )
@@ -114,6 +116,9 @@ void function UpdateActiveUserInfoPanels()
 {
 	bool isReady = GRX_IsInventoryReady() && GRX_AreOffersReady()
 	int premiumBalance, creditsBalance, craftingBalance
+
+	printt("UpdateActiveUserInfoPanels Offers:" + GRX_AreOffersReady() + " Inventory:" + GRX_IsInventoryReady()  + " isReady:" +isReady + " " + FUNC_NAME( 1 ) );
+
 	if ( isReady )
 	{
 		premiumBalance = GRXCurrency_GetPlayerBalance( GetLocalClientPlayer(), GRX_CURRENCIES[GRX_CURRENCY_PREMIUM] )
@@ -127,6 +132,9 @@ void function UpdateActiveUserInfoPanels()
 		
 		RuiSetBool( rui, "isQuerying", !isReady )
 
+		RuiSetBool( rui, "count1isNegative", premiumBalance < 0 )
+		RuiSetBool( rui, "count2isNegative", creditsBalance < 0 )
+		RuiSetBool( rui, "count3isNegative", craftingBalance < 0 )
 		if ( isReady )
 		{
 #if DEV

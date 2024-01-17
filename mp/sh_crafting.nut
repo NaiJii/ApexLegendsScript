@@ -3,6 +3,13 @@
 global function Crafting_Init
 global function Crafting_RegisterNetworking
 global function Crafting_IsEnabled
+
+
+
+
+
+
+
 global function Crafting_GetPlayerCraftingMaterials
 global function Crafting_GetLootDataFromIndex
 global function Crafting_GetCraftingDataArray
@@ -10,6 +17,12 @@ global function Crafting_IsItemCurrentlyOwnedByAnyPlayer
 global function Crafting_DoesPlayerOwnItem
 
 global function Crafting_IsPingMapIconEnabled
+
+
+
+
+
+
 
 
 
@@ -89,6 +102,11 @@ global function ServerCallback_UpdateWorkbenchVars
 
 global function ServerCallback_Crafting_Notify_Player_On_Obit
 
+
+
+
+
+
 global function Crafting_OnMenuItemSelected
 global function Crafting_OnWorkbenchMenuClosed
 global function TryCloseCraftingMenuFromDamage
@@ -98,6 +116,7 @@ global function ServerCallback_SetCraftingIndexForSpectator
 global function MarkNextStepForPlayer
 global function MarkAllWorkbenches
 global function DestroyWorkbenchMarkers
+global function HarvesterAnimThread
 
 global function Crafting_ShowCraftingMapFeature
 
@@ -106,6 +125,9 @@ global function Crafting_GetWorkbenchDescString
 
 global function Crafting_IsPlayerAtWorkbench
 
+global function Crafting_GetCraftingIcon
+global function Crafting_GetSmallCraftingIcon
+global function Crafting_GetCraftingZoneIcon
 
 #if DEV
 global function DEV_Crafting_TogglePreMatchRotation
@@ -128,6 +150,11 @@ global function DEV_Crafting_PrintUsedHarvesterEHIs
 const asset CRAFTING_DATATABLE = $"datatable/crafting_workbench.rpak"
 const asset CRAFTING_CATEGORIES_DATATABLE = $"datatable/crafting_bundles.rpak"
 const string CRAFTING_NULL_CHECK = "null"
+
+
+
+
+
 
 
 global const string HARVESTER_SCRIPTNAME = "crafting_harvester"
@@ -156,6 +183,14 @@ const float WORKBENCH_LIMITED_STOCK_USE_DEFAULT = 3
 const string WORKBENCH_IDLE_ANIM = "crafting_replicator_ready_idle"
 const string WORKBENCH_IDLE_GROUND_ANIM = "crafting_replicator_ready_groundidle"
 
+
+
+
+
+
+
+
+
 const asset WORKBENCH_HOLO_FX = $"P_workbench_holo"
 
 
@@ -181,6 +216,12 @@ const int HARVESTER_TEAMMATE_REWARD = 25
 const asset WORKBENCH_ICON_ASSET = $"rui/hud/gametype_icons/survival/crafting_workbench"
 const asset WORKBENCH_ICON_LIMITED_ASSET = $"rui/hud/gametype_icons/survival/crafting_workbench_limited"
 const asset WORKBENCH_ICON_AIRDROP_ASSET = $"rui/hud/gametype_icons/survival/crafting_workbench_airdrop"
+
+
+
+
+
+
 const asset HARVESTER_ICON_ASSET = $"rui/hud/gametype_icons/survival/crafting_harvester"
 const asset CRAFTING_SMALL_HARVESTER_ASSET = $"rui/hud/gametype_icons/survival/crafting_small_harvester"
 const asset CRAFTING_SMALL_WORKBENCH_ASSET = $"rui/hud/ping/icon_ping_crafting_hexagon"
@@ -227,6 +268,10 @@ global const int CRAFTING_AMMO_MULTIPLIER = 3
 global const int CRAFTING_AMMO_MULTIPLIER_SMALL = 2
 
 
+
+
+
+
 const float IDEAL_END_FLAT_LENGTH = 27
 const vector IDEAL_END_TRACE_OFFSET_START = <0, 0, 72>
 const vector IDEAL_END_TRACE_OFFSET_END = <0, 0, -32>
@@ -267,6 +312,9 @@ global enum eCraftingRotationStyle
 
 		PERK,
 
+
+
+
 	
 
 
@@ -290,6 +338,18 @@ enum eCrafting_Obit_NotifyType
 	IS_REQUESTING_MATERIALS,
 	COUNT_
 }
+
+
+
+
+
+
+
+
+
+
+
+
 
 global struct CraftingBundle
 {
@@ -328,6 +388,10 @@ struct WorkbenchData
 
 	entity cluster
 	bool isCrafting = false
+
+
+
+
 }
 
 struct CraftingItemInfo
@@ -378,6 +442,11 @@ struct {
 	table<entity, var>			   harvesterMinimapRuiTable
 	table<entity, var>			   harvesterFullmapRuiTable
 
+
+
+
+
+
 	array<int>					   workbenchMarkerList
 	array<var>				   	   workbenchMarkerRuiList
 
@@ -393,6 +462,12 @@ struct {
 
 	
 	table< EHI, entity >			harvesterTableLocal
+
+
+
+
+
+
 
 #if DEV
 	bool 							DEV_testingRotationRui
@@ -499,10 +574,18 @@ void function Crafting_Init()
 	RegisterSignal( "OnPinged_Crafting" )
 	RegisterSignal( "CraftingPlayerPlayExitAnim" )
 	RegisterSignal( "CraftingPlayerDetachImmediate" )
+	RegisterSignal( "CraftingDestroyReferencePlacement" )
 	if ( file.craftingBetterSpectatorEnabled )
 	{
 		RegisterSignal( "crafting_kill_spectator_thread" )
 	}
+
+
+
+
+
+
+
 
 
 
@@ -515,6 +598,13 @@ void function Crafting_Init()
 
 	printf( "CRAFTING: Crafting Systems enabled" )
 	file.isEnabled = true
+
+
+
+
+
+
+
 
 
 
@@ -585,6 +675,11 @@ void function Crafting_Init()
 	PrecacheParticleSystem( WORKBENCH_ENGINE_SMOKE_FX )
 	PrecacheParticleSystem( WORKBENCH_DOOR_OPEN_FX )
 	PrecacheParticleSystem( WORKBENCH_PRINTING_FX )
+
+
+
+
+
 }
 
 void function Crafting_RegisterNetworking()
@@ -594,8 +689,14 @@ void function Crafting_RegisterNetworking()
 
 	file.isEnabled = true
 
-	RegisterNetworkedVariable( "craftingMaterials", SNDC_PLAYER_GLOBAL, SNVT_BIG_INT, 0 )
-	RegisterNetworkedVariable( "Crafting_NumHarvesters", SNDC_GLOBAL, SNVT_INT, 0 )
+
+
+
+	{
+		RegisterNetworkedVariable( "craftingMaterials", SNDC_PLAYER_GLOBAL, SNVT_BIG_INT, 0 )
+		RegisterNetworkedVariable( "Crafting_NumHarvesters", SNDC_GLOBAL, SNVT_INT, 0 )
+	}
+
 	RegisterNetworkedVariable( "Crafting_NumWorkbenches", SNDC_GLOBAL, SNVT_INT, 0 )
 	RegisterNetworkedVariable( "Crafting_StartTime", SNDC_GLOBAL, SNVT_TIME, -1 )
 
@@ -619,7 +720,11 @@ void function Crafting_RegisterNetworking()
 	Remote_RegisterClientFunction( "ServerCallback_Crafting_Notify_Player_On_Obit", "entity", "int", 0, eCrafting_Obit_NotifyType.COUNT_, "int", 0, 256, "int", 0, 128, "int", -1, MAX_ARMOR_EVO_TIER + 1 )
 	Remote_RegisterServerFunction( "ClientCallback_Crafting_Notify_Teammates_On_Obit", 		  "int", 0, eCrafting_Obit_NotifyType.COUNT_, "int", 0, 256, "int", 0, 128, "int", -1, MAX_ARMOR_EVO_TIER + 1 )
 
-	Remote_RegisterServerFunction( FUNCNAME_PingCrafterFromMap, "entity" )
+	Remote_RegisterServerFunction( FUNCNAME_PingCrafterFromMap, "typed_entity", "prop_dynamic" )
+
+
+
+
 
 
 	AddOnSpectatorTargetChangedCallback( Crafting_OnSpectateTargetChanged )
@@ -642,6 +747,53 @@ bool function Crafting_PlaylistVar_IsEnabled()
 }
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 bool function Replicators_PingFromMap_Enabled()
 {
 	return GetCurrentPlaylistVarBool( "replicators_pingfrommap_enabled", true )
@@ -658,15 +810,38 @@ bool function Crafting_IsPingMapIconEnabled()
 	return GetCurrentPlaylistVarBool( "crafting_pingmapicon_enabled", true )
 }
 
-bool function Crafting_PlaylistVar_CraftersDisabledInDeathField()
+bool function Crafting_CraftersDisabledInDeathField()
 {
 	return( GetCurrentPlaylistVarBool( "crafting_crafters_disabled_indeathfield", false ))
 }
 
+float function Crafting_CrafterExlusionDistance()
+{
+	return GetCurrentPlaylistVarFloat( "crafting_crafter_exclusion_distance", 16250 )
+}
+
+float function Crafting_HarvesterExlusionDistance()
+{
+	return GetCurrentPlaylistVarFloat( "crafting_harvester_exclusion_distance", 12000 )
+}
+
+int function Crafting_HarvesterGoalOverride()
+{
+	return GetCurrentPlaylistVarInt( "crafting_cluster_goal_override", 9 )
+}
 
 void function RegisterCraftingData()
 {
-	var dataTable = GetDataTable( CRAFTING_DATATABLE )
+	var dataTable
+	dataTable = GetDataTable( CRAFTING_DATATABLE )
+
+
+
+
+
+
+
+
 	int numRows = GetDataTableRowCount( dataTable )
 
 	for ( int i=0; i<numRows; i++ )
@@ -722,7 +897,16 @@ void function RegisterCraftingData()
 
 void function RegisterCraftingDistribution()
 {
-	var distributionTable = GetDataTable( CRAFTING_CATEGORIES_DATATABLE )
+	var distributionTable
+	distributionTable = GetDataTable( CRAFTING_CATEGORIES_DATATABLE )
+
+
+
+
+
+
+
+
 	int numRows = GetDataTableRowCount( distributionTable )
 
 	foreach ( category in file.craftingDataArray )
@@ -766,6 +950,26 @@ void function RegisterCraftingDistribution()
 			}
 		}
 	}
+}
+
+array<string> function Crafting_GetCraftingItemsByCategoryName( string categoryToCheck )
+{
+	array<string> validItemsInBundle
+
+	for ( int i = 0; i < file.craftingDataArray.len(); i++ )
+	{
+		CraftingCategory group = file.craftingDataArray[i]
+
+		if( group.category != categoryToCheck )
+			continue
+
+		if ( group.exclusivityStyle == eCraftingExclusivityStyle.RARITY || group.exclusivityStyle == eCraftingExclusivityStyle.FLOOR )
+		{
+			validItemsInBundle.extend( GenerateCraftingItemsInCategory( null, group ) )
+		}
+	}
+
+	return validItemsInBundle
 }
 
 
@@ -1361,6 +1565,166 @@ void function Crafting_OnGameStatePlaying_Thread()
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 array<string> function GetItemNamesFromCraftingBundle( CraftingBundle craftedBundle )
 {
 	array<string> arrayResults
@@ -1439,6 +1803,14 @@ string function Crafting_GetWorkbenchTitleString()
 	entity workbench = GetLocalClientPlayerWorkbench()
 	if ( IsLimitedStockWorkbench( workbench ) )
 		return Localize("#CRAFTING_WORKBENCH_LIMITED")
+
+
+
+
+
+
+
+
 	else
 		return Localize("#CRAFTING_WORKBENCH")
 	unreachable
@@ -1450,6 +1822,14 @@ string function Crafting_GetWorkbenchDescString()
 	entity workbench = GetLocalClientPlayerWorkbench()
 	if ( IsLimitedStockWorkbench( workbench ) )
 		return GetLimitedStockFromWorkbench( workbench ) <=1 ? Localize("#CRAFTING_LIMITED_USE_BENCH_SINGULAR", GetLimitedStockFromWorkbench( workbench )) : Localize("#CRAFTING_LIMITED_USE_BENCH", GetLimitedStockFromWorkbench( workbench ))
+
+
+
+
+
+
+
+
 	else
 		return Localize("#CRAFTING_WORKBENCH_DESC")
 	unreachable
@@ -1486,7 +1866,7 @@ entity function GetLocalClientPlayerWorkbench()
 void function RegisterMinimapPackages()
 {
 	RegisterMinimapPackage( "prop_script", eMinimapObject_prop_script.CRAFTING_HARVESTER, MINIMAP_OBJECT_RUI, MinimapPackage_Crafting_Harvester, FULLMAP_OBJECT_RUI, FullmapPackage_Crafting_Harvester )
-	RegisterMinimapPackage( "prop_script", eMinimapObject_prop_script.CRAFTING_WORKBENCH, MINIMAP_OBJECT_RUI, MapPackage_Crafting_Workbench, FULLMAP_OBJECT_RUI, MapPackage_Crafting_Workbench )
+	RegisterMinimapPackage( "prop_script", eMinimapObject_prop_script.CRAFTING_WORKBENCH, MINIMAP_OBJECT_RUI, MiniMapPackage_Crafting_Workbench, FULLMAP_OBJECT_RUI, MapPackage_Crafting_Workbench )
 	RegisterMinimapPackage( "prop_script", eMinimapObject_prop_script.CRAFTING_WORKBENCH_LIMITED, MINIMAP_OBJECT_RUI, MapPackage_Crafting_WorkbenchLimited, FULLMAP_OBJECT_RUI, MapPackage_Crafting_WorkbenchLimited )
 }
 
@@ -1519,16 +1899,42 @@ void function MapPackage_Crafting_Workbench( entity ent, var rui )
 {
 	bool isAirdrop = ent.GetTargetName() == "craftingWorkbenchAirdropIcon"
 
-	RuiSetImage( rui, "defaultIcon", isAirdrop ? WORKBENCH_ICON_AIRDROP_ASSET : WORKBENCH_ICON_ASSET )
+	RuiSetImage( rui, "defaultIcon", Crafting_GetCraftingIcon( isAirdrop ) )
 
 	RuiSetImage( rui, "clampedDefaultIcon", $"" )
 	RuiSetBool( rui, "useTeamColor", false )
 
 	if ( !isAirdrop )
 	{
-		RuiSetImage( rui, "smallIcon", CRAFTING_SMALL_WORKBENCH_ASSET )
+		RuiSetImage( rui, "smallIcon", Crafting_GetSmallCraftingIcon() )
 		RuiSetBool( rui, "hasSmallIcon", true )
 	}
+
+
+
+
+
+}
+
+void function MiniMapPackage_Crafting_Workbench( entity ent, var rui )
+{
+	bool isAirdrop = ent.GetTargetName() == "craftingWorkbenchAirdropIcon"
+
+	RuiSetImage( rui, "defaultIcon", Crafting_GetCraftingIcon( isAirdrop ) )
+
+	RuiSetImage( rui, "clampedDefaultIcon", $"" )
+	RuiSetBool( rui, "useTeamColor", false )
+
+	if ( !isAirdrop )
+	{
+		RuiSetImage( rui, "smallIcon", Crafting_GetSmallCraftingIcon() )
+		RuiSetBool( rui, "hasSmallIcon", true )
+	}
+
+
+
+
+
 }
 
 void function MapPackage_Crafting_WorkbenchLimited( entity ent, var rui )
@@ -1644,6 +2050,20 @@ void function TryCloseCraftingMenuFromDamage( float damage, vector damageOrigin,
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 void function OnHarvesterCreated( entity target )
 {
 	if ( !file.isEnabled )
@@ -1653,6 +2073,14 @@ void function OnHarvesterCreated( entity target )
 
 	if ( target.GetScriptName() != "crafting_harvester" )
 		return
+
+
+
+
+
+
+
+
 
 #if DEV
 	DEV_Crafting_Print( format( "OnHarvesterCreated():  %s", string( target ) ))
@@ -2227,6 +2655,11 @@ bool function SetMapIconsAsUsed( entity harvester, entity minimapObj )
 
 void function ServerCallback_CL_MaterialsChanged( int amount, int difference, int campIndex, entity giver, bool selfOnly )
 {
+
+
+
+
+
 	if ( file.fullmapRui.len() != 0 && file.fullmapRui[0] != null )
 		RuiSetInt( file.fullmapRui[0], "craftingMaterials", amount )
 
@@ -2544,12 +2977,36 @@ void function Crafting_Obit_Notify_Single( entity notifyingPlayer, int notifyTyp
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 int function Crafting_GetPlayerCraftingMaterials( entity player )
 {
-	if( !IsValid( player ) )
+
+
+
+
+	if( !IsValid( player ) || !Crafting_IsEnabled() )
 		return 0
 
-	int playerMaterials = Crafting_PlaylistVar_IsEnabled() ? player.GetPlayerNetInt( "craftingMaterials" ) : 0
+	int playerMaterials = ( Crafting_PlaylistVar_IsEnabled() && file.isNetworkingRegistered ) ? player.GetPlayerNetInt( "craftingMaterials" ) : 0
 	return playerMaterials
 }
 
@@ -2567,6 +3024,79 @@ bool function Crafting_IsPlayerAtWorkbench( entity player )
 
 	return false
 }
+
+asset function Crafting_GetCraftingIcon( bool isAirdrop )
+{
+
+
+
+
+
+
+
+	return isAirdrop ? WORKBENCH_ICON_AIRDROP_ASSET : WORKBENCH_ICON_ASSET
+}
+
+asset function Crafting_GetSmallCraftingIcon()
+{
+
+
+
+
+
+
+
+	return CRAFTING_SMALL_WORKBENCH_ASSET
+}
+
+asset function Crafting_GetCraftingZoneIcon()
+{
+
+
+
+
+
+
+
+	return CRAFTING_ZONE_ASSET
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -3100,8 +3630,28 @@ void function OnWorkbenchClusterCreated( entity target )
 		if ( ent.GetScriptName() == WORKBENCH_SCRIPTNAME && IsLimitedStockWorkbench( target ) )
 			AddEntityCallback_GetUseEntOverrideText( ent, LimitedStock_TextOverride )
 		else if ( ent.GetScriptName() == WORKBENCH_SCRIPTNAME )
+		{
 			AddEntityCallback_GetUseEntOverrideText( ent, Crafting_Workbench_UseTextOverride )
+
+
+
+
+
+
+
+
+
+
+
+		}
 	}
+
+
+
+
+
+
+
 
 	
 	file.workbenchClusterArray.append( target )
@@ -3124,6 +3674,16 @@ string function Crafting_Workbench_UseTextOverride( entity ent )
 	CustomUsePrompt_SetSourcePos( ent.GetOrigin() + ( ent.GetScriptName() == HARVESTER_SCRIPTNAME ? < 0, 0, 30 > : <0,0,-20> ) )
 
 	CustomUsePrompt_SetText( Localize("#CRAFTING_WORKBENCH_USE_PROMPT") )
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -3156,6 +3716,20 @@ void function UseCraftingWorkbench( entity bench, entity player, int pickupFlags
 	if( player.Player_IsSkywardFollowing() )
 		return
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 	if ( IsBitFlagSet( pickupFlags, USE_INPUT_LONG ) )
 	{
 		entity cluster
@@ -3182,6 +3756,26 @@ void function UseCraftingWorkbench( entity bench, entity player, int pickupFlags
 
 void function WorkbenchThink( entity ent, entity playerUser )
 {
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 	ExtendedUseSettings settings = WorkbenchExtendedUseSettings( ent, playerUser )
 
 	ent.EndSignal( "OnDestroy" )
@@ -3207,6 +3801,272 @@ ExtendedUseSettings function WorkbenchExtendedUseSettings( entity ent, entity pl
 
 	return settings
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -4085,14 +4945,24 @@ array< string > function GenerateCraftingItemsInCategory( entity player, Craftin
 
 	if ( craftingRotation == eCraftingRotationStyle.PERK )
 	{
-		if ( categoryToCheck.category == "banner" && ( Perk_CanBuyBanners( player ) || Perks_DoesPlayerHavePerk( player, ePerkIndex.BANNER_CRAFTING ) ) )
+
+
+
+
+
+
+
+
 		{
-			CraftingBundle bundle = GetBundleForCategory( categoryToCheck )
-			return bundle.itemsInBundle
-		}
-		else
-		{
-			return []
+			if ( categoryToCheck.category == "banner" && ( Perk_CanBuyBanners( player ) && ( GetRespawnStyle() == eRespawnStyle.RESPAWN_CHAMBERS ) || Perks_DoesPlayerHavePerk( player, ePerkIndex.BANNER_CRAFTING ) ) )
+			{
+				CraftingBundle bundle = GetBundleForCategory( categoryToCheck )
+				return bundle.itemsInBundle
+			}
+			else
+			{
+				return []
+			}
 		}
 	}
 
@@ -4303,6 +5173,11 @@ bool function CheckCraftingRotation( int craftingRotation )
 
 
 
+
+
+
+
+
 #if DEV
 
 
@@ -4347,7 +5222,7 @@ bool function Crafting_Workbench_IsNotBusy( entity player, entity ent, int useFl
 	bool isWorkbenchBusy = ent.GetLinkEntArray().len() != 0
 	bool isWorkbenchCrafting = ent.GetOwner() != null
 
-	if( Crafting_PlaylistVar_CraftersDisabledInDeathField() )
+	if( Crafting_CraftersDisabledInDeathField() )
 	{
 		if ( DeathField_PointDistanceFromFrontier( ent.GetOrigin(), player.DeathFieldIndex() ) <= 0 )
 		{
@@ -4551,7 +5426,15 @@ void function Crafting_ShowCraftingMapFeature()
 		showMapFeature = false
 
 	if( showMapFeature )
-		SetMapFeatureItem( 100, "#CRAFTING_CLUSTER_MAP_FEATURE", "#CRAFTING_CLUSTER_MAP_FEATURE_DESC", WORKBENCH_ICON_ASSET )
+	{
+
+
+
+
+
+
+			SetMapFeatureItem( 100, "#CRAFTING_CLUSTER_MAP_FEATURE", "#CRAFTING_CLUSTER_MAP_FEATURE_DESC", Crafting_GetCraftingIcon( false ) )
+	}
 }
 
 table<int, var> function CreateMarker( entity markedEnt, bool shouldFadeOutNearCrosshair = false )
@@ -4567,16 +5450,26 @@ table<int, var> function CreateMarker( entity markedEnt, bool shouldFadeOutNearC
 			iconToUse = HARVESTER_ICON_ASSET
 			break
 		case WORKBENCH_CLUSTER_SCRIPTNAME:
-			iconToUse = WORKBENCH_ICON_ASSET
+			iconToUse = Crafting_GetCraftingIcon( false )
 			break
 	}
 
-	int fxId = GetParticleSystemIndex( WORKBENCH_BEAM_FX )
-	int fxHandle = StartParticleEffectInWorldWithHandle( fxId, markedEnt.GetOrigin(), markedEnt.GetAngles() )
+	int fxHandle
+
+
+
+
+
+
+
+
+	{
+		fxHandle = StartParticleEffectInWorldWithHandle( GetParticleSystemIndex( WORKBENCH_BEAM_FX ), markedEnt.GetOrigin(), markedEnt.GetAngles() )
+	}
 
 	entity localViewPlayer = GetLocalViewPlayer()
 	vector pos             = markedEnt.GetOrigin() + (markedEnt.GetUpVector() * 200)
-	var rui                = CreatePermanentCockpitPostFXRui( $"ui/survey_beacon_marker_icon.rpak", RuiCalculateDistanceSortKey( localViewPlayer.EyePosition(), pos ) )
+	var rui                = CreatePermanentCockpitRui( $"ui/survey_beacon_marker_icon.rpak", RuiCalculateDistanceSortKey( localViewPlayer.EyePosition(), pos ) )
 	RuiSetImage( rui, "beaconImage", iconToUse )
 	RuiSetGameTime( rui, "startTime", Time() )
 	RuiSetFloat3( rui, "pos", pos )
@@ -4674,17 +5567,22 @@ void function OnWaitingForPlayers_Client()
 	if ( file.gameStartRuiCreated )
 		return
 
-	file.gameStartRuiCreated = true
-	var craftingGameStartRui = RuiCreate( $"ui/crafting_game_start.rpak", clGlobal.topoFullScreen, RUI_DRAW_POSTEFFECTS, 1 )
-	file.gameStartRui.append( craftingGameStartRui )
 
-	for ( int i = 0; i < 6; i++ )
-	{
-		var rui = SetupWorkbenchPreview( file.gameStartRui[0], i , "rotation" + i, false )
-		file.gameStartRui.append( rui )
-		
-		
-	}
+
+
+		{
+			file.gameStartRuiCreated = true
+			var craftingGameStartRui = RuiCreate( $"ui/crafting_game_start.rpak", clGlobal.topoFullScreen, RUI_DRAW_POSTEFFECTS, 1 )
+			file.gameStartRui.append( craftingGameStartRui )
+
+			for ( int i = 0; i < 6; i++ )
+			{
+				var rui = SetupWorkbenchPreview( file.gameStartRui[0], i , "rotation" + i, false )
+				file.gameStartRui.append( rui )
+				
+				
+			}
+		}
 
 	thread GameStart_CleanupThread()
 }
@@ -4720,6 +5618,11 @@ void function GameStart_CleanupThread()
 
 void function UICallback_PopulateCraftingPanel( var button )
 {
+
+
+
+
+
 	var rui = Hud_GetRui( button )
 	if ( rui == null )
 		return
@@ -4773,6 +5676,13 @@ var function SetupWorkbenchPreview( var baseRui, int index, string uiHandle, boo
 		RuiSetImage( rui, "iconImage", hudIcon )
 		RuiSetInt( rui, "lootTier", lootRef.tier )
 
+
+			if ( lootRef.ref == "hopup_golden_horse_green" )
+			{
+				RuiSetInt( rui, "lootTier", GOLDEN_HORSE_SPECIAL_EVENT_LOOT_TIER )
+			}
+
+
 		if ( lootRef.lootType == eLootType.MAINWEAPON )
 		{
 			RuiSetBool( rui, "isWeapon", true )
@@ -4803,20 +5713,30 @@ void function OnGameStartedPlaying_Client()
 		return
 	}
 
-	file.fullmapRui.append( RuiCreate( $"ui/crafting_fullmap.rpak", clGlobal.topoFullscreenFullMap, FULLMAP_RUI_DRAW_LAYER, 20 ) )
-	RuiTrackInt( file.fullmapRui[0], "craftingMaterials", GetLocalViewPlayer(), RUI_TRACK_SCRIPT_NETWORK_VAR_INT, GetNetworkedVariableIndex( "craftingMaterials" ) )
 
-	for ( int i = 0; i < 6; i++ )
+
+
 	{
-		var rui = SetupWorkbenchPreview( file.fullmapRui[0], i, "rotation" + i, false )
-		RuiSetBool( rui, "isMini", true )
-		file.fullmapRui.append( rui )
+		file.fullmapRui.append( RuiCreate( $"ui/crafting_fullmap.rpak", clGlobal.topoFullscreenFullMap, FULLMAP_RUI_DRAW_LAYER, 20 ) )
+		RuiTrackInt( file.fullmapRui[0], "craftingMaterials", GetLocalViewPlayer(), RUI_TRACK_SCRIPT_NETWORK_VAR_INT, GetNetworkedVariableIndex( "craftingMaterials" ) )
+
+		for ( int i = 0; i < 6; i++ )
+		{
+
+
+
+
+
+			var rui = SetupWorkbenchPreview( file.fullmapRui[0], i, "rotation" + i, false )
+			RuiSetBool( rui, "isMini", true )
+			file.fullmapRui.append( rui )
+		}
+
+		InitHUDRui( file.fullmapRui[0] )
+		Fullmap_AddRui( file.fullmapRui[0] )
+
+		file.fullmapInitialized = true
 	}
-
-	InitHUDRui( file.fullmapRui[0], false )
-	Fullmap_AddRui( file.fullmapRui[0] )
-
-	file.fullmapInitialized = true
 
 #if DEV
 	DEV_Crafting_Print( format( "CLIENT: Player Started Playing: %s", string( GetLocalViewPlayer() ) ) )
@@ -4897,6 +5817,13 @@ void function OnPlayerMatchStateChanged( entity player, int newState )
 
 vector function GetCraftingColor()
 {
+
+
+
+
+
+
+
 	return SrgbToLinear( <0, 255, 240> / 255.0 )
 }
 
@@ -4904,6 +5831,10 @@ vector function GetCraftingColor()
 
 void function Crafting_Workbench_OpenCraftingMenu( entity workbench )
 {
+
+
+
+
 	CommsMenu_Shutdown( false )
 	HideScoreboard()
 
@@ -5090,6 +6021,9 @@ void function Crafting_Workbench_CloseCraftingMenu( )
 	if ( CommsMenu_GetCurrentCommsMenu() != eCommsMenuStyle.CRAFTING )
 		return
 
+
+
+
 	CommsMenu_Shutdown( true )
 }
 
@@ -5111,7 +6045,7 @@ void function CreateWorkbenchWorldIcon( entity workbench, bool isLimitedStock = 
 	entity localViewPlayer = GetLocalViewPlayer()
 	vector pos             = workbench.GetOrigin() + (workbench.GetUpVector() * 160)
 	var rui                = CreateCockpitRui( $"ui/survey_beacon_marker_icon.rpak", RuiCalculateDistanceSortKey( localViewPlayer.EyePosition(), pos ) )
-	RuiSetImage( rui, "beaconImage", isLimitedStock ? WORKBENCH_ICON_LIMITED_ASSET : WORKBENCH_ICON_ASSET )
+	RuiSetImage( rui, "beaconImage", isLimitedStock ? WORKBENCH_ICON_LIMITED_ASSET : Crafting_GetCraftingIcon( false ) )
 	RuiSetGameTime( rui, "startTime", Time() )
 	RuiSetFloat3( rui, "pos", pos )
 	RuiSetFloat( rui, "sizeMin", 48 )
@@ -5123,6 +6057,11 @@ void function CreateWorkbenchWorldIcon( entity workbench, bool isLimitedStock = 
 
 void function SetupProgressWaypoint( entity waypoint )
 {
+
+
+
+
+
 	if ( waypoint.GetWaypointType() != eWaypoint.OBJECTIVE || Waypoint_GetPingTypeForWaypoint( waypoint ) != ePingType.OBJECTIVE )
 	{
 		return
@@ -5167,6 +6106,8 @@ void function SetupProgressWaypoint_Internal( entity waypoint )
 	RuiSetBool( waypoint.wp.ruiHud, "reverseProgress", false )
 	RuiSetBool( waypoint.wp.ruiHud, "iconColorOverride", true )
 	RuiSetFloat3( waypoint.wp.ruiHud, "iconColor", Crafting_GetWaypointColor( waypoint ) )
+	RuiSetImage( waypoint.wp.ruiHud, "fillBackgroundImage", $"rui/hud/gametype_icons/obj_background_capturepoint" )
+	RuiSetImage( waypoint.wp.ruiHud, "fillImage", $"rui/hud/gametype_icons/obj_background_capturepoint_fill" )
 
 	RuiTrackGameTime( waypoint.wp.ruiHud, "captureEndTime", waypoint, RUI_TRACK_WAYPOINT_GAMETIME, RUI_TRACK_INDEX_CAPTURE_END_TIME )
 	RuiTrackFloat( waypoint.wp.ruiHud, "captureTimeRequired", waypoint, RUI_TRACK_WAYPOINT_FLOAT, RUI_TRACK_INDEX_REQUIRED_TIME )
@@ -5317,6 +6258,13 @@ void function Crafting_PopulateItemRuiAtIndex( var rui, int index )
 		RuiSetImage( rui, "icon", hudIcon )
 		printt("CRAFTING LOOT ICON : " + lootRef.hudIcon)
 		RuiSetInt( rui, "tier", lootRef.tier )
+
+			if ( lootRef.ref == "hopup_golden_horse_green" )
+			{
+				RuiSetInt( rui, "tier", GOLDEN_HORSE_SPECIAL_EVENT_LOOT_TIER )
+			}
+
+
 		if ( lootRef.lootType == eLootType.MAINWEAPON )
 			RuiSetBool( rui, "isWeapon", true )
 		else if ( lootRef.lootType == eLootType.AMMO && validItemList.len() > 1 && validItemList[1] != "" )
@@ -5327,21 +6275,45 @@ void function Crafting_PopulateItemRuiAtIndex( var rui, int index )
 			if ( lootRef.ref == BULLET_AMMO || lootRef.ref == HIGHCAL_AMMO || lootRef.ref == SPECIAL_AMMO )
 			{
 				RuiSetInt( rui, "ammoAmount", lootRef.countPerDrop * CRAFTING_AMMO_MULTIPLIER )
+
+
+
+
+
+
 			}
 
 			if ( lootRefAlt.ref == BULLET_AMMO || lootRefAlt.ref == HIGHCAL_AMMO || lootRefAlt.ref == SPECIAL_AMMO )
 			{
 				RuiSetInt( rui, "ammoAmountAlt", lootRefAlt.countPerDrop * CRAFTING_AMMO_MULTIPLIER )
+
+
+
+
+
+
 			}
 
 			if ( lootRef.ref == SHOTGUN_AMMO || lootRef.ref == ARROWS_AMMO || lootRef.ref == SNIPER_AMMO )
 			{
 				RuiSetInt( rui, "ammoAmount", lootRef.countPerDrop * CRAFTING_AMMO_MULTIPLIER_SMALL )
+
+
+
+
+
+
 			}
 
 			if ( lootRefAlt.ref == SHOTGUN_AMMO || lootRefAlt.ref == ARROWS_AMMO || lootRefAlt.ref == SNIPER_AMMO )
 			{
 				RuiSetInt( rui, "ammoAmountAlt", lootRefAlt.countPerDrop * CRAFTING_AMMO_MULTIPLIER_SMALL )
+
+
+
+
+
+
 			}
 		}
 		else if ( lootRef.lootType == eLootType.AMMO )
@@ -5350,12 +6322,24 @@ void function Crafting_PopulateItemRuiAtIndex( var rui, int index )
 			{
 				RuiSetBool( rui, "isAmmo", true )
 				RuiSetInt( rui, "ammoAmount", lootRef.countPerDrop * CRAFTING_AMMO_MULTIPLIER )
+
+
+
+
+
+
 			}
 
 			if ( lootRef.ref == SHOTGUN_AMMO || lootRef.ref == ARROWS_AMMO || lootRef.ref == SNIPER_AMMO )
 			{
 				RuiSetBool( rui, "isAmmo", true )
 				RuiSetInt( rui, "ammoAmount", lootRef.countPerDrop * CRAFTING_AMMO_MULTIPLIER_SMALL )
+
+
+
+
+
+
 			}
 		}
 	}
@@ -5377,7 +6361,7 @@ void function Crafting_PopulateItemRuiAtIndex( var rui, int index )
 		}
 	}
 
-		else if ( validItemList.len() != 0 && item.category == "banner" )
+		else if ( validItemList.len() != 0 && item.category == "banner" && ( GetRespawnStyle() == eRespawnStyle.RESPAWN_CHAMBERS ))
 		{
 			cost = item.itemToCostTable[validItemList[0]]
 			RuiSetImage( rui, "icon", $"rui/hud/gametype_icons/survival/perk_craftable_banner_double_generic" )
@@ -5411,6 +6395,14 @@ void function Crafting_PopulateItemRuiAtIndex( var rui, int index )
 
 	bool canAfford = Crafting_GetPlayerCraftingMaterials( GetLocalViewPlayer() ) >= cost
 	RuiSetBool( rui, "isEnabled", canBuy && canAfford )
+
+	
+
+
+
+
+
+
 
 	CraftingBundle bundle = GetBundleForCategory( item )
 	bundle.attachedRui[index] <- rui
@@ -5463,6 +6455,126 @@ void function Update_CraftingItems_Availabilities()
 		}
 	}
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -5863,6 +6975,37 @@ bool function PingCrafterUnderAim( entity crafter )
 
 	return true
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

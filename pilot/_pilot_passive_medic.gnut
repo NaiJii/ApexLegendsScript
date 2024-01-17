@@ -15,6 +15,11 @@ global function ServerToClient_RemoveCancelReviveHintForPlayer
 
 
 
+
+
+
+
+
 const DEPLOYABLE_SHIELD_FX = $"P_drone_medic_shield"
 const DEPLOYABLE_SHIELD_HEALTH = 850
 
@@ -51,6 +56,11 @@ struct
 
 
 
+
+
+
+
+
 } file
 
 void function PassiveMedic_Init()
@@ -59,8 +69,19 @@ void function PassiveMedic_Init()
 	Remote_RegisterClientFunction( "ServerToClient_DisplayCancelReviveHintForPlayer" )
 	Remote_RegisterClientFunction( "ServerToClient_RemoveCancelReviveHintForPlayer" )
 
+
+
+
+
+
 	RegisterSignal( "OnPassiveMedicReviveEnd" )
 	PrecacheScriptString( REVIVE_SHIELD_SCRIPTNAME )
+
+
+
+
+
+
 
 
 
@@ -90,7 +111,54 @@ void function PassiveMedic_Init()
 
 
 
+
+
+
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -670,6 +738,71 @@ bool function IsEntLifelineReviveTarget( entity ent )
 	return false
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 void function ServerToClient_DisplayCancelReviveHintForPlayer()
 {
 	thread _DisplayCancelReviveHintForPlayer()
@@ -703,6 +836,9 @@ void function _DisplayCancelReviveHintForPlayer()
 
 	WaitForever()
 }
+
+
+
 
 
 

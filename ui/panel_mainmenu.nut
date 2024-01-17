@@ -7,13 +7,12 @@ global function SetLaunchState
 global function PrelaunchValidateAndLaunch
 
 global function IsCrossProgressing
-global function UICodeCallback_GetProfileInfoRequestFinished
-global function UICodeCallback_SetMainProfileRequestFinished
-
-
-
-
-
+global function UICodeCallback_XProgCheckRolloutRequestFinished
+global function UICodeCallback_XProgMigrateRequestFinished
+global function UICodeCallback_XProgMigrateStatusRequestFinished
+global function UICodeCallback_XProgMigrateFlowFailed
+global function UICodeCallback_XProgMigrateNotificationRequestFinished
+global function UI_CrossProgression_DoMigrateFlow
 
 global function UICodeCallback_GetOnPartyServer
 
@@ -35,8 +34,7 @@ global function DEV_ToggleRuiIssuesDemo
 
 const bool SPINNER_DEBUG_INFO = PC_PROG
 
-const float GETPROFILEINFO_REQUEST_TIMEOUT = 30.0
-const float SETMAINPROFILE_REQUEST_TIMEOUT = 10.0
+const int MIGRATE_DEFAULT_RETRY_MINUTES = 180
 const float REAUTH_REQUEST_TIMEOUT = 10.0
 
 struct
@@ -57,6 +55,14 @@ struct
 	var				   serverSearchMessage
 	var				   serverSearchError
 	bool				needsEAAccountRegistration = false
+
+
+		bool xProgCheckRolloutRequestFinished = false
+		bool xProgCheckNotificationRequestFinished = false
+		bool xProgRequestMigrateFinished = false
+		bool xProgMigrateDoneWithMTXData = false
+		bool xProgMigrateFailed = false
+
 
 
 
@@ -81,6 +87,7 @@ void function InitMainMenuPanel( var panel )
 	RegisterSignal( "EndPrelaunchValidation" )
 	RegisterSignal( "EndSearchForPartyServerTimeout" )
 	RegisterSignal( "EndSetMainProfileForCrossProgressionTimeout" )
+	RegisterSignal( "EndMigrateFlow" )
 	RegisterSignal( "SetLaunchState" )
 	RegisterSignal( "MainMenu_Think" )
 
@@ -133,10 +140,6 @@ void function InitMainMenuPanel( var panel )
 	AddPanelFooterOption( panel, LEFT, BUTTON_X, true, "#BUTTON_RETRY_CONNECT", "", RetryConnect_OnActivate, IsRetryConnectFooterValid )
 
 	AddPanelFooterOption( panel, LEFT, BUTTON_START, true, "#START_BUTTON_ACCESSIBLITY", "#BUTTON_ACCESSIBLITY", Accessibility_OnActivate, IsAccessibilityFooterValid )
-
-
-
-
 
 
 
@@ -324,6 +327,15 @@ void function PrelaunchValidation( bool autoContinue = false )
 			SetLaunchState( eLaunchState.CANT_CONTINUE, Localize( "#TITLE_UPDATE_AVAILABLE" ) )
 			return
 		}
+
+
+
+
+
+
+
+
+
 
 
 
@@ -676,52 +688,105 @@ void function PrelaunchValidation( bool autoContinue = false )
 
 
 
+	if ( !file.xProgMigrateFailed && GetConVarBool( "CrossProgression_CheckRollout" ) )
+	{
+		if ( !CrossProgression_IsMigrated() )
+		{
+			
+			if ( !file.xProgCheckRolloutRequestFinished )
+			{
+#if SPINNER_DEBUG_INFO
+					SetSpinnerDebugInfo( "CheckRolloutForCrossProgression" )
+#endif
 
+				const float CHECK_ROLLOUT_TIMEOUT = 10.0
+				float startTimeCheckRollout = UITime()
 
+				CrossProgression_RequestCheckRollout()
 
+				while ( true )
+				{
+					PrintLaunchDebugVal( "[CrossProgression] xProgCheckRolloutRequestFinished", file.xProgCheckRolloutRequestFinished )
 
+					if ( file.xProgCheckRolloutRequestFinished )
+						break
 
+					if ( UITime() - startTimeCheckRollout > CHECK_ROLLOUT_TIMEOUT )
+					{
+						
+						file.xProgMigrateFailed = true
+						printt( "[CrossProgression] CheckRollout Timeout" )
+						break
+					}
 
+					WaitFrame()
+				}
+			}
+			else
+			{
+				
+				UICodeCallback_XProgCheckRolloutRequestFinished()
+			}
 
+			SetLaunchState( eLaunchState.WAIT_TO_CONTINUE, "", Localize( "#MAINMENU_CONTINUE" ) )
+			return
+		}
 
+#if SPINNER_DEBUG_INFO
+			SetSpinnerDebugInfo( "ReAuthenticatedByStryder" )
+#endif
+		float startTimeReAuth = UITime()
+		while ( true )
+		{
+			bool isReAuthenticatedByStryder = IsStryderAuthenticated()
+			PrintLaunchDebugVal( "[CrossProgression] isReAuthenticatedByStryder", isReAuthenticatedByStryder )
 
+			if ( isReAuthenticatedByStryder )
+				break
 
+			if ( UITime() - startTimeReAuth > REAUTH_REQUEST_TIMEOUT )
+			{
+				SetLaunchState( eLaunchState.WAIT_TO_CONTINUE, Localize( "#CROSS_PROGRESSION_REAUTH_NOT_AVAILABLE" ), Localize( "#MAINMENU_RETRY" ) )
+				return
+			}
 
+			WaitFrame()
+		}
+	}
+	else if ( CrossProgression_IsOfflineMigration() && !file.xProgCheckNotificationRequestFinished )
+	{
+#if SPINNER_DEBUG_INFO
+			SetSpinnerDebugInfo( "CheckNotificationForCrossProgression" )
+#endif
 
+		const float CHECK_NOTIFICATION_TIMEOUT = 10.0
+		float startTimeCheckNotification = UITime()
 
+		CrossProgression_RequestMigrateNotification();
 
+		while ( true )
+		{
+			PrintLaunchDebugVal( "[CrossProgression] xProgCheckNotificationRequestFinished", file.xProgCheckNotificationRequestFinished )
 
+			if ( file.xProgCheckNotificationRequestFinished )
+				break
 
+			if ( UITime() - startTimeCheckNotification > CHECK_NOTIFICATION_TIMEOUT )
+			{
+				file.xProgCheckNotificationRequestFinished = true
+				printt( "[CrossProgression] CheckNotification Timeout" )
+				break
+			}
 
+			WaitFrame()
+		}
+	}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+	if ( GetConVarBool("CrossProgression_ForceMigrate" ) && !CrossProgression_IsMigrated() )
+	{
+		SetLaunchState( eLaunchState.CANT_CONTINUE, Localize( "#CROSS_PROGRESSION_FORCE_MIGRATE" ) )
+		return;
+	}
 
 
 
@@ -809,10 +874,6 @@ void function SetLaunchState( int launchState, string details = "", string promp
 
 	UpdateSignedInState()
 	UpdateFooterOptions()
-
-
-
-
 }
 
 
@@ -851,134 +912,186 @@ bool function IsWorking()
 
 
 
+void function DoMigrateFlow()
+{
+	EndSignal( uiGlobal.signalDummy, "EndMigrateFlow" )
 
+	file.crossProgressing = true
+	SetLaunchState( eLaunchState.WORKING )
 
+	CrossProgression_RequestMigrate()
 
+	const float MIGRATE_FLOW_TIMEOUT = 180.0
+	float startTimeMigrate = UITime()
 
+	const float QUERY_STATUS_INTERVAL = 10.0
+	float nextTimeRequestStatus       = 0.0
 
+	while ( true )
+	{
+		float currentTime = UITime()
+		if ( currentTime - startTimeMigrate > MIGRATE_FLOW_TIMEOUT )
+		{
+			file.xProgMigrateFailed = true
+			printt( "[CrossProgression] DoMigrateFlow Timeout" )
 
+			UI_CloseCrossProgressionDialog()
+			ConfirmDialogData data
+			data.headerText = Localize( "#CROSS_PROGRESSION_MIGRATE_COOLINGDOWN_TITLE" )
+			data.messageText = Localize( "#CROSS_PROGRESSION_MIGRATE_COOLINGDOWN_DESC", string( MIGRATE_DEFAULT_RETRY_MINUTES ) )
+			OpenOKDialogFromData( data )
 
+			break
+		}
 
+		if ( file.xProgMigrateFailed )
+			break
 
+		if ( CrossProgression_IsMigrated() )
+		{
+			XProgMigrateData migrateData = CrossProgressionGetMigrateData()
+			if ( !file.xProgMigrateDoneWithMTXData && migrateData.hasMultipleProfiles )
+				CrossProgression_RequestMigrateStatus()
 
+			break
+		}
 
+		if ( file.xProgRequestMigrateFinished && currentTime > nextTimeRequestStatus )
+		{
+			if ( nextTimeRequestStatus > QUERY_STATUS_INTERVAL )
+				CrossProgression_RequestMigrateStatus()
 
+			nextTimeRequestStatus = currentTime + QUERY_STATUS_INTERVAL
+		}
 
+		WaitFrame()
+	}
 
+	file.crossProgressing = false
+	SetLaunchState( eLaunchState.WAIT_TO_CONTINUE, "", Localize( "#MAINMENU_CONTINUE" ) )
+}
 
+bool function IsCrossProgressionMigrateFlowEnabled()
+{
+	if ( !GetConVarBool( "CrossProgression_Ready" ) )
+		return false
 
+	if ( file.xProgMigrateFailed )
+		return false
 
+	return true
+}
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-void function UICodeCallback_GetProfileInfoRequestFinished()
+void function UI_CrossProgression_DoMigrateFlow()
 {
 
+		thread DoMigrateFlow()
 
+}
 
+void function UICodeCallback_XProgCheckRolloutRequestFinished()
+{
 
+		printt( "[CrossProgression] UICodeCallback_XProgCheckRolloutRequestFinished")
 
+		file.xProgCheckRolloutRequestFinished = true
 
+		if ( IsCrossProgressionMigrateFlowEnabled() && !CrossProgression_IsMigrated() )
+		{
+			RTKCrossProgressionPanel_SetDialogHeight()
+			UI_OpenCrossProgressionDialog()
+		}
 
+}
 
+void function UICodeCallback_XProgMigrateRequestFinished()
+{
 
+		printt( "[CrossProgression] UICodeCallback_XProgMigrateRequestFinished" )
+		file.xProgRequestMigrateFinished = true
 
+		if ( CrossProgression_IsMigrated() )
+		{
+			XProgMigrateData migrateData = CrossProgressionGetMigrateData()
 
-
-
+			if ( migrateData.hasMultipleProfiles )
+			{
+				RTKCrossProgressionPanel_SetHeader()
+				RTKCrossProgressionPanel_SetDialogHeight()
+				RTKCrossProgressionPanel_UpdateDataModel()
+				UI_OpenCrossProgressionDialog()
+			}
+			else
+			{
+				UI_CloseCrossProgressionDialog()
+			}
+		}
 
 }
 
 
-void function UICodeCallback_SetMainProfileRequestFinished( string lastHardware, string currentHardware, string lastPersonaId, string currentPersonaId )
+void function UICodeCallback_XProgMigrateStatusRequestFinished()
 {
 
+		printt( "[CrossProgression] UICodeCallback_XProgMigrateStatusRequestFinished")
 
+		XProgMigrateData migrateData = CrossProgressionGetMigrateData()
+		printt( "[CrossProgression] XProgStatus process state: ", migrateData.processStatus )
 
+		if ( CrossProgression_IsMigrated() )
+		{
+			file.xProgMigrateDoneWithMTXData = true
 
+			UICodeCallback_XProgMigrateRequestFinished()
 
-
-
-
+			printt( "[CrossProgression] EA ID: ", migrateData.eaId )
+			printt( "[CrossProgression] Nickname: ", migrateData.nickname )
+			printt( "[CrossProgression] Level: ", migrateData.level )
+			printt( "[CrossProgression] Herirlooms: ", migrateData.heirloom )
+			printt( "[CrossProgression] Herirloom Shards ", migrateData.heirloomShards )
+			printt( "[CrossProgression] Apex Packs ", migrateData.apexPacks )
+			printt( "[CrossProgression] Total (Cosmetics)", migrateData.cosmetics )
+			printt( "[CrossProgression] Legend Tokens", migrateData.credits )
+			printt( "[CrossProgression] Crafting Metals", migrateData.crafting )
+			printt( "[CrossProgression] Nintendo AC", migrateData.premiumNx )
+			printt( "[CrossProgression] All other AC", migrateData.premium )
+		}
 
 }
 
+void function UICodeCallback_XProgMigrateNotificationRequestFinished()
+{
+
+		printt( "[CrossProgression] UICodeCallback_XProgMigrateNotificationRequestFinished")
+		file.xProgCheckNotificationRequestFinished = true;
+		UI_OpenCrossProgressionDialog();
+
+}
+
+void function UICodeCallback_XProgMigrateFlowFailed()
+{
+
+		printt( "[CrossProgression] UICodeCallback_XProgMigrateFlowFailed")
+
+		file.xProgMigrateFailed = true
+
+		XProgMigrateData migrateData = CrossProgressionGetMigrateData()
+		UI_CloseCrossProgressionDialog()
+		ConfirmDialogData data
+		data.headerText = Localize( "#CROSS_PROGRESSION_MIGRATE_COOLINGDOWN_TITLE" )
+		data.messageText = Localize( "#CROSS_PROGRESSION_MIGRATE_COOLINGDOWN_DESC" )
+		OpenOKDialogFromData( data )
+
+}
 
 bool function IsCrossProgressing()
 {
-	return file.crossProgressing
+
+	return IsCrossProgressionMigrateFlowEnabled() && file.crossProgressing
+
+
+	return false
 }
 
 

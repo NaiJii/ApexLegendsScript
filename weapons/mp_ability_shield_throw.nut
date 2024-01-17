@@ -1,4 +1,3 @@
-
 global function MpAbilityShieldThrow_Init
 global function OnWeaponActivate_ability_shield_throw
 global function OnWeaponAttemptOffhandSwitch_ability_shield_throw
@@ -47,20 +46,8 @@ const MOBILE_SHIELD_DRONE_ENGINE_FX					= $"P_NC_shield_drone_engine"
 const MOBILE_SHIELD_DRONE_WARNING_FX				= $"P_nc_drone_warning"
 
 const MOBILE_SHIELD_DRONE_HEALTH					= 150	
-
-
-
 const MOBILE_SHIELD_WALL_HEALTH 					= 500	
-
-
-
-
-
-
-
-
 const float MOBILE_SHIELD_SPEED						= 160	
-
 
 
 
@@ -117,6 +104,9 @@ struct
 
 
 
+
+
+
 	table<entity, entity> mobileShield = {}
 	table<entity, array<vector> > cornerPosList = {}
 	table<entity, bool > shieldStopState = {}
@@ -164,20 +154,13 @@ void function MpAbilityShieldThrow_Init()
 		AddCallback_ModifyDamageFlyoutForScriptName( MOBILE_SHIELD_SCRIPTNAME, MobileShield_OffsetDamageNumbersLower )
 
 
-
-
-
-
-
 	file.mobileShieldHealth			= GetCurrentPlaylistVarInt( "newcastle_mobile_shield_HP", MOBILE_SHIELD_WALL_HEALTH )
 	file.mobileShieldDuration		= GetCurrentPlaylistVarFloat( "newcastle_mobile_shield_duration", SHIELD_THROW_DURATION )
 
+	file.mobileShieldSpeed			= GetCurrentPlaylistVarFloat( "newcastle_mobile_shield_speed", MOBILE_SHIELD_SPEED )
 
 
 
-
-
-		file.mobileShieldSpeed			= GetCurrentPlaylistVarFloat( "newcastle_mobile_shield_speed", MOBILE_SHIELD_SPEED )
 }
 
 
@@ -1226,6 +1209,9 @@ void function OnDeployableShieldPlanted( entity projectile )
 
 
 
+
+
+
 void function CodeCallback_ScriptMoverTraversalStopped( entity ent, bool isBlocked )
 {
 	if ( ent.GetScriptName() != SHIELD_THROW_SCRIPTNAME )
@@ -1244,9 +1230,6 @@ void function CodeCallback_ScriptMoverTraversalStopped( entity ent, bool isBlock
 
 
 }
-
-
-
 
 
 
@@ -1890,6 +1873,12 @@ void function OnWaypointCreated( entity wp )
 	{
 		thread MobileShield_WaypointUI_Thread( wp )
 		AddRefEntAreaToInvalidOriginsForPlacingPermanentsOnto( wp, MOBILE_SHIELD_INVALID_PLACEMENT_MIN_AREA, MOBILE_SHIELD_INVALID_PLACEMENT_MAX_AREA )
+		AddEntityDestroyedCallback( wp,
+			void function( entity ent ) : ( wp )
+			{
+				RemoveRefEntAreaFromInvalidOriginsForPlacingPermanentsOnto( ent )
+			}
+		)
 	}
 
 }
@@ -2039,5 +2028,3 @@ void function MobileShield_TrackStickyEnt_Thread( entity mobileShield, entity st
 
 }
 
-
-      

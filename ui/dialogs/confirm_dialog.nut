@@ -44,7 +44,7 @@ void function InitConfirmDialog( var newMenuArg )
 	file.confirmMenu = menu
 
 	SetDialog( menu, true )
-	SetGamepadCursorEnabled( menu, false )
+	SetGamepadCursorEnabled( menu, true )
 
 	AddMenuEventHandler( menu, eUIEvent.MENU_OPEN, Dialog_OnOpen )
 	AddMenuEventHandler( menu, eUIEvent.MENU_CLOSE, ConfirmDialog_OnClose )

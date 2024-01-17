@@ -15,7 +15,7 @@ global function GetAllAmbientDialogue
 
 
 
-
+	global function DEV_SetCharacterForAmbientDialogue
 
 
 
@@ -28,10 +28,13 @@ const int AMBIENT_DIALOGUE_FAIL_RANDOM_RETRY_ATTEMPTS = 3
 
 const bool VERBOSE_PRINT_DEBUG = false
 
+const string SPECIAL_CHARACTER_STRING = "npc"
+
 global struct AmbientDialogueData
 {
 	string eventName
 	ItemFlavor& speakingLegendFlav
+	bool npc = false
 }
 
 global struct AmbientConversationData
@@ -66,13 +69,12 @@ void function ShAmbientDialogue_Init()
 {
 	if ( !GetCurrentPlaylistVarBool( "ambient_dialogue_enabled", true ) )
 	{
-		Warning( "WARNING! Ambient dialogue disabled!" )
+		printt( "Ambient dialogue disabled. Check playlist var ambient_dialogue_enabled to enable it" )
 		return
 	}
 
-
-
-
+		
+		RegisterCSVDialogue( $"datatable/ambient_dialogue.rpak" )
 
 
 	
@@ -124,17 +126,17 @@ void function RegisterAmbientDialogueConversations( asset dt )
 			}
 
 
-			if ( GetActiveLevel() != mapName )
 
 
+			if ( GetMapName() != mapName )
 
 			{
 #if DEV
 					if ( VERBOSE_PRINT_DEBUG )
 
-						printt( "Skipping register ambient dialogue conversation " + GetDataTableString( dataTable, idx_row, columnName ) + " required map( " + mapName + ") != current map(" +  GetActiveLevel() + ")")
 
 
+						printt( "Skipping register ambient dialogue conversation " + GetDataTableString( dataTable, idx_row, columnName ) + " required map( " + mapName + ") != current map(" +  GetMapName() + ")")
 
 #endif
 				continue
@@ -164,7 +166,8 @@ void function RegisterAmbientDialogueConversations( asset dt )
 			array<string> requiredLegendRefs = split( GetDataTableString( dataTable, idx_row, columnRequiredLegend ), ";" )
 			array<string> forbiddenLegendRefs = split( GetDataTableString( dataTable, idx_row, columnForbiddenLegend ), ";" )
 			string speakingLegendRef = GetDataTableString( dataTable, idx_row, columnSpeakingLegend )
-			if ( !requiredLegendRefs.contains( speakingLegendRef ) )
+
+			if ( !requiredLegendRefs.contains( speakingLegendRef ) && speakingLegendRef != SPECIAL_CHARACTER_STRING )
 			{
 
 
@@ -230,7 +233,15 @@ void function RegisterAmbientDialogueConversations( asset dt )
 				{
 					AmbientDialogueData newDialogue
 					newDialogue.eventName 			= GetDataTableString( dataTable, idx_rowsWithinConvo, columnName )
-					newDialogue.speakingLegendFlav 	= GetCharacterFlavorFromTableName( GetDataTableString( dataTable, idx_rowsWithinConvo, columnSpeakingLegend ) )
+					string speakingLegend = GetDataTableString( dataTable, idx_rowsWithinConvo, columnSpeakingLegend )
+					if ( speakingLegend == SPECIAL_CHARACTER_STRING )
+					{
+						newDialogue.npc = true
+					}
+					else
+					{
+						newDialogue.speakingLegendFlav 	= GetCharacterFlavorFromTableName( speakingLegend )
+					}
 					newConversation.convoSequence.append( newDialogue )
 					curOrder = order
 				}
@@ -272,21 +283,50 @@ bool function AmbientDialogue_ProcessRefArray( array<ItemFlavor> arrayToPopulate
 		}
 
 
+		if ( !GetValidVoices().contains( ref ) && ref != SPECIAL_CHARACTER_STRING )
+		{
 
 
 
 
+			didErrorOccur = true
+			continue
+		}
 
 
-
-
-
+		if ( ref == SPECIAL_CHARACTER_STRING )
+			continue
 
 		arrayToPopulate.append( GetCharacterFlavorFromTableName( ref ) )
 	}
 
 	return didErrorOccur
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -481,182 +521,182 @@ entity function GetSpeakingPlayerInSquadForAmbientDialogue( AmbientDialogueData 
 }
 
 
+bool function AmbientConversation_CanSquadPlay( AmbientConversationData convoData, array<entity> squad, int team, entity touchingEnt, entity trig )
+{
+	
+	if ( convoData.repeatType == 0 && convoData.spokenBySquads.contains( team ) && ( GetBugReproNum() != 16661 ) )
+		return false
+
+	if ( ( trig in file.triggerUsedBySquadMap ) && file.triggerUsedBySquadMap[ trig ].contains( team ) && ( GetBugReproNum() != 16661 ) )
+		return false
 
+	if ( ( team in file.excludedConversationsForSquad ) && ( file.excludedConversationsForSquad[ team ].contains( convoData.convoName ) ) )
+		return false
 
+	bool squadOutOfRetries = team in convoData.numDiceRollAttemptsMadeByTeam && convoData.numDiceRollAttemptsMadeByTeam[ team ] >= AMBIENT_DIALOGUE_FAIL_RANDOM_RETRY_ATTEMPTS
+	if ( convoData.repeatType == 0 && squadOutOfRetries )
+		return false
 
+	int numLegendReqs                 = convoData.requiredLegendFlavs.len()
+	int numAliveConnectedSquadMembers = squad.len()
+	if ( numLegendReqs > numAliveConnectedSquadMembers )
+		return false
 
+	array<entity> squadMembersWithRequiredLegendFlav
+	array<ItemFlavor> requiredFlavsRemaining = clone convoData.requiredLegendFlavs
+	for( int i; i < numAliveConnectedSquadMembers; i++ )
+	{
+		ItemFlavor squadMemberFlav = LoadoutSlot_GetItemFlavor( ToEHI( squad[ i ] ), Loadout_Character() )
+
+		if ( requiredFlavsRemaining.contains( squadMemberFlav ) )
+		{
+			squadMembersWithRequiredLegendFlav.append( squad[ i ] )
+			requiredFlavsRemaining.fastremovebyvalue( squadMemberFlav )
+		}
+
+		if ( convoData.forbiddenLegendFlavs.contains( squadMemberFlav ) )
+			return false
+	}
+
+	
+	if ( requiredFlavsRemaining.len() > 0 )
+	{
+		return false
+	}
+
+	ItemFlavor firstSpeakerFlav = convoData.convoSequence[ 0 ].speakingLegendFlav
+
+	foreach( entity player in squadMembersWithRequiredLegendFlav )
+	{
+		if( !IsValid( player ) || !IsAlive( player ) || Bleedout_IsBleedingOut( player ) )
+			return false
+	}
+
+	bool requiredLegendsTouching = true
+	bool firstSpeakerTouching = true
+	foreach( entity player in squadMembersWithRequiredLegendFlav )
+	{
+		if ( !trig.IsTouching( player ) )
+		{
+			requiredLegendsTouching = false
 
+			if ( LoadoutSlot_GetItemFlavor( ToEHI( touchingEnt ), Loadout_Character() ) == firstSpeakerFlav )
+			{
+				firstSpeakerTouching = false
+			}
+		}
+	}
 
+	if ( convoData.allLegendsRequired && !requiredLegendsTouching )
+		return false
 
+	
+	
+	if ( !firstSpeakerTouching )
+		return false
 
+	if ( GetBugReproNum() == 16661 )
+		return true
 
+	
+	if ( GetBugReproNum() == 16662 )
+		return true
 
+	
 
 
 
+	if ( RandomFloat( 1.0 ) > convoData.rarity )
 
+	{
 
+		if ( team in convoData.numDiceRollAttemptsMadeByTeam )
+			convoData.numDiceRollAttemptsMadeByTeam[ team ]++
+		else
+			convoData.numDiceRollAttemptsMadeByTeam[ team ] <- 1
 
+		return false
+	}
 
+	return true
+}
 
 
+bool function NonTriggerAmbientConversation_CanSquadPlay( AmbientConversationData convoData, array<entity> squad, int team )
+{
+	
+	if ( convoData.repeatType == 0 && convoData.spokenBySquads.contains( team ) && ( GetBugReproNum() != 16661 ) )
+		return false
 
+	if ( ( team in file.excludedConversationsForSquad ) && ( file.excludedConversationsForSquad[ team ].contains( convoData.convoName ) ) )
+		return false
 
+	bool squadOutOfRetries = team in convoData.numDiceRollAttemptsMadeByTeam && convoData.numDiceRollAttemptsMadeByTeam[ team ] >= AMBIENT_DIALOGUE_FAIL_RANDOM_RETRY_ATTEMPTS
+	if ( convoData.repeatType == 0 && squadOutOfRetries )
+		return false
 
+	int numLegendReqs                 = convoData.requiredLegendFlavs.len()
+	int numAliveConnectedSquadMembers = squad.len()
+	if ( numLegendReqs > numAliveConnectedSquadMembers )
+		return false
 
+	array<entity> squadMembersWithRequiredLegendFlav
+	array<ItemFlavor> requiredFlavsRemaining = clone convoData.requiredLegendFlavs
+	for( int i; i < numAliveConnectedSquadMembers; i++ )
+	{
+		ItemFlavor squadMemberFlav = LoadoutSlot_GetItemFlavor( ToEHI( squad[ i ] ), Loadout_Character() )
 
+		if ( requiredFlavsRemaining.contains( squadMemberFlav ) )
+		{
+			squadMembersWithRequiredLegendFlav.append( squad[ i ] )
+			requiredFlavsRemaining.fastremovebyvalue( squadMemberFlav )
+		}
 
+		if ( convoData.forbiddenLegendFlavs.contains( squadMemberFlav ) )
+			return false
+	}
 
+	
+	if ( requiredFlavsRemaining.len() > 0 )
+	{
+		return false
+	}
 
+	ItemFlavor firstSpeakerFlav = convoData.convoSequence[ 0 ].speakingLegendFlav
 
+	if ( GetBugReproNum() == 16661 )
+		return true
 
+	
+	if ( GetBugReproNum() == 16662 )
+		return true
 
+	
 
 
 
+	if ( RandomFloat( 1.0 ) > convoData.rarity )
 
+	{
 
+	if ( team in convoData.numDiceRollAttemptsMadeByTeam )
+		convoData.numDiceRollAttemptsMadeByTeam[ team ]++
+	else
+		convoData.numDiceRollAttemptsMadeByTeam[ team ] <- 1
 
+	return false
+	}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+	return true
+}
 
 
 
 array<AmbientConversationData> function GetAllAmbientDialogue()
 {
 
-		if (file.ambDialogMap.len() < 1)
-			ShAmbientDialogue_Init()
+
+
 
 
 	array<AmbientConversationData> result = []
@@ -699,6 +739,50 @@ array<AmbientConversationData> function GetAllAmbientDialogue()
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+void function DEV_SetCharacterForAmbientDialogue (SettingsAssetGUID characterItemFlavorGuid, bool spawnBot)
+{
+#if DEV
+	if( !IsValidItemFlavorGUID( characterItemFlavorGuid ) )
+		return
+
+	string characterName = ItemFlavor_GetCharacterRef( GetItemFlavorByGUID( characterItemFlavorGuid ) )
+	entity player = GetLocalClientPlayer()
+	if (!spawnBot)
+	{
+		string command ="loadouts_devset "+ Loadout_Character().id + " " + characterName
+		player.ClientCommand( command )
+	}
+	else
+	{
+		string command = "dev_sur_force_spawn_character " + characterName
+		player.ClientCommand( command )
+		player.ClientCommand( "bot -myteam" )
+		player.ClientCommand( "bot_follow 1" )
+	}
+#endif
+}
 
 
 

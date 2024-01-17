@@ -7,6 +7,27 @@ global function InitProcessingDialog
 
 global function UICodeCallback_RefreshSoundOptions
 
+array<string> navItems = 
+[
+	"SldMasterVolume",
+	"SwchOutputDevice",
+	"SwchSpatialAudio",
+	"SwchSpeakerConfig",
+	"VoiceChatHeader",
+
+	
+
+	"SwchSoundWithoutFocus",
+	"SwchVipTelemetry",
+]
+
+
+
+
+
+
+
+
 
 struct
 {
@@ -31,25 +52,41 @@ struct
 	var processingDialog
 } file
 
-void function SoundPanelSetButtonVisible( var contentPanel, string buttonName, string prevButtonName, string nextButtonName, bool visible )
-{
-	var button = Hud_GetChild( contentPanel, buttonName )
-	var prevElem = Hud_GetChild( contentPanel, prevButtonName )
-	var nextElem = Hud_GetChild( contentPanel, nextButtonName )
 
-	if ( visible )
+void function SoundPanelSetButtonVisible( var contentPanel, string buttonName, bool visible )
+{
+	int prevVisibleNavItem = -1
+
+	for ( int i = 0; i < navItems.len() - 1; i++ )
 	{
-		Hud_Show( button )
-		Hud_SetPinSibling( nextElem, buttonName )
-		Hud_SetNavUp( nextElem, button )
-		Hud_SetNavDown( prevElem, button )
-	}
-	else
-	{
-		Hud_Hide( button )
-		Hud_SetPinSibling( nextElem, prevButtonName )
-		Hud_SetNavUp( nextElem, prevElem )
-		Hud_SetNavDown( prevElem, nextElem )
+		var elem = Hud_GetChild( contentPanel, navItems[i] )
+
+		if ( navItems[i] == buttonName )
+		{
+			if ( visible )
+			{
+				Hud_Show( elem )
+
+				if ( i < navItems.len() - 1 )
+					Hud_SetPinSibling( Hud_GetChild( contentPanel, navItems[i + 1] ), buttonName )
+
+				if ( prevVisibleNavItem >= 0 )
+					Hud_SetPinSibling( elem, navItems[prevVisibleNavItem] )
+			}
+			else
+			{
+				Hud_Hide( elem )
+
+				if ( i < navItems.len() - 1 && prevVisibleNavItem >= 0 )
+					Hud_SetPinSibling( Hud_GetChild( contentPanel, navItems[i + 1] ), navItems[prevVisibleNavItem] )
+			}
+
+			Hud_SetEnabled( elem, visible )
+			return
+		}
+
+		if ( Hud_IsVisible( elem ) )
+			prevVisibleNavItem = i
 	}
 }
 
@@ -76,6 +113,8 @@ void function InitSoundPanel( var panel )
 	SetupSettingsSlider( Hud_GetChild( contentPanel, "SldSFXVolume" ), "#MENU_SFX_VOLUME_CLASSIC", "#OPTIONS_MENU_SFX_VOLUME_DESC", $"rui/menu/settings/settings_audio" )
 	SetupSettingsSlider( Hud_GetChild( contentPanel, "SldMusicVolume" ), "#MENU_MUSIC_VOLUME_CLASSIC", "#OPTIONS_MENU_MUSIC_VOLUME_DESC", $"rui/menu/settings/settings_audio" )
 	SetupSettingsSlider( Hud_GetChild( contentPanel, "SldLobbyMusicVolume" ), "#MENU_LOBBY_MUSIC_VOLUME", "#OPTIONS_MENU_LOBBY_MUSIC_VOLUME_DESC", $"rui/menu/settings/settings_audio" )
+	SetupSettingsButton( Hud_GetChild( contentPanel, "SwchSpatialAudio" ), "#AUDIO_SPATIAL", "#AUDIO_SPATIAL_DESC", $"rui/menu/settings/settings_audio" )
+
 
 		file.voiceSensitivityButton = Hud_GetChild( contentPanel, "SldOpenMicSensitivity" )
 		file.voiceSensitivitySliderRui = Hud_GetRui( Hud_GetChild( file.voiceSensitivityButton, "PrgValue" ) )
@@ -116,6 +155,11 @@ void function InitSoundPanel( var panel )
 	file.conVarDataList.append( CreateSettingsConVarData( "closecaption", eConVarType.INT ) )
 	file.conVarDataList.append( CreateSettingsConVarData( "speechtotext_enabled", eConVarType.INT ) )
 
+#if DEV
+		file.conVarDataList.append( CreateSettingsConVarData( "miles_spatial", eConVarType.INT ) )
+#endif
+
+
 		file.conVarDataList.append( CreateSettingsConVarData( "voice_input_device", eConVarType.STRING ) )
 		file.conVarDataList.append( CreateSettingsConVarData( "hudchat_play_text_to_speech", eConVarType.INT ) )
 		file.conVarDataList.append( CreateSettingsConVarData( "miles_output_device", eConVarType.STRING ) )
@@ -128,7 +172,7 @@ void function SoundPanel_UpdateChannelConfigOption()
 {
 	int numChannelOptions = SoundOptions_SetupChannelConfigOptions( file.contentPanel, "SwchSpeakerConfig" )
 	bool presentChannelsOption = GetConVarBool( "miles_channels_menuoption") && numChannelOptions > 2 && !SoundOptions_IsBadDevice()
-	SoundPanelSetButtonVisible( file.contentPanel, "SwchSpeakerConfig", "SwchOutputDevice", "VoiceChatHeader", presentChannelsOption )
+	SoundPanelSetButtonVisible( file.contentPanel, "SwchSpeakerConfig", presentChannelsOption )
 }
 
 void function SoundPanel_UpdateDriverOptions()
@@ -141,9 +185,16 @@ void function SoundPanel_UpdateDriverOptions()
 
 	var warning = Hud_GetChild( file.contentPanel, "NoDeviceWarningText" )
 	Hud_SetVisible( warning, invalidDevice)
-	SoundPanelSetButtonVisible( file.contentPanel, "SwchOutputDevice", "SldMasterVolume", "SwchSpeakerConfig", presentOutputOption )
 
-	SoundPanel_UpdateChannelConfigOption();
+	
+	SoundPanelSetButtonVisible( file.contentPanel, "SwchOutputDevice", presentOutputOption )
+
+#if DEV
+	bool presentSpatialOption = GetConVarBool( "miles_spatial_menuoption") && !invalidDevice
+	SoundPanelSetButtonVisible( file.contentPanel, "SwchSpatialAudio", presentSpatialOption )
+#endif
+
+	SoundPanel_UpdateChannelConfigOption()
 }
 
 
@@ -161,6 +212,14 @@ void function OnSoundPanel_Show( var panel )
 
 
 
+
+
+
+
+
+
+
+
 	const string aboveElem = "SwchSoundWithoutFocus"
 
 
@@ -170,11 +229,13 @@ void function OnSoundPanel_Show( var panel )
 	if (GetConVarString( "XLOG_TLS_hostname" ).len() != 0 )
 	{
 		Hud_Show( vipButton )
+		Hud_SetEnabled( vipButton, true )
 		Hud_SetNavDown( Hud_GetChild( file.contentPanel, aboveElem ), vipButton )
 	}
 	else
 	{
 		Hud_Hide( vipButton )
+		Hud_SetEnabled( vipButton, false )
 		Hud_SetNavDown( Hud_GetChild( file.contentPanel, aboveElem ), null )
 	}
 	SettingsPanel_SetContentPanelHeight( file.contentPanel )

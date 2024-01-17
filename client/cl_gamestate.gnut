@@ -9,6 +9,7 @@ global function ClGameState_SetHasScreenBorder
 
 global function AddCallback_OnScoreboardCreated
 global function AddCallback_OnGameStateChanged
+global function ClWaittillGameStateOrHigher
 
 global function ShowRoundScoresInAnnouncement
 
@@ -27,6 +28,7 @@ global function UpdateKillLeaderOnGameStateRui
 global function CreateScoreRUI
 global function SetCommonScoreRUIVars
 global function ClGameState_RegisterGameStateAsset
+global function ClGameState_HasRegisteredGameStateAsset
 global function ClGameState_RegisterGameStateFullmapAsset
 global function GetFullmapGameStateAsset
 
@@ -38,6 +40,8 @@ global function ClGameState_SetSwitchingSidesSubText
 global function UpdateIsSonyMP
 
 global function HasWaitingGameStateArtHud
+
+global function ClientCodeCallback_ToggleGamePaused
 
 global enum ePlayerStatusType
 {
@@ -103,10 +107,20 @@ struct
 
 const DEV_COUNTDOWNTIMER = 0
 
+void function ClientCodeCallback_ToggleGamePaused( bool isPaused )
+{
+	if ( !file.gameStateRuiCreated )
+		return
 
+	if ( !GetConVarBool( "pause_ui" ) && isPaused )
+		return
 
-
-
+	RuiSetBool( file.gamestateRui, "showPauseMessage", isPaused )
+	if ( isPaused )
+		GfxDesaturateOn()
+	else
+		GfxDesaturateOff()
+}
 
 void function ClGameState_Init()
 {
@@ -148,6 +162,7 @@ void function CreateScoreRUI()
 	RuiTrackBool( rui, "audioIssueLimits", null, RUI_TRACK_AUDIO_ISSUE_LIMITS )
 	RuiTrackBool( rui, "audioIssueMarker", null, RUI_TRACK_AUDIO_ISSUE_MARKER_INSERTED )
 
+
 	
 	if ( file.isNetGraphEnabled == true )
 	{
@@ -167,7 +182,8 @@ void function CreateScoreRUI()
 
 		
 		RuiSetFloat( rui, "waitingMessageScale", 0.65 )
-		RuiSetFloat2( rui, "waitingMessageOffset", <0.0, 570.0, 0.0> )
+		RuiSetFloat2( rui, "startingMessageOffset", <0.0, 570.0, 0.0> )
+		RuiSetFloat2( rui, "waitingMessageOffset", <0.0, 556.0, 0.0> )
 	}
 
 	file.gamestateRui        = rui
@@ -192,28 +208,22 @@ bool function HasWaitingGameStateArtHud()
 asset function GetWaitingGameStateArtHud()
 {
 	asset hudArtAsset = $""
+	string mapName = GetMapName()
 
+	switch( mapName )
+	{
+		case "mp_rr_olympus_mu1_night":
+			hudArtAsset = $"ui/waiting_after_dark_olympus.rpak"
+			break
 
+		case "mp_rr_canyonlands_mu1_night":
+			hudArtAsset = $"ui/waiting_after_dark_canyonlands.rpak"
+			break
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+		case "mp_rr_desertlands_night":
+			hudArtAsset = $"ui/waiting_after_dark_desertlands.rpak"
+			break
+	}
 
 	return hudArtAsset
 }
@@ -299,7 +309,12 @@ void function UpdateCommonScoreRuiTracking( var rui, entity player )
 
 		if ( Crafting_IsEnabled() )
 		{
-			RuiTrackInt( ClGameState_GetRui(), "craftingMaterials", player, RUI_TRACK_SCRIPT_NETWORK_VAR_INT, GetNetworkedVariableIndex( "craftingMaterials" ) )
+
+
+
+			{
+				RuiTrackInt( ClGameState_GetRui(), "craftingMaterials", player, RUI_TRACK_SCRIPT_NETWORK_VAR_INT, GetNetworkedVariableIndex( "craftingMaterials" ) )
+			}
 		}
 
 }
@@ -330,7 +345,6 @@ void function ClGameState_SetInfoStatusText( string statusText )
 		RuiSetString( file.gamestateRui, "statusText", Localize( statusText ) )
 }
 
-
 asset function GetGameStateAsset()
 {
 	if ( file.gameStateRuiAsset != $"" ) 
@@ -360,6 +374,11 @@ void function ClGameState_RegisterGameStateFullmapAsset( asset gameStateFullmapA
 	file.gameStateFullmapRuiAsset = gameStateFullmapAsset
 }
 
+
+bool function ClGameState_HasRegisteredGameStateAsset()
+{
+	return file.gameStateRuiAsset != $""
+}
 
 void function ClGameState_AddClient( entity player )
 {
@@ -663,6 +682,10 @@ void function ClGameState_Changed( entity playerEnt, int newVal )
 
 	entity player = GetLocalClientPlayer()
 	Signal( player, "GameStateChanged", { newState = gameState } )
+	
+	
+	if ( IsValid( clGlobal.levelEnt ) )
+		Signal( clGlobal.levelEnt, "GameStateChanged", { newState = gameState } )
 
 	foreach( func in file.onGameStateChangedFuncs )
 		func( gameState )
@@ -764,7 +787,7 @@ void function ClGameState_Changed( entity playerEnt, int newVal )
 
 			float announcementDuration = 7.0
 			if ( IsRoundWinningKillReplayEnabled() == true && (!IsRoundBased() && IsSwitchSidesBased()) ) 
-				announcementDuration = SWITCHING_SIDES_DELAY + ROUND_WINNING_KILL_REPLAY_TOTAL_LENGTH
+				announcementDuration = SWITCHING_SIDES_DELAY + GetRoundWinningKillReplayTotalLength()
 
 			AnnouncementData announcement = Announcement_Create( "#GameState_HALFTIME" )
 			announcement.sortKey = RUI_SORT_SCREENFADE + 1 
@@ -817,6 +840,14 @@ void function AddCallback_OnGameStateChanged( void functionref( int ) func )
 {
 	Assert( !file.onGameStateChangedFuncs.contains( func ) )
 	file.onGameStateChangedFuncs.append( func )
+}
+
+void function ClWaittillGameStateOrHigher( int state )
+{
+	while( GetGameState() < state && IsValid( clGlobal.levelEnt ) )
+	{
+		clGlobal.levelEnt.WaitSignal( "GameStateChanged" )
+	}
 }
 
 void function GameState_SpectatorTargetChanged( entity player, entity previousTarget, entity currentTarget )

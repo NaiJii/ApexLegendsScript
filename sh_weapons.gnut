@@ -17,11 +17,13 @@ global function GetAllWeaponItemFlavors
 global function GetAllWeaponCategories
 global function GetWeaponsInCategory
 global function GetAllWeaponsInCategory
+global function GetAllMeleeWeapons
 global function MainWeapon_GetIsShippingWeapon
 global function MainWeapon_GetLoadoutOverviewOffset
 global function MainWeapon_GetLoadoutOverviewRotation
 
 
+global function ShowDefaultBodygroupsOnFakeWeapon
 
 
 
@@ -34,8 +36,7 @@ global function MainWeapon_GetLoadoutOverviewRotation
 
 
 
-
-global const string WEAPON_STAT_CATEGORY_GOLD_WEAPON = "crate_unique"
+global const string WEAPON_STAT_CATEGORY_CRATE_WEAPON = "crate_unique"
 
 
 
@@ -66,7 +67,7 @@ void function ShWeapons_LevelInit()
 
 
 
-
+		PrecacheWeapon( $"weapon_cubemap" )
 
 
 	AddCallback_RegisterRootItemFlavors( void function() {
@@ -101,8 +102,8 @@ void function OnItemFlavorRegistered_WeaponItemFlavor( ItemFlavor weaponFlavor )
 void function RegisterWeaponForUse( string weaponClassname )
 {
 
-
-
+		PrecacheWeapon( weaponClassname )
+		RegisterWeaponDamageSource( weaponClassname )
 
 }
 
@@ -241,9 +242,9 @@ array<ItemFlavor> function GetWeaponsInCategory( ItemFlavor category )
 
 	entity player = null
 
+
+
 		player = GetLocalClientPlayer()
-
-
 
 
 	foreach ( weapon in allWeapons )
@@ -275,6 +276,10 @@ array<ItemFlavor> function GetAllWeaponsInCategory( ItemFlavor category )
 	return categoryWeapons
 }
 
+array<ItemFlavor> function GetAllMeleeWeapons()
+{
+	return GetAllItemFlavorsOfType( eItemType.melee_weapon )
+}
 
 bool function MainWeapon_GetIsShippingWeapon( ItemFlavor flavor )
 {
@@ -299,18 +304,18 @@ vector function MainWeapon_GetLoadoutOverviewRotation( ItemFlavor flavor )
 
 
 
+void function ShowDefaultBodygroupsOnFakeWeapon( entity ent, string weaponClassName )
+{
+	SetBodyGroupsForWeaponConfig( ent, weaponClassName, [] )
+	if ( weaponClassName == "mp_weapon_bow" )
+	{
+		int idx = ent.FindBodygroup( "release_aid" )
+		if ( idx < 0 )
+			return
 
-
-
-
-
-
-
-
-
-
-
-
+		ent.SetBodygroupModelByIndex( idx, 1 )
+	}
+}
 
 
 

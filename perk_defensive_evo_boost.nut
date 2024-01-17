@@ -4,7 +4,7 @@ global function Perk_DefensiveEvoBoost_Init
 
 
 
-
+global function Perk_DefensiveEvoBoost_SetBoostMultiplier
 
 
 const float BOOST_RANGE = 15 * METERS_TO_INCHES
@@ -35,7 +35,7 @@ void function Perk_DefensiveEvoBoost_Init()
 	Perks_RegisterClassPerk( defensiveEvoBoost )
 
 
-
+		Remote_RegisterClientFunction( "Perk_DefensiveEvoBoost_SetBoostMultiplier", "float", 0.0, 5.0, 16 )
 
 }
 
@@ -144,9 +144,9 @@ void function Perk_DefensiveEvoBoost_Init()
 
 
 
-
-
-
-
+void function Perk_DefensiveEvoBoost_SetBoostMultiplier( float multiplier )
+{
+	SetEvoArmorModifier( multiplier, BOOST_IMAGE )
+}
 
 

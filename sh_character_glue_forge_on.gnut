@@ -1,7 +1,7 @@
 
 
-
-
+global function InitForgeAll
+global function IsDoingPullshot
 
 
 global const bool FORGE_CHARACTER = false
@@ -16,91 +16,91 @@ global const string WEAPON_FORGE = "mp_ability_forge_gpound"
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+void function InitForgeAll()
+{
+	if ( WhenBuildFlag( "Season4Chars" ) )
+		Assert( FORGE_CHARACTER, "Build merge mismatch again" )
+
+	RegisterSignal( "GPoundFinished" )
+
+#if FORGE_CHARACTER
+		NotReal()
+		NotReal()
+		NotReal()
+		NotReal()
+		NotReal()
+		NotReal()
+		NotReal()
+		NotReal()
+		NotReal()
+		NotReal()
+		NotReal()
+		NotReal()
+		NotReal()
+		NotReal()
+		NotReal()
+		NotReal()
+		NotReal()
+		NotReal()
+		NotReal()
+		NotReal()
+		NotReal()
+		NotReal()
+		NotReal()
+		NotReal()
+		NotReal()
+		NotReal()
+		NotReal()
+		NotReal()
+		NotReal()
+		NotReal()
+		NotReal()
+		NotReal()
+		NotReal()
+		NotReal()
+		NotReal()
+		NotReal()
+		NotReal()
+		NotReal()
+		NotReal()
+		NotReal()
+		NotReal()
+		NotReal()
+		NotReal()
+		NotReal()
+#endif
+
+}
+
+bool function IsDoingPullshot( entity player )
+{
+#if FORGE_CHARACTER
+		NotReal()
+		NotReal()
+		NotReal()
+		NotReal()
+		NotReal()
+		NotReal()
+		NotReal()
+		NotReal()
+		NotReal()
+		NotReal()
+		NotReal()
+		NotReal()
+		NotReal()
+		NotReal()
+		NotReal()
+		NotReal()
+		NotReal()
+		NotReal()
+		NotReal()
+		NotReal()
+		NotReal()
+		NotReal()
+#else
+		return false
+#endif
+}
 
 
 

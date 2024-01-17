@@ -12,6 +12,7 @@ global function ShadowShield_IsAllowedStickyEnt
 
 
 
+
 global function ServerToClient_UpdateDamageRUI
 global function ServerToClient_DoShadowShieldDamageIndicator
 
@@ -58,7 +59,7 @@ const asset SHADOW_FORM_ACTIVATION_FX_3P = $"p_rev_reborn_3P_ult_activation_arms
 const asset SHADOW_FORM_SHIELD_ACTIVATION_FX_3P = $"P_rev_reborn_shield_start"
 const asset SHADOW_FORM_SHIELD_FX_3P = $"P_rev_reborn_shield"
 const asset SHADOW_FORM_SHIELD_RECHARGE_FX_3P = $"P_rev_reborn_3P_ult_activation"
-const asset SHADOW_FORM_SHIELD_BREAK_FX_3P = $"P_rev_reborn_shield_end"  
+const asset SHADOW_FORM_SHIELD_BREAK_FX_3P = $"P_rev_reborn_shield_end"
 const asset SHADOW_FORM_BODY_FX_3P = $"P_rev_reborn_shield_powerup"
 const asset SHADOW_FORM_EYE_FX_3P = $"P_rev_reborn_shield_eye"
 const asset SHADOW_FORM_TRAIL_FX_3P = $"P_rev_reborn_3P_ult_body_trail"
@@ -75,12 +76,16 @@ const asset SHADOW_FORM_SHADOW_SCREEN_FX = $"p_rev_reborn_FP_ult_screen_base"
 
 
 global const float SHADOW_FORM_DURATION = 25.0
-const float SHADOW_FORM_TIME_ADD = 10.0
+const float SHADOW_FORM_TIME_ADD = 5.0
+const float SHADOW_FORM_ASSIST_TIME = 3.0
 const float SHADOW_FORM_SHIELD_HEALTH = 75
 const float SHADOW_FORM_SHIELD_REGEN_RATE = 1.0
 const float SHADOW_FORM_SHIELD_REGEN_DELAY = 1.0
 const float SHADOW_FORM_EXPIRATION_WARNING_TIME = 3.0
 const vector SHADOW_FORM_SHIELD_ORIGIN_OFFSET= < 0, 0, -5 >
+const int SHADOW_FORM_ENABLE_SHIELD_RESET = 1
+const int SHADOW_FORM_ENABLE_TAC_RESET = 1
+const int SHADOW_FORM_ENABLE_CARRYOVER_DMG = 1
 
 const int SHADOW_FORM_CHEST_FOCUS = 1
 
@@ -111,9 +116,13 @@ struct
 	
 	float duration
 	float extensionTime
+	float assistTime
 	float shieldHealth
 	float shieldRegenRate
 	float shieldRegenDelay
+	bool enableShieldReset
+	bool enableTacReset
+	bool enableCarryoverDmg
 } file
 
 void function MpAbilityShadowForm_Init()
@@ -139,9 +148,13 @@ void function MpAbilityShadowForm_Init()
 	
 	file.duration = GetCurrentPlaylistVarFloat( "revenant_shadow_form_duration", SHADOW_FORM_DURATION )
 	file.extensionTime = GetCurrentPlaylistVarFloat( "revenant_shadow_form_extension_time", SHADOW_FORM_TIME_ADD )
+	file.assistTime = GetCurrentPlaylistVarFloat( "revenant_shadow_form_extension_time", SHADOW_FORM_ASSIST_TIME )
 	file.shieldHealth = GetCurrentPlaylistVarFloat( "revenant_shadow_form_shield_health", SHADOW_FORM_SHIELD_HEALTH )
 	file.shieldRegenRate = GetCurrentPlaylistVarFloat( "revenant_shadow_form_shield_regen_rate", SHADOW_FORM_SHIELD_REGEN_RATE )
 	file.shieldRegenDelay = GetCurrentPlaylistVarFloat( "revenant_shadow_form_shield_regen_delay", SHADOW_FORM_SHIELD_REGEN_DELAY )
+	file.enableShieldReset = ( GetCurrentPlaylistVarInt( "revenant_shadow_form_enable_shield_reset", SHADOW_FORM_ENABLE_SHIELD_RESET ) > 0 )
+	file.enableTacReset = ( GetCurrentPlaylistVarInt( "revenant_shadow_form_enable_tactical_reset", SHADOW_FORM_ENABLE_TAC_RESET ) > 0 )
+	file.enableCarryoverDmg = ( GetCurrentPlaylistVarInt( "revenant_shadow_form_enable_carryover_dmg", SHADOW_FORM_ENABLE_CARRYOVER_DMG ) > 0 )
 
 	RegisterNetworkedVariable( SHADOW_FORM_HEALTH_NETVAR, SNDC_PLAYER_GLOBAL, SNVT_FLOAT_RANGE, 0.0, 0.0, file.shieldHealth )
 	Remote_RegisterClientFunction( "ServerToClient_UpdateDamageRUI", "bool", "bool", "float", 0.0, 32000.0, 32  )
@@ -170,6 +183,12 @@ void function MpAbilityShadowForm_Init()
 	RegisterSignal( "EndShieldRegenDelay" )
 	RegisterSignal( "EndExpirationThread" )
 }
+
+
+
+
+
+
 
 
 
@@ -281,8 +300,32 @@ bool function IsForgedShadowsShield( entity ent )
 	return ent.GetTargetName() == FORGED_SHADOWS_SHIELD_NAME
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 bool function ShadowShield_IsAllowedStickyEnt( entity shadowShield, entity stickyEnt, string stickyEntWeaponClassName )
 {
+	if( !IsValid( shadowShield ) || !IsValid( stickyEnt ) )
+		return false
+	if( IsFriendlyTeam( stickyEnt.GetTeam(), shadowShield.GetTeam() ) )
+		return false
+
 	bool allowStick = false
 
 	if ( stickyEntWeaponClassName == "mp_weapon_cluster_bomb_launcher" )
@@ -388,6 +431,21 @@ void function ShadowForm_Start( entity player, entity weapon )
 		return
 
 	EndSignal( player, "OnDeath", "OnDestroy", "BleedOut_OnStartDying" ,"ExitShadowForm" )
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1063,6 +1121,66 @@ void function ShadowForm_Start( entity player, entity weapon )
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 void function ShadowForm_StartClient( entity ent, int statusEffect, bool actuallyChanged )
 {
 	if ( !actuallyChanged && GetLocalViewPlayer() == GetLocalClientPlayer() )
@@ -1081,6 +1199,8 @@ void function ShadowForm_StopClient( entity ent, int statusEffect, bool actually
 
 	if ( ent != GetLocalViewPlayer() )
 		return
+
+	Rumble_Play( "rumble_burn_card_activate", {} )
 
 	ent.Signal( "ShadowForm_EndShadowScreenFx" )
 }
@@ -1143,6 +1263,7 @@ void function ShadowShield_ToggleFX_Think( entity player )
 
 	file.shadowShieldFx = StartParticleEffectOnEntity( viewPlayer, GetParticleSystemIndex( SHADOW_FORM_SHIELD_ACTIVE_FX_1P ), FX_PATTACH_ABSORIGIN_FOLLOW, ATTACHMENTID_INVALID )
 	EffectSetIsWithCockpit( file.shadowShieldFx, true )
+	Rumble_Play( "rumble_stim_activate", {} )
 
 	OnThreadEnd(
 		function() : ()
@@ -1167,6 +1288,7 @@ void function ShadowShield_ToggleFX_Think( entity player )
 			file.shadowShieldFx = StartParticleEffectOnEntity( viewPlayer, GetParticleSystemIndex( SHADOW_FORM_SHIELD_ACTIVE_FX_1P ), FX_PATTACH_ABSORIGIN_FOLLOW, ATTACHMENTID_INVALID )
 			EffectSetIsWithCockpit( file.shadowShieldFx, true )
 			effectiveActive = true
+			Rumble_Play( "rumble_stim_activate", {} )
 		}
 
 		WaitFrame()
@@ -1250,6 +1372,8 @@ void function DamageTakenFlash( entity player )
 	EffectSetIsWithCockpit( shieldDamageFx, true )
 	int shieldDamageHexFx = StartParticleEffectOnEntity( viewPlayer, GetParticleSystemIndex( SHADOW_FORM_SHIELD_HIT_FX2_1P ), FX_PATTACH_ABSORIGIN_FOLLOW, ATTACHMENTID_INVALID )
 	EffectSetIsWithCockpit( shieldDamageHexFx, true )
+
+	Rumble_Play( "rumble_pilot_hurt", {} )
 
 	OnThreadEnd(
 		function() : ( player, shieldDamageFx, shieldDamageHexFx )

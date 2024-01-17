@@ -5,6 +5,8 @@ global function MeleeSyncedShared_Init
 
 
 
+global function AttackerCanStartSyncedMelee
+global function IsValidSyncedMeleeTarget
 
 
 
@@ -16,18 +18,16 @@ global function MeleeSyncedShared_Init
 
 
 
+global function CodeCallback_IsValidMeleeExecutionTarget
 
 
 
 
+global function ServerCallback_WatchForSyncedMeleeCancelPeriod
 
 
 
-
-
-
-
-
+global function ServerCallback_SyncedMeleeDone
 
 
 
@@ -101,6 +101,14 @@ void function MeleeSyncedShared_Init()
 
 
 
+		RegisterSignal( "SyncedMeleeOver_Client" )
+
+
+
+
+
+
+}
 
 
 
@@ -108,6 +116,93 @@ void function MeleeSyncedShared_Init()
 
 
 
+
+
+
+bool function AttackerCanStartSyncedMelee( entity attacker, entity meleeInputWeapon, entity meleeAttackWeapon )
+{
+	if ( !AttackerCanStartMelee( attacker, meleeInputWeapon ) )
+		return false
+
+	if ( attacker.IsHuman() && !attacker.IsOnGround() )
+		return false
+
+	if ( attacker.IsWallRunning() || attacker.IsTraversing() ) 
+		return false
+
+	if ( IsDoingPullshot( attacker ) )
+		return false
+
+	return true
+}
+
+
+
+
+bool function IsValidSyncedMeleeTarget( entity attacker, entity meleeInputWeapon, entity meleeAttackWeapon, entity target )
+{
+	if ( GetCurrentPlaylistVarInt( "sur_dev_disable_executions", 0 ) > 0 )
+		return false
+
+	if ( !IsValidMeleeAttackTarget( attacker, meleeInputWeapon, meleeAttackWeapon, target ) )
+		return false
+
+	if ( !IsHumanSized( target ) && target.GetScriptName() != CRYPTO_DRONE_SCRIPTNAME )
+		return false
+
+	if ( target.IsInvulnerable() )
+		return false
+
+	
+	if ( target.ContextAction_IsMeleeExecution() ) 
+		return false
+
+	
+	
+
+	if ( target.IsPlayer() ) 
+	{
+		if ( !target.IsOnGround() ) 
+			return false
+
+		if ( target.IsWallRunning() )
+			return false
+
+		if ( target.IsTraversing() )
+			return false
+
+		if ( !Bleedout_IsBleedingOut( target ) )
+			return false
+
+		if ( IsDoingPullshot( target ) )
+			return false
+
+
+
+
+	}
+	else if ( target.IsNPC() )
+	{
+		if ( target.ContextAction_IsActive() )
+			return false
+
+		if ( !target.IsInterruptableForScriptedAnim() )
+			return false
+
+		if ( !target.CanBeMeleeExecuted() )
+			return false
+
+		if ( target.Dev_GetAISettingByKeyField( "disableMeleeExecution" ) == 1 )
+			return false
+	}
+
+	if ( fabs( attacker.GetWorldSpaceCenter().z - target.GetWorldSpaceCenter().z ) > SYNCED_MELEE_MAX_HEIGHT_DIFFERENCE )
+		return false
+
+	if ( !PlayerMelee_IsExecutionReachable( attacker, target, 0.3 ) )
+		return false
+
+	return true
 }
 
 
@@ -162,16 +257,41 @@ void function MeleeSyncedShared_Init()
 
 
 
+bool function CodeCallback_IsValidMeleeExecutionTarget( entity attacker, entity target )
+{
+	
+	
 
+	return IsValidSyncedMeleeTarget( attacker, null, null, target )
+}
 
 
 
+void function ServerCallback_WatchForSyncedMeleeCancelPeriod_Thread( float allowedCancelTime )
+{
+	entity player = GetLocalViewPlayer()
 
+	if ( !IsAlive( player ) )
+		return
 
+	EndSignal( player, "SyncedMeleeOver_Client" )
 
+	
+	
+	float hintTime = allowedCancelTime - 0.1
+	AddPlayerHint( hintTime, 0.1, $"", "#SURVIVAL_FINISHER_CANCEL_HINT" )
 
+	OnThreadEnd( function() : () {
+		HidePlayerHint( "#SURVIVAL_FINISHER_CANCEL_HINT" )
+	} )
 
+	wait hintTime
+}
 
+void function ServerCallback_WatchForSyncedMeleeCancelPeriod( float allowedCancelTime )
+{
+	thread ServerCallback_WatchForSyncedMeleeCancelPeriod_Thread( allowedCancelTime )
+}
 
 
 
@@ -198,106 +318,15 @@ void function MeleeSyncedShared_Init()
 
 
 
+void function ServerCallback_SyncedMeleeDone()
+{
+	entity player = GetLocalViewPlayer()
 
+	if ( !IsAlive( player ) )
+		return
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+	Signal( player, "SyncedMeleeOver_Client" )
+}
 
 
 

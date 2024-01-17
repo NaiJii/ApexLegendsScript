@@ -41,6 +41,8 @@ struct
 	float stickDeflection = 0
 	int   lastStickState = eStickState.NEUTRAL
 
+	bool hasOpenedPack = false
+
 	
 } file
 
@@ -147,6 +149,8 @@ void function MiniPromo_Reset()
 	Signal( uiGlobal.signalDummy, "EndAutoAdvancePages" )
 	file.activePageIndex = -1
 	Hud_Hide( file.button )
+
+	RTKTutorialOverlay_Deactivate( eTutorialOverlayID.APEX_PACK )
 }
 
 
@@ -181,6 +185,7 @@ void function UpdateValidityOfPages( array<MiniPromoPageData> pages )
 			case "heirloom":
 			case "prestigeskin":
 			case "monthlystoreoffer":
+			case "personalizedstore":
 				page.isValid = true
 				break
 
@@ -423,7 +428,7 @@ void function SetPage( int pageIndex, bool instant = false )
 		RuiSetColorAlpha( rui, "rarityColor", SrgbToLinear( rarityColor ), 1.0 )
 		string nextPackDescription = "#APEX"
 
-		if ( ItemFlavor_GetAccountPackType( pack ) == eAccountPackType.EVENT )
+		if ( ItemFlavor_GetAccountPackType( pack ) == eAccountPackType.EVENT || ItemFlavor_GetAccountPackType( pack ) == eAccountPackType.SIRNGE )
 		{
 			nextPackDescription = "#PACK_BUNDLE_EVENT_TEXT"
 		}
@@ -441,6 +446,9 @@ void function SetPage( int pageIndex, bool instant = false )
 		}
 
 		RuiSetString( rui, "packDescription", nextPackDescription )
+
+		if ( page.linkType == "openpack" && !file.hasOpenedPack )
+			RTKTutorialOverlay_Activate( eTutorialOverlayID.APEX_PACK )
 	}
 	else
 	{
@@ -448,7 +456,11 @@ void function SetPage( int pageIndex, bool instant = false )
 	}
 
 	if ( page.linkType != "openpack" )
+	{
 		Hud_ClearToolTipData( file.button )
+
+		RTKTutorialOverlay_Deactivate( eTutorialOverlayID.APEX_PACK )
+	}
 }
 
 ToolTipData function GetPackInfoToolTip( int ownedPacks )
@@ -587,6 +599,7 @@ void function MiniPromoButton_OnActivate( var button )
 		{
 			EmitUISound( "UI_Menu_OpenLootBox" )
 			OnLobbyOpenLootBoxMenu_ButtonPress()
+			file.hasOpenedPack = true
 		}
 	}
 	else if ( page.linkType == "openmotd" )

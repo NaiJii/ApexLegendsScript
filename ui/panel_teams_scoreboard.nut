@@ -202,6 +202,7 @@ void function OnShowScoreboardPanel( var panel )
 	}
 
 	RegisterButtonPressedCallback( KEY_F, HandleViewProfileScoreboardPlayer )
+	RegisterButtonPressedCallback( BUTTON_Y, HandleViewProfileScoreboardPlayer )
 
 	UpdateFooterOptions()
 }
@@ -227,6 +228,7 @@ void function OnHideScoreboardPanel( var panel )
 	}
 
 	DeregisterButtonPressedCallback( KEY_F, HandleViewProfileScoreboardPlayer )
+	DeregisterButtonPressedCallback( BUTTON_Y, HandleViewProfileScoreboardPlayer )
 }
 
 void function RegisterEvents( var panel )
@@ -420,7 +422,7 @@ void function HideAll( var panel)
 bool function ShouldUseTinyMode( var panel )
 {
 	int teams = file.panels[panel].teams
-	return teams > 10
+	return teams >= 10
 }
 
 string function GetHeaderClassName( var panel )
@@ -497,6 +499,11 @@ float function GetHPadding( var panel )
 	float screenSizeFrac = GetScreenSize().height / 1080.0
 	if( ShouldUseTinyMode(panel ) )
 		return 22.0 * screenSizeFrac
+
+
+	if( DeathScreenIsOpen() && Control_IsModeEnabled() )
+		return 100.0 * screenSizeFrac
+
 
 	return 35.0 * screenSizeFrac
 }
@@ -825,6 +832,9 @@ bool function PlayerButton_OnKeyPress( var button, int keyId, bool isDown )
 		return CustomMatchTeamRoster_OnKeyPress( button, keyId, isDown )
 
 	if( !Hud_IsEnabled( button ) )
+		return false
+
+	if( !( button in file.playerButtonData ) )
 		return false
 
 	bool isCustomMatchSpectator = CustomMatch_IsInCustomMatch() && file.panels[file.activePanel].isMatchAdminSpectator
@@ -1157,6 +1167,7 @@ bool function TryDisplayInspect( var button )
 		Friend customMatchPlayerToFriend
 		customMatchPlayerToFriend.name = player.name
 		customMatchPlayerToFriend.id = player.uid
+		customMatchPlayerToFriend.unspoofedid = player.firstPartyID
 		customMatchPlayerToFriend.hardware = player.hardware
 		customMatchPlayerToFriend.eadpData = CreateEADPDataFromEAID( player.eaid )
 

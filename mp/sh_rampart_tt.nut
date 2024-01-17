@@ -1,7 +1,18 @@
 global function Rampart_TT_Init
+global function Rampart_TT_RegisterNetworking
 global function IsRampartTTPanelLocked
 global function GetRampartTTPanelForLoot
 global function CheckRampartTTMuralLegends
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -35,10 +46,29 @@ const string SFX_PANEL_SPEAKER = "diag_mp_rampart_tt_vendMachine"
 const string SFX_VEND_POWERDOWN = "VendingMachine_Shield_PowerDown"
 const string SFX_VEND_SUSTAIN = "VendingMachine_Shield_Sustain"
 
-const asset VFX_SHIELD_DISABLE = $"P_rampart_vendit_shield_disable"
-const asset VFX_ALARM_LIGHT = $"P_vault_door_alarm_oly_mu1_sm"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+const string VFX_SHIELD_DISABLE = "P_rampart_vendit_shield_disable"
+const string VFX_ALARM_LIGHT = "P_vault_door_alarm_oly_mu1_sm"
 const string VFX_ALARM_LIGHT_NAME = "rampart_tt_vfx_alarm_light"
-const asset MODEL_VEND_SHIELD = $"mdl/desertlands/rampart_tt_vendit_01_energyfield_01.rmdl"
+const string MODEL_VEND_SHIELD = "mdl/desertlands/rampart_tt_vendit_01_energyfield_01.rmdl"
 
 
 const string RAMPART_LORE_DATAPAD = "rampart_tt_datapad"
@@ -86,6 +116,14 @@ struct
 	array < array <string> > datapadDialogue = []
 
 	float vendPickupGracePeriod
+
+
+
+
+
+
+
+
 }file
 
 
@@ -106,16 +144,6 @@ struct
 
 void function Rampart_TT_Init()
 {
-	PrecacheParticleSystem( VFX_SHIELD_DISABLE )
-	PrecacheParticleSystem( VFX_ALARM_LIGHT )
-	PrecacheModel( MODEL_VEND_SHIELD )
-
-	PrecacheScriptString( VEND_SHIELD_AMBGENERIC )
-	PrecacheScriptString( VEND_SPAWNED_WEAPON )
-	PrecacheScriptString( VEND_SPAWNED_AMMO )
-	PrecacheScriptString( VFX_ALARM_LIGHT_NAME )
-	PrecacheScriptString( VEND_SHIELD )
-
 
 
 
@@ -127,7 +155,22 @@ void function Rampart_TT_Init()
 	AddCreateCallback( "prop_dynamic", OnPanelCreated )
 	AddCreateCallback( "prop_dynamic", OnLoreCreated )
 
+
+
+
 }
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -169,6 +212,33 @@ bool function RampartHasStock()
 {
 	return GetCurrentPlaylistVarBool( "rampart_tt_stocked", true )
 }
+
+
+void function Rampart_TT_RegisterNetworking()
+{
+
+
+
+
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -301,6 +371,34 @@ string function Vend_UseTextOverride( entity panel )
 	}
 
 	string str = Localize( "#RAMPART_TT_BUY", Vend_GetCost( panel ) )
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 	return str
 }
 
@@ -326,6 +424,33 @@ void function Vend_OnUse( entity panel, entity player, int useInputFlags )
 
 void function Vend_UseThink_Thread( entity ent, entity playerUser )
 {
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 	ExtendedUseSettings settings
 	settings.duration = 0.3
 
@@ -336,6 +461,10 @@ void function Vend_UseThink_Thread( entity ent, entity playerUser )
 
 	settings.icon = $""
 	settings.hint = Localize( "#RAMPART_TT_BUYING" )
+
+
+
+
 	settings.displayRui = $"ui/extended_use_hint.rpak"
 	settings.displayRuiFunc = Vend_DisplayRui
 	settings.loopSound = SFX_PANEL_LOOP
@@ -356,6 +485,33 @@ void function Vend_DisplayRui( entity ent, entity player, var rui, ExtendedUseSe
 	RuiSetGameTime( rui, "startTime", Time() )
 	RuiSetGameTime( rui, "endTime", Time() + settings.duration )
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -509,16 +665,28 @@ int function Vend_GetCost( entity panel )
 		case VEND_INST_BLUE:
 		{
 			value = 50
+
+
+
+
 			break
 		}
 		case VEND_INST_PURPLE:
 		{
 			value = 75
+
+
+
+
 			break
 		}
 		case VEND_INST_GOLD:
 		{
 			value = 100
+
+
+
+
 			break
 		}
 	}
@@ -581,6 +749,19 @@ entity function GetRampartTTPanelForLoot( entity lootEnt )
 
 	return null
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1025,3 +1206,221 @@ bool function CheckRampartTTMuralLegends( entity player )
 	
 	return false
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

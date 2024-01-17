@@ -1,5 +1,3 @@
-
-
 global function MeleeAshHeirloom_Init
 
 global function OnWeaponActivate_melee_ash_heirloom
@@ -68,5 +66,3 @@ void function OnWeaponDeactivate_melee_ash_heirloom( entity weapon )
 
 
 }
-
-                         

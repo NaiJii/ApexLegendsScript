@@ -72,24 +72,22 @@ void function BattlePassRewardButton_OnActivate( rtk_behavior self )
 	{
 		int badgeDataInteger = 0
 
+		string grxRef = GetGlobalSettingsString( ItemFlavor_GetAsset( item.flav ), "grxRef" )
 
-			string grxRef = GetGlobalSettingsString( ItemFlavor_GetAsset( item.flav ), "grxRef" )
+		const string MASTERY_TAG = "mastery_"
 
-			const string MASTERY_TAG = "mastery_"
+		if( grxRef.len() > MASTERY_TAG.len() && grxRef.find( MASTERY_TAG ) > 0 ) 
+		{
+			entity player = GetLocalClientPlayer()
+			EHI playerEHI = ToEHI( player )
+			int tier =  GetPlayerBadgeDataInteger( playerEHI, item.flav, 0, null )
+			int badgeTier = ( tier < 0 )? 0: Mastery_GetTierFromBitfield( tier )
 
-			if( grxRef.len() > MASTERY_TAG.len() && grxRef.find( MASTERY_TAG ) > 0 ) 
-			{
-				entity player = GetLocalClientPlayer()
-				EHI playerEHI = ToEHI( player )
-				int tier =  GetPlayerBadgeDataInteger( playerEHI, item.flav, 0, null )
-				int badgeTier = ( tier < 0 )? 0: Mastery_GetTierFromBitfield( tier )
+			badgeDataInteger = badgeTier
 
-				badgeDataInteger = badgeTier
-
-				if( !item.isOwned )
-					badgeDataInteger = int( min( badgeDataInteger + 1, MASTERY_TRIAL_TIERS_FOR_BADGE.len() ) ) 
-			}
-
+			if( !item.isOwned )
+				badgeDataInteger = int( min( badgeDataInteger + 1, MASTERY_TRIAL_TIERS_FOR_BADGE.len() ) ) 
+		}
 
 		SetChallengeRewardPresentationModeActive( item.flav, item.quantity,
 			badgeDataInteger,

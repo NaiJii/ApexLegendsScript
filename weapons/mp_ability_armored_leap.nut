@@ -1,4 +1,3 @@
-
 global function MpAbilityArmoredLeap_Init
 global function OnWeaponActivate_ability_armored_leap
 global function OnWeaponDeactivate_ability_armored_leap
@@ -63,28 +62,21 @@ const bool DEBUG_BETTER_AIR_POS								= false
 #endif
 
 
-
-
-const float ARMORED_LEAP_DISTANCE 							= 1400.0 	
-
-
-
-
-
 const float ARMORED_LEAP_DISTANCE_MIN 						= 50.0
 
-
-
-const float ARMORED_LEAP_MAX_ALLY_RANGE 					= 2800 		
-
-const float ARMORED_LEAP_MAX_SLAM_FOLLOW_DISTANCE 			= 1500 		
+const float ARMORED_LEAP_DISTANCE 							= 40 * METERS_TO_INCHES 
+const float ARMORED_LEAP_MAX_ALLY_RANGE 					= 80 * METERS_TO_INCHES 
 
 
 
 
-const float ARMORED_LEAP_MAX_LEAP_HEIGHT 					= 800 		
-const float ARMORED_LEAP_MAX_LEAP_HEIGHT_ALLY 				= 2000 		
+const float ARMORED_LEAP_MAX_SLAM_FOLLOW_DISTANCE 			= 1500
 
+const float ARMORED_LEAP_MAX_LEAP_HEIGHT 					= 25 * METERS_TO_INCHES 
+
+
+
+const float ARMORED_LEAP_MAX_LEAP_HEIGHT_ALLY 				= 50 * METERS_TO_INCHES 
 const float ARMORED_LEAP_MIN_AIR_HEIGHT 					= 100 
 const float ARMORED_LEAP_CLOSE_AIR_HEIGHT 					= 200		
 const float ARMORED_LEAP_FAR_AIR_HEIGHT 					= 500		
@@ -116,19 +108,11 @@ const float ARMORED_LEAP_GROUND_DASH_SPEED_MAX 				= 1500
 const float ARMORED_LEAP_GROUND_DASH_ACCEL 					= 12000
 
 const float ARMORED_LEAP_JUMP_SPEED_MIN 					= 1800
-
-
-
 const float ARMORED_LEAP_JUMP_SPEED_MAX 					= 2500
-
 const float ARMORED_LEAP_HOVER_SPEED_MIN					= 320
 const float ARMORED_LEAP_HOVER_SPEED_MAX					= 400
 
-
-
-
 const float ARMORED_LEAP_JUMP_ACCEL							= 24000
-
 const float ARMORED_LEAP_HOVER_ACCEL 						= 9000
 const float ARMORED_LEAP_DIVE_ACCEL 						= 9000
 
@@ -158,16 +142,16 @@ const float ARMORED_LEAP_MOVERS_MAX_SPEED_FOR_END_DEFAULT 	= 12.0
 
 const float ARMORED_LEAP_WARNING_DURATION 					= 1.5
 
-
-
-
-const float ARMORED_LEAP_RECOVERY_TIME						= 1.0 		
+const float ARMORED_LEAP_RECOVERY_TIME						= 0.75 		
 const float ARMORED_LEAP_CAM_RECOVERY_TIME					= 0.5		
 
 
 
 
-const float ARMORED_LEAP_RECOVERY_MOVESLOW_DURATION 		= 2.0
+
+const float ARMORED_LEAP_RECOVERY_MOVESLOW_DURATION 		= 1.0
+
+
 
 const float ARMORED_LEAP_ABOVE_LEDGE_DEGREE_CHECK_OFFSET 	= 8 		
 const float ARMORED_LEAP_LEDGE_INSET_AMOUNT			 		= 100
@@ -352,6 +336,8 @@ const string ARMORED_LEAP_ALLY_TARGETED_CHATTER_3P 				= "diag_mp_newcastle_bc_s
 const string ARMORED_LEAP_ALLY_BUDDY_TARGETED_CHATTER_3P 		= "diag_mp_newcastle_bc_superSquadObserving_3p"
 const string CASTLE_WALL_DESTROYED_CHATTER_VO_1P 				= "diag_mp_newcastle_bc_superDestroyed_1p"
 const string CASTLE_WALL_DESTROYED_CHATTER_VO_3P 				= "diag_mp_newcastle_bc_superDestroyed_3p"
+const string CASTLE_WALL_REMOVED_CHATTER_VO_1P 					= "diag_mp_newcastle_bc_superAdjust_1p"
+const string CASTLE_WALL_REMOVED_CHATTER_VO_3P 					= "diag_mp_newcastle_bc_superAdjust_3p"
 
 const string ARMORED_LEAP_TARGET_FAIL_DEFAULT					= "#HINT_NEWCASTLE_LEAP_TARGET_FAIL_DEFAULT"
 const string ARMORED_LEAP_TARGET_FAIL_BLOCKED_LAND				= "#HINT_NEWCASTLE_LEAP_TARGET_FAIL_BLOCKED_LAND"
@@ -511,6 +497,8 @@ struct
 
 	bool hasVisorThreatDetection	= VISOR_THREAT_DETECTION
 
+	table< entity, bool > canDoWallRemoveChatter = {}
+
 
 
 
@@ -632,7 +620,6 @@ void function MpAbilityArmoredLeap_Init()
 
 
 
-
 		RegisterConCommandTriggeredCallback( "+scriptCommand5", OnCharacterButtonPressed )
 		file.colorCorrection = ColorCorrection_Register( "materials/correction/ability_hunt_mode.raw_hdr" ) 
 
@@ -661,17 +648,10 @@ void function MpAbilityArmoredLeap_Init()
 
 	
 	file.castleWallHealth			= GetCurrentPlaylistVarInt( "newcastle_armored_leap_castleWallHP", CASTLE_WALL_SHIELD_ANCHOR_HEALTH )
-
-
-
-
-
-		file.maxDist 					= GetCurrentPlaylistVarFloat( "newcastle_armored_leap_dist", ARMORED_LEAP_DISTANCE )
-
-
-	file.maxDistAlly				= GetCurrentPlaylistVarFloat( "newcastle_armored_leap_dist_ally", ARMORED_LEAP_MAX_ALLY_RANGE )
-	file.maxHeight					= GetCurrentPlaylistVarFloat( "newcastle_armored_leap_height", ARMORED_LEAP_MAX_LEAP_HEIGHT )
-	file.maxHeightAlly				= GetCurrentPlaylistVarFloat( "newcastle_armored_leap_height_ally", ARMORED_LEAP_MAX_LEAP_HEIGHT_ALLY )
+	file.maxDist 					= GetCurrentPlaylistVarFloat( "newcastle_armored_leap_dist", ARMORED_LEAP_DISTANCE )
+	file.maxDistAlly 				= GetCurrentPlaylistVarFloat( "newcastle_armored_leap_dist_ally", ARMORED_LEAP_MAX_ALLY_RANGE )
+	file.maxHeight 					= GetCurrentPlaylistVarFloat( "newcastle_armored_leap_height", ARMORED_LEAP_MAX_LEAP_HEIGHT )
+	file.maxHeightAlly 				= GetCurrentPlaylistVarFloat( "newcastle_armored_leap_height_ally", ARMORED_LEAP_MAX_LEAP_HEIGHT_ALLY )
 	file.airLaunchSpeed 			= GetCurrentPlaylistVarFloat( "newcastle_armored_leap_speed_air_launch", ARMORED_LEAP_AIR_LAUNCH_SPEED ) 
 	file.airJumpSpeedMin 			= GetCurrentPlaylistVarFloat( "newcastle_armored_leap_speed_air_jump_min", ARMORED_LEAP_JUMP_SPEED_MIN )
 	file.airJumpSpeedMax 			= GetCurrentPlaylistVarFloat( "newcastle_armored_leap_speed_air_jump_max", ARMORED_LEAP_JUMP_SPEED_MAX )
@@ -1151,7 +1131,7 @@ void function ArmoredLeap_Master_Thread( entity player, vector endPoint, vector 
 	if( dist3D < ARMORED_LEAP_FAR_AIR_HEIGHT )
 		diveSpeed = GraphCapped( dist3D, ARMORED_LEAP_CLOSE_AIR_HEIGHT, ARMORED_LEAP_FAR_AIR_HEIGHT, ARMORED_LEAP_SLAM_SPEED_NEAR, ARMORED_LEAP_SLAM_SPEED_FAR )
 	else
-		diveSpeed = GraphCapped( dist3D, ARMORED_LEAP_FAR_AIR_HEIGHT, ARMORED_LEAP_MAX_ALLY_RANGE, ARMORED_LEAP_SLAM_SPEED_FAR, file.airSlamSpeedMax )
+		diveSpeed = GraphCapped( dist3D, ARMORED_LEAP_FAR_AIR_HEIGHT, GetArmoredLeapAllyDistance( player ), ARMORED_LEAP_SLAM_SPEED_FAR, file.airSlamSpeedMax )
 
 	if ( GetArmoredLeapUseCode() )
 	{
@@ -2691,6 +2671,9 @@ void function ArmoredLeap_CheckForUpdraft_Thread( entity player )
 
 
 
+
+
+
 void function ServerToClient_SetClient_BleedoutWaypoint( entity victim, entity wp )
 {
 	if( IsValid( wp ) )
@@ -3203,6 +3186,12 @@ void function ArmoredLeap_AR_Placement_Thread( entity weapon )
 		shieldMover.SetOrigin( adjPos )
 		shieldMover.SetAngles( AnglesCompose( VectorToAngles( FlattenVec(info.finalPos - player.EyePosition()) ), <0,0,0> ) )
 
+		float testDistance = Distance(player.GetOrigin(), info.finalPos)
+		float testHeight = ( info.finalPos.z - player.GetOrigin().z )
+		float testDistanceM = Distance(player.GetOrigin(), info.finalPos) * INCHES_TO_METERS
+		float testHeightM = ( info.finalPos.z - player.GetOrigin().z ) * INCHES_TO_METERS
+		
+
 		endPointMover.Hide()
 		allyMover.Hide()
 		shieldMover.Hide()
@@ -3368,7 +3357,7 @@ void function ArmoredLeap_AR_Placement_Thread( entity weapon )
 
 				vector allyOrigin 		= ally.GetOrigin()
 				float allyDistance 		= Distance( allyOrigin, player.GetOrigin() )
-				bool isAllyOutOfRange 	= !( ArmoredLeap_HasValidLeapPos( player, ally, allyOrigin, null,  info ) && ( allyDistance < ARMORED_LEAP_MAX_ALLY_RANGE ) )
+				bool isAllyOutOfRange 	= !( ArmoredLeap_HasValidLeapPos( player, ally, allyOrigin, null,  info ) && ( allyDistance < GetArmoredLeapAllyDistance( player ) ) ) 
 
 				RuiSetBool( allyRui[ally], "outOfRange", isAllyOutOfRange )
 				
@@ -3575,14 +3564,6 @@ void function ArmoredLeap_VisionMode_Thread( entity player )
 
 	WaitForever()
 }
-
-
-
-
-
-
-
-
 
 
 
@@ -3999,6 +3980,48 @@ const float MINIMUM_TUNNEL_STEP_DIST = 4.0
 float function GetArmoredLeapDistance( entity player )
 {
 	float result = file.maxDist
+
+
+
+
+
+
+
+
+	return result
+}
+
+float function GetArmoredLeapAllyDistance( entity player )
+{
+	float result = file.maxDistAlly
+
+
+
+
+
+
+
+
+	return result
+}
+
+float function GetArmoredLeapHeight( entity player )
+{
+	float result = file.maxHeight
+
+
+
+
+
+
+
+
+	return result
+}
+
+float function GetArmoredLeapHeightAlly( entity player )
+{
+	float result = file.maxHeightAlly
 
 
 
@@ -4750,7 +4773,7 @@ bool function ArmoredLeap_HasValidLeapPos( entity ent, entity targetAlly, vector
 	vector leapDir = Normalize( endPos - leapPos )
 	float distCheck  = Distance( leapPos, endPos )
 
-	float maxHeight	  = ARMORED_LEAP_MAX_LEAP_HEIGHT
+	float maxHeight	  = GetArmoredLeapHeight( ent )
 	float vertDist	= endPos.z - leapPos.z
 
 	vector adjustedEndPos = endPos + < 0, 0, 5 > 
@@ -4784,7 +4807,7 @@ bool function ArmoredLeap_HasValidLeapPos( entity ent, entity targetAlly, vector
 	
 
 	if( IsValid(targetAlly) )
-		maxHeight = ARMORED_LEAP_MAX_LEAP_HEIGHT_ALLY
+		maxHeight = GetArmoredLeapHeightAlly( ent ) 
 
 	if( vertDist > maxHeight )
 	{
@@ -5059,7 +5082,7 @@ entity function GetAllyTargetInRange( entity owner )
 	foreach ( entity player in allyArray )
 	{
 		float distToAlly = Distance2D( owner.GetOrigin(), player.GetOrigin() )
-		if ( distToAlly > ARMORED_LEAP_MAX_ALLY_RANGE )
+		if ( distToAlly > GetArmoredLeapAllyDistance( owner ) ) 
 			continue
 
 		allyInRangeArray.append( player )
@@ -5076,7 +5099,7 @@ entity function GetAllyTargetInRange( entity owner )
 			if( !ShouldPickupDNAFromDeathBox( deathbox, owner  ) )
 				continue
 			float distToBox = Distance2D( owner.GetOrigin(), deathbox.GetOrigin() )
-			if ( distToBox > ARMORED_LEAP_MAX_ALLY_RANGE )
+			if ( distToBox > GetArmoredLeapAllyDistance( owner ) ) 
 				continue
 
 			allyInRangeArray.append(deathbox)
@@ -5157,6 +5180,13 @@ array<entity> function GetAllyPlayerArray( entity owner )
 
 	return validAllyArray
 }
+
+
+
+
+
+
+
 
 
 
@@ -6754,6 +6784,20 @@ vector function SnakeWall_GetBestDownTracePosition( vector nextValidPos, vector 
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 vector function CastleWall_OffsetDamageNumbers( entity shieldEnt, vector damageFlyoutPosition )
 {
 	vector flyoutPosition = ZERO_VECTOR
@@ -7386,6 +7430,11 @@ float function CastleWall_GetWallBarrierDuration( entity owner )
 
 
 
+
+
+
+
+
 bool function CastleWall_CanUse( entity player, entity ent, int useFlags )
 {
 	if ( ! IsValid( player ) )
@@ -7400,6 +7449,52 @@ bool function CastleWall_CanUse( entity player, entity ent, int useFlags )
 	SURVIVAL_PlayerAllowedToPickup( player ) &&
 	! GradeFlagsHas( ent, eGradeFlags.IS_BUSY )
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -7957,4 +8052,3 @@ bool function DoAdditionalAirPosChecks()
 }
 
 
-              

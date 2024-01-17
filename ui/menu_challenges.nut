@@ -67,6 +67,8 @@ void function InitAllChallengesPanel( var panel, bool isInventory )
 	panelData.groupListPanel = Hud_GetChild( panel, "CategoryList" )
 	panelData.pinnedChallengeButtons.append( Hud_GetChild( panel, "PinnedChallenge" ) )
 	panelData.pinnedChallengeButtons.append( Hud_GetChild( panel, "PinnedChallenge2" ) )
+	panelData.pinnedChallengeButtons.append( Hud_GetChild( panel, "PinnedChallenge3" ) )
+	panelData.pinnedChallengeButtons.append( Hud_GetChild( panel, "PinnedChallenge4" ) )
 	panelData.challengesListPanel = Hud_GetChild( panel, "ChallengesList" )
 	panelData.largeGroupButtonArray = []
 	panelData.dividerLine = Hud_GetChild( panel, "DividerLine" )
@@ -176,6 +178,10 @@ void function JumpToChallengesLink ( string link )
 
 		case "challengesevent":
 			button = challengePanelData.claimedLargeButtons[eChallengeTimeSpanKind.EVENT]
+			break
+
+		case "challengeseventshop":
+			button = challengePanelData.claimedLargeButtons[eChallengeTimeSpanKind.EVENTSHOP_DAILY_CHALLENGE]
 			break
 
 		case "challengesspecial1":
@@ -373,6 +379,37 @@ void function AllChallengesMenu_UpdateCategories( bool ornull isShown )
 					else
 					{
 						continue
+					}
+				}
+				else if ( group.timeSpanKind == eChallengeTimeSpanKind.EVENTSHOP_DAILY_CHALLENGE )
+				{
+					if ( group.challenges.len() > 0 )
+					{
+						button = ClaimLargeGroupButton( panelData, group.timeSpanKind )
+						ItemFlavor eventShopFlav = Challenge_GetSource( group.challenges[0] )
+						Assert( ItemFlavor_GetType( eventShopFlav ) == eItemType.calevent_event_shop )
+
+						int remainingDuration = GetPersistentVarAsInt( "dailyExpirationTime" ) - Daily_GetCurrentTime()
+						EventShopData data = EventShop_GetEventShopData( eventShopFlav )
+						group.groupName = Localize ( data.eventShopButtonText )
+						RuiSetGameTime( Hud_GetRui( button ), "expireTime", remainingDuration > 0 ? ClientTime() + remainingDuration : RUI_BADGAMETIME )
+						HudElem_SetRuiArg( button, "isTrackedCategory", false )
+					}
+				}
+				else if ( group.timeSpanKind == eChallengeTimeSpanKind.EVENTSHOP_EVENT_CHALLENGE )
+				{
+					if ( group.challenges.len() > 0 )
+					{
+						button = ClaimLargeGroupButton( panelData, group.timeSpanKind )
+						eventButton = button
+						ItemFlavor eventShopFlav = Challenge_GetSource( group.challenges[0] )
+						eventFlav = eventShopFlav
+						expect ItemFlavor( eventFlav )
+						Assert( ItemFlavor_GetType( eventShopFlav ) == eItemType.calevent_event_shop )
+
+						EventShopData data = EventShop_GetEventShopData( eventShopFlav )
+						group.groupName = Localize ( data.eventShopButtonText )
+						HudElem_SetRuiArg( button, "isTrackedCategory", false )
 					}
 				}
 				else if ( group.timeSpanKind == eChallengeTimeSpanKind.FAVORITE )
@@ -629,16 +666,18 @@ void function AllChallengesMenu_UpdateActiveGroup()
 			}
 		}
 
-
 		
 		if ( group.timeSpanKind == eChallengeTimeSpanKind.EVENT_SPECIAL )
 		{
 			ItemFlavor metaChallenge = GetItemFlavorByAsset( $"settings/itemflav/challenge/revenant/complete_revenant_reborn_challenges.rpak" )
-			pinnedChallenges = [ metaChallenge ]
+			ItemFlavor metaChallenge2 = GetItemFlavorByAsset( $"settings/itemflav/challenge/revenant/highlight_enemies_low_health.rpak" )
+			ItemFlavor metaChallenge3 = GetItemFlavorByAsset( $"settings/itemflav/challenge/revenant/shadow_pounce_enemies.rpak" )
+			ItemFlavor metaChallenge4 = GetItemFlavorByAsset( $"settings/itemflav/challenge/revenant/shadow_form_kills_or_assists.rpak" )
+			pinnedChallenges = [ metaChallenge, metaChallenge2, metaChallenge3, metaChallenge4 ]
+
 			Newness_IfNecessaryMarkItemFlavorAsNoLongerNewAndInformServer( metaChallenge )
 			challengesToDisplay.removebyvalue( metaChallenge )
 		}
-
 
 		if ( group.timeSpanKind == eChallengeTimeSpanKind.EVENT_HIDDEN )
 		{
@@ -653,7 +692,7 @@ void function AllChallengesMenu_UpdateActiveGroup()
 			}
 		}
 
-		if ( group.timeSpanKind == eChallengeTimeSpanKind.BEGINNER )
+		if ( group.timeSpanKind == eChallengeTimeSpanKind.BEGINNER || group.timeSpanKind == eChallengeTimeSpanKind.EVENTSHOP_DAILY_CHALLENGE )
 		{
 			pinnedChallenges = []
 		}
@@ -743,9 +782,11 @@ void function PutChallengeOnFullChallengeWidget( var button, ItemFlavor challeng
 	else if ( timeSpan == eChallengeTimeSpanKind.MYTHIC )
 	{
 		mythicSkinEnabled = true
-
-
 	}
+	
+	
+	
+	
 
 	int displayTier = Challenge_GetCurrentTier( GetLocalClientPlayer(), challenge )
 	bool isEitherOrChallenge = Challenge_IsEitherOr( challenge )
@@ -815,7 +856,6 @@ void function PutChallengeOnFullChallengeWidget( var button, ItemFlavor challeng
 		MaybeAddChallengeClickEventToButton( null, button, challenge, displayTier, canReroll, isChallengeComplete, allowSetFavorites )
 	}
 }
-
 
 void function AllChallengesMenu_ActivateLastGroupButton()
 {

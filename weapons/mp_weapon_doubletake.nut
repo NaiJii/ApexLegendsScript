@@ -48,11 +48,19 @@ void function OnWeaponActivate_weapon_doubletake( entity weapon )
 
 
 
+
+
+		GoldenHorseGreen_OnWeaponActivate( weapon )
+
 }
 
 void function OnWeaponDeactivate_weapon_doubletake( entity weapon )
 {
 	OnWeaponDeactivate_Kinetic_Loader( weapon )
+
+
+		GoldenHorseGreen_OnWeaponDeactivate( weapon )
+
 }
 
 var function OnWeaponPrimaryAttack_weapon_doubletake( entity weapon, WeaponPrimaryAttackParams attackParams )

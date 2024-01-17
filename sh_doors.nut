@@ -1534,8 +1534,6 @@ const table<int, vector> BLOCKABLE_DOOR_NOTCH_ROTATIONS = {
 
 
 
-
-
 bool function BlockableDoorCanUseCheck( entity player, entity door, int useFlags )
 {
 	
@@ -1848,6 +1846,16 @@ vector arcCornerIn, float arcRadius, float arcStartAng, float arcEndAng )
 
 	return intersect
 }
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -2629,10 +2637,6 @@ void function CodeCallback_OnDoorInteraction( entity door, entity user, entity o
 
 
 }
-
-
-
-
 
 
 

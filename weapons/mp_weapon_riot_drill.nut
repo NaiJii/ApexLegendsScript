@@ -36,7 +36,7 @@ const float RIOT_DRILL_BLAST_LENGTH = 224.0
 const float RIOT_DRILL_BLAST_RADIUS = 130.0			
 const int	RIOT_DRILL_DAMAGE 		= 4				
 const int 	RIOT_DRILL_IMPACT_DAMAGE = 5			
-const int	RIOT_DRILL_STUCK_DAMAGE = 1				
+const int	RIOT_DRILL_OBJECT_DAMAGE = 1				
 const float RIOT_DRILL_DAMAGE_TICK 	= 0.2			
 
 
@@ -51,6 +51,10 @@ const asset RIOT_DRILL_PLACEMENT_EXIT 			= $"_none_FX_test"
 const asset RIOT_DRILL_BLAST_BEAM_FX 			= $"P_mm_breach_beam"
 const asset RIOT_DRILL_BLAST_BEAM_WARN_FX 		= $"P_mm_breach_beam_warn"
 const asset RIOT_DRILL_AOE_WARNING_01_FX 		= $"P_mm_breach_exit"
+
+
+
+
 const asset RIOT_DRILL_FRONT_FX 				= $"P_mm_breach_enter"
 const asset RIOT_DRILL_SPRAY_TEST_CONE	 		= $"_none_FX_test"
 const asset RIOT_DRILL_SPRAY_TEST_COLUMN 		= $"_none_FX_test"
@@ -119,7 +123,7 @@ struct
 	float balance_riotDrillDuration
 	int balance_riotDrillDamage
 	int balance_riotDrillImpactDamage
-	int balance_riotDrillStuckDamage
+	int balance_riotDrillObjectDamage
 	float balance_riotDrillMaxThickness
 	float balance_riotDrillRadius
 	float balance_riotDrillLength
@@ -149,6 +153,10 @@ void function MpWeaponRiotDrill_Init()
 {
 	PrecacheParticleSystem( RIOT_DRILL_FRONT_FX )
 	PrecacheParticleSystem( RIOT_DRILL_AOE_WARNING_01_FX )
+
+
+
+
 	PrecacheParticleSystem( RIOT_DRILL_SPRAY_TEST_CONE )
 	PrecacheParticleSystem( RIOT_DRILL_SPRAY_TEST_COLUMN )
 	PrecacheParticleSystem( RIOT_DRILL_BLAST_BEAM_FX )
@@ -181,7 +189,7 @@ void function MpWeaponRiotDrill_Init()
 	file.balance_riotDrillDuration 		= max( GetCurrentPlaylistVarFloat( "riot_drill_duration_override", RIOT_DRILL_DURATION ), 0.0 )			
 	file.balance_riotDrillDamage 		= maxint( GetCurrentPlaylistVarInt( "breaching_spike_damage_override", RIOT_DRILL_DAMAGE ), 0 )				
 	file.balance_riotDrillImpactDamage	= maxint( GetCurrentPlaylistVarInt( "breaching_spike_impact_damage_override", RIOT_DRILL_IMPACT_DAMAGE ), 0 )		
-	file.balance_riotDrillStuckDamage 	= maxint( GetCurrentPlaylistVarInt( "breaching_spike_stuck_damage_override", RIOT_DRILL_STUCK_DAMAGE ), 0 )		
+	file.balance_riotDrillObjectDamage 	= maxint( GetCurrentPlaylistVarInt( "breaching_spike_stuck_damage_override", RIOT_DRILL_OBJECT_DAMAGE ), 0 )		
 	file.balance_riotDrillMaxThickness 	= max( GetCurrentPlaylistVarFloat( "breaching_spike_max_thickness_override", WALL_THICKNESS_MAX ), 400.0 )		
 	file.balance_riotDrillRadius 		= max( GetCurrentPlaylistVarFloat( "breaching_spike_radius_override", RIOT_DRILL_BLAST_RADIUS ), 64.0 )		
 	file.balance_riotDrillLength 		= max( GetCurrentPlaylistVarFloat( "breaching_spike_length_override", RIOT_DRILL_BLAST_LENGTH ), 64.0 )		
@@ -193,9 +201,7 @@ void function MpWeaponRiotDrill_Init()
 	file.fxOption_impactTableFXEnterRefire	= GetCurrentPlaylistVarFloat( "breaching_spike_impact_fx_enter_refire", 0.2 )
 	file.fxOption_impactTableFXExitRefire	= GetCurrentPlaylistVarFloat( "breaching_spike_impact_fx_exit_refire", 0.2 )
 
-
 	file.shieldScriptNames.append( MOBILE_SHIELD_SCRIPTNAME )
-
 	file.shieldScriptNames.append( BUBBLE_SHIELD_SCRIPTNAME )
 	file.shieldScriptNames.append( AMPED_WALL_SCRIPT_NAME )
 	file.shieldScriptNames.append( ECHO_LOCATOR_SCRIPT_NAME )
@@ -245,11 +251,14 @@ void function RestoreRiotDrillAmmo( entity owner )
 
 
 
+
+
+
+
+
 float function RiotDrill_GetDuration( entity player )
 {
 	float result = file.balance_riotDrillDuration
-
-
 
 
 
@@ -264,12 +273,40 @@ float function RiotDrill_GetRadius( entity player )
 
 
 
+	return result
+}
+
+float function RiotDrill_GetLength( entity player )
+{
+	float result = file.balance_riotDrillLength
 
 
 
 
 	return result
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1060,7 +1097,7 @@ void function RiotDrill_AddThreatIndicator( entity dangerZone )
 	int dangerZoneTeam = player.GetTeam()
 
 	if( IsEnemyTeam( team, dangerZoneTeam ) || ( player == owner ) )
-		ShowGrenadeArrow( player, dangerZone, file.balance_riotDrillLength, 0, false, eThreatIndicatorVisibility.INDICATOR_SHOW_TO_ALL, ( 60.0 * dangerZone.GetUpVector() ) )
+		ShowGrenadeArrow( player, dangerZone, RiotDrill_GetLength( owner ), 0, false, eThreatIndicatorVisibility.INDICATOR_SHOW_TO_ALL, ( 60.0 * dangerZone.GetUpVector() ) )
 }
 
 
@@ -1142,7 +1179,7 @@ int function RiotDrill_FireProjectile( entity weapon, WeaponPrimaryAttackParams 
 
 
 
-	entity grenade     = Grenade_Launch( weapon, attackParams.pos, (attackParams.dir), projectilePredicted, projectileLagCompensated, false )
+	entity grenade     = Grenade_Launch( weapon, attackParams.pos, (attackParams.dir), projectilePredicted, projectileLagCompensated, ZERO_VECTOR )
 	entity weaponOwner = weapon.GetWeaponOwner()
 	weaponOwner.Signal( "ThrowGrenade" )
 

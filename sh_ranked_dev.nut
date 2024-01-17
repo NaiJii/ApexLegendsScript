@@ -680,6 +680,20 @@ globalize_all_functions
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 #if DEV
 void function DEV_script_ranked_debug ( string message,int indent = 0 )
 {
@@ -711,6 +725,7 @@ void function PrintRankLadderPointsBreakdown ( RankLadderPointsBreakdown data , 
 		DEV_script_ranked_debug ( "memo:" + memo, indent++ )
 	}
 
+	DEV_script_ranked_debug ( "isHighTier: " + data.isHighTier, indent )
 	DEV_script_ranked_debug ( "wasInProvisonalGame: " + data.wasInProvisonalGame, indent )
 	DEV_script_ranked_debug ( "wasAbandoned: " + data.wasAbandoned, indent )
 	DEV_script_ranked_debug ( "lossForgiveness: " + data.lossForgiveness , indent)

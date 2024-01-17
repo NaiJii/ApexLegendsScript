@@ -4,6 +4,7 @@ global function OnWeaponReload_weapon_wingman
 global function OnProjectileCollision_weapon_wingman
 
 const string WINGMAN_CLASS_NAME = "mp_weapon_wingman"
+global const string WINGMAN_CRATE_CLASS_NAME = "mp_weapon_wingman_crate"
 
 void function OnWeaponActivate_weapon_wingman( entity weapon )
 {

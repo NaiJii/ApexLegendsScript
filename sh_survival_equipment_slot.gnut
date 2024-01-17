@@ -43,6 +43,12 @@ global function GetAttachmentPointName
 
 
 
+
+
+
+
+
+
 global const table<string, asset> emptyAttachmentSlotImages = {
 	barrel = $"rui/pilot_loadout/mods/empty_barrel"
 	barrel_stabilizer = $"rui/pilot_loadout/mods/empty_barrel_stabilizer"
@@ -95,11 +101,11 @@ global const table<string, asset> emptyAttachmentSlotImages = {
 
 
 
-
-
-
-
-
+		hopup_golden_horse_blue =  $"rui/pilot_loadout/mods/empty_hopup_golden_horse_blue"
+		hopup_golden_horse_green = $"rui/pilot_loadout/mods/empty_hopup_golden_horse_green"
+		hopup_golden_horse_yellow = $"rui/pilot_loadout/mods/empty_hopup_golden_horse_yellow"
+		hopup_golden_horse_purple = $"rui/pilot_loadout/mods/empty_hopup_golden_horse_purple"
+		hopup_golden_horse_red = $"rui/pilot_loadout/mods/empty_hopup_golden_horse_red"
 
 }
 
@@ -932,6 +938,13 @@ int function FilledCommsAction_Equipment( string equipmentSlotRef, string itemRe
 	}
 
 
+
+
+
+
+
+
+
 	if ( lootData.tier < maxTier )
 		return commsAction
 
@@ -1475,6 +1488,16 @@ void function SetUnitFrameHudImageIfValid( string imageVarName, string tierVarNa
 				bool isEvolving = (lootIndex < 0) ? false : EvolvingArmor_IsEquipmentEvolvingArmor( SURVIVAL_Loot_GetLootDataByIndex( lootIndex ).ref )
 				RuiSetBool( rui, "isEvolvingShield", isEvolving )
 			}
+
+
+
+
+
+
+
+
+
+
 			else
 			{
 				RuiSetBool( rui, "isEvolvingShield", false )

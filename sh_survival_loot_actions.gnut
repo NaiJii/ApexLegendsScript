@@ -271,6 +271,7 @@ bool function PickupCustomItem( entity pickup, entity player, int pickupFlags, e
 
 
 
+
 		return result
 	}
 
@@ -317,6 +318,12 @@ bool function TryPickupItem( int action, entity pickup, entity player, int picku
 		case eLootType.CUSTOMPICKUP:
 			shouldDestroy = PickupCustomItem( pickup, player, pickupFlags, deathBox, desiredCount )
 			break
+
+
+		case eLootType.CANDY_PICKUP:
+			shouldDestroy = PickupCustomItem( pickup, player, pickupFlags, deathBox, desiredCount )
+			break
+
 
 
 
@@ -451,6 +458,11 @@ bool function TryPickupSlingWeapon( int action, entity pickup, entity player, in
 
 
 
+
+
+
+
+
 		var slingPassiveRui = GetSlingPassiveRui()
 		if ( slingPassiveRui != null )
 			RuiSetBool( slingPassiveRui, "hasMainWeapon", true )
@@ -472,6 +484,19 @@ bool function TrySwapSlingWeapon( int action, entity pickup, entity player, int 
 	}
 	else
 	{
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -525,9 +550,19 @@ void function ExtendedTrySwapSlingWeapon( entity ent, entity player, ExtendedUse
 
 
 
+
+
+
+
+
+
+
+
+
 		LootData data = SURVIVAL_Loot_GetLootDataByIndex( ent.GetSurvivalInt() )
 		PlayLootPickupFeedbackFX( ent )
-		EmitSoundOnEntity( player, data.pickupSound_1p )
+		
+		
 
 		var slingPassiveRui = GetSlingPassiveRui()
 		if ( slingPassiveRui != null )
@@ -941,6 +976,7 @@ bool function GiveMainWeapon_Internal( entity pickup, entity player, bool dropCu
 
 
 
+
 			if ( !dropCurrentWeapon && primaryWeapons.len() > 1 )
 
 				return false
@@ -1084,10 +1120,6 @@ bool function EquipEquipment( entity pickup, entity player, string equipSlot, en
 
 
 
-
-
-
-
 		if ( newEquip == "helmet_pickup_lv5_sunglasses" )
 		{
 			Heatwave_OnSunglassesPickup(player)
@@ -1108,7 +1140,8 @@ bool function EquipEquipment( entity pickup, entity player, string equipSlot, en
 
 
 		settings.loopSound = "UI_Survival_PickupTicker"
-		settings.successSound = data.pickupSound_1p
+		
+		
 		settings.successPlayPickupEffect = true
 		settings.displayRui = $"ui/extended_use_hint.rpak"
 		settings.displayRuiFunc = DisplayRuiForMainWeaponSwap
@@ -1164,9 +1197,22 @@ void function ExtendedTrySwapWeapon( entity ent, entity player, ExtendedUseSetti
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
 		LootData data = SURVIVAL_Loot_GetLootDataByIndex( ent.GetSurvivalInt() )
 		PlayLootPickupFeedbackFX( ent )
-		EmitSoundOnEntity( player, data.pickupSound_1p )
+		
+		
 
 }
 
@@ -1180,7 +1226,8 @@ void function ExtendedTrySwapEquipment( entity ent, entity player, ExtendedUseSe
 
 		LootData data = SURVIVAL_Loot_GetLootDataByIndex( ent.GetSurvivalInt() )
 		PlayLootPickupFeedbackFX( ent )
-		EmitSoundOnEntity( player, data.pickupSound_1p )
+		
+		
 
 }
 

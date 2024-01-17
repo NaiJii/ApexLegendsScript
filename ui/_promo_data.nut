@@ -144,7 +144,7 @@ void function OpenPromoLink( string linkType, string link )
 	{
 		EmitUISound( "UI_Menu_Accept" )
 
-		array<ItemFlavor> storyChallengeEvents  = GetActiveStoryChallengeEvents( GetUnixTimestamp() )
+		array<ItemFlavor> storyChallengeEvents = GetActiveStoryChallengeEvents( GetUnixTimestamp() )
 		if ( storyChallengeEvents.len() <= 0 )
 			return
 
@@ -154,7 +154,38 @@ void function OpenPromoLink( string linkType, string link )
 	else if ( linkType == "storespecials" )
 	{
 		EmitUISound( "UI_Menu_Accept" )
-		JumpToStoreOffer( SPECIALS_STORE_PANEL, link)
+		JumpToStoreOffer( SPECIALS_STORE_PANEL, link )
+	}
+	else if ( linkType == "personalizedstore" )
+	{
+		EmitUISound( "UI_Menu_Accept" )
+		JumpToStorePanel( PERSONALIZED_STORE_PANEL )
+	}
+	else if ( linkType == "milestoneevent" )
+	{
+		ItemFlavor ornull milestoneEvent = GetActiveMilestoneEvent( GetUnixTimestamp() )
+		if ( milestoneEvent != null )
+		{
+			switch ( link )
+			{
+				case "landingpage":
+					EventsPanel_SetOpenPageIndex( eEventsPanelPage.LANDING )
+					break
+				case "purchasepack":
+					EventsPanel_SetOpenPageIndex( eEventsPanelPage.MILESTONES )
+					break
+				case "collection":
+					EventsPanel_SetOpenPageIndex( eEventsPanelPage.COLLECTION )
+					break
+				case "freerewards":
+					ItemFlavor ornull activeEventShop = EventShop_GetCurrentActiveEventShop()
+					if ( activeEventShop == null )
+						return
+					EventsPanel_SetOpenPageIndex( eEventsPanelPage.EVENT_SHOP )
+					break
+			}
+			JumpToSeasonTab( "RTKEventsPanel" )
+		}
 	}
 }
 

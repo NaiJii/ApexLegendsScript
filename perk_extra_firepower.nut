@@ -10,10 +10,16 @@ void function Perk_ExtraFirepower_Init()
 	PerkInfo extraFirepower
 	extraFirepower.perkId          = ePerkIndex.EXTRA_FIREPOWER
 
-
-
+		extraFirepower.activateCallback = ExtraFirepower_Activate
+		extraFirepower.deactivateCallback = ExtraFirepower_Deactivate
 
 	Perks_RegisterClassPerk( extraFirepower )
+
+
+
+
+
+
 
 
 
@@ -41,6 +47,21 @@ void function Perk_ExtraFirepower_Init()
 
 
 
+void function ExtraFirepower_Activate( entity player, string characterName )
+{
+
+
+
+
+
+
+
+
+
+}
+
+void function ExtraFirepower_Deactivate( entity player )
+{
 
 
 
@@ -54,22 +75,7 @@ void function Perk_ExtraFirepower_Init()
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+}
 
 
 

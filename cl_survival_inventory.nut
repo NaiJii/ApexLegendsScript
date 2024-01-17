@@ -37,6 +37,7 @@ global function UIToClient_GroundlistClosed
 
 
 
+
 global function UICallback_UpdateInventoryButton
 global function UICallback_OnInventoryButtonAction
 global function UICallback_OnInventoryButtonAltAction
@@ -75,6 +76,10 @@ global function UIToClient_WeaponSwap
 global function UICallback_UpdatePlayerInfo
 global function UICallback_UpdateTeammateInfo
 global function UICallback_UpdateUltimateInfo
+
+
+
+
 
 global function UICallback_BlockPingForDuration
 
@@ -247,10 +252,6 @@ void function ResetInventoryMenuInternal( entity player )
 
 
 		RunUIScript( "SurvivalInventoryMenu_SetSpaceForSling", DoesPlayerHaveWeaponSling( player ) )
-
-
-
-
 
 
 	PerfEnd( PerfIndexClient.InventoryRefreshTotal )
@@ -558,15 +559,15 @@ void function GroundAction( int lootAction, string guid, bool isAltAction, bool 
 		case eLootAction.SWAP:
 		case eLootAction.PICKUP_ALL:
 			RunUIScript( "SurvivalMenu_AckAction" )
-			Remote_ServerCallFunction( "ClientCallback_PickupSurvivalItem", lootEnt, extraFlags, deathBox )
+			RunClientCallback_PickupSurvivalItem( null, lootEnt, extraFlags, deathBox )
 			break
 
 		case eLootAction.ATTACH_TO_ACTIVE:
-			Remote_ServerCallFunction( "ClientCallback_PickupSurvivalItem", lootEnt, (PICKUP_FLAG_ATTACH_ACTIVE_ONLY | extraFlags), deathBox )
+			RunClientCallback_PickupSurvivalItem( null, lootEnt, (PICKUP_FLAG_ATTACH_ACTIVE_ONLY | extraFlags), deathBox )
 			break
 
 		case eLootAction.ATTACH_TO_STOWED:
-			Remote_ServerCallFunction( "ClientCallback_PickupSurvivalItem", lootEnt, (PICKUP_FLAG_ATTACH_STOWED_ONLY | extraFlags), deathBox )
+			RunClientCallback_PickupSurvivalItem( null, lootEnt, (PICKUP_FLAG_ATTACH_STOWED_ONLY | extraFlags), deathBox )
 			break
 
 		case eLootAction.CARRY:
@@ -578,7 +579,7 @@ void function GroundAction( int lootAction, string guid, bool isAltAction, bool 
 			break
 
 		case eLootAction.DISMANTLE:
-			Remote_ServerCallFunction( "ClientCallback_PickupSurvivalItem", lootEnt, PICKUP_FLAG_ALT, deathBox )
+			RunClientCallback_PickupSurvivalItem( null, lootEnt, PICKUP_FLAG_ALT, deathBox )
 	}
 }
 
@@ -795,7 +796,13 @@ void function SurvivalMenu_Internal( entity player, string uiScriptFuncName, ent
 
 	ServerCallback_ClearHints()
 	player.ClientCommand( "-zoom" )
-	CommsMenu_Shutdown( false )
+
+
+
+
+	{
+		CommsMenu_Shutdown( false )
+	}
 
 	file.currentGroundListData.deathBox = deathBox
 	file.currentGroundListData.behavior = groundListBehavior
@@ -887,6 +894,26 @@ void function OpenSurvivalGroundList( entity player, entity deathBox = null, int
 	string funcName = "OpenSurvivalGroundListMenu"
 	SurvivalMenu_Internal( player, funcName, deathBox, groundListBehavior, groundListType )
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1294,6 +1321,27 @@ void function UICallback_UpdateRequestButton( var button )
 		RunUIScript( "ClientToUI_Tooltip_MarkForClientUpdate", button, eTooltipStyle.DEFAULT )
 
 	}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 }
 
 
@@ -1449,7 +1497,14 @@ void function UICallback_UpdateEquipmentButton( var button )
 
 		if ( IsValid( weapon ) )
 		{
-			RuiSetInt( rui, "count", GetWeaponCurrentAmmo( weapon ) )
+			int ammountCount = GetWeaponCurrentAmmo( weapon )
+
+
+				if ( TitanSword_WeaponIsTitanSword( weapon ) )
+					ammountCount = 0
+
+
+			RuiSetInt( rui, "count", ammountCount )
 
 			RuiSetString( rui, "weaponName", data.pickupString )
 
@@ -1554,7 +1609,7 @@ void function EquipmentButtonInit( var button, string equipmentSlot, LootData lo
 
 
 	{
-		asset icon      = lootData.fakeAmmoIcon
+		asset icon      = lootData.fakeAmmoIcon == $"" ? $"rui/hud/gametype_icons/survival/sur_ammo_unique" : lootData.fakeAmmoIcon
 
 		int slot 		= isMainWeapon ? Survival_GetEquipmentSlotDataByRef( equipmentSlot ).weaponSlot : SLING_WEAPON_SLOT
 
@@ -1562,17 +1617,19 @@ void function EquipmentButtonInit( var button, string equipmentSlot, LootData lo
 
 		entity weapon   = player.GetNormalWeapon( slot )
 
-		Assert( IsValid( weapon ), "Weapon entity must be valid if the equipment slot data is valid as well" )
+		bool weaponEntIsValid = IsValid( weapon )
+		Assert( weaponEntIsValid, "Weapon entity must be valid if the equipment slot data is valid as well" )
 
-		string ammoTypeRef = AmmoType_GetRefFromIndex( weapon.GetWeaponAmmoPoolType() )
-		if( SURVIVAL_Loot_IsRefValid( ammoTypeRef ) && ( weapon.GetWeaponSettingBool( eWeaponVar.uses_ammo_pool ) || GetInfiniteAmmo( weapon ) ) )
+		string ammoTypeRef = GetWeaponAmmoType( lootData.ref )
+		if ( GetWeaponInfoFileKeyField_GlobalBool( lootData.baseWeapon, "uses_ammo_pool" ) )
 		{
 			LootData ammoData = SURVIVAL_Loot_GetLootDataByRef( ammoTypeRef )
 			icon = ammoData.hudIcon
 		}
 
 		RuiSetImage( rui, "ammoTypeImage", icon )
-		Weapon_UpdateAltAmmoRui( rui, player, weapon, false )
+		if( weaponEntIsValid )
+			Weapon_UpdateAltAmmoRui( rui, player, weapon, false )
 	}
 	ToolTipData dt
 	PopulateTooltipWithTitleAndDesc( lootData, dt )
@@ -1615,9 +1672,17 @@ void function EquipmentButtonInit( var button, string equipmentSlot, LootData lo
 
 void function PopulateTooltipWithTitleAndDesc( LootData lootData, ToolTipData dt )
 {
+	entity localPlayer = GetLocalViewPlayer()
 	dt.tooltipFlags = dt.tooltipFlags | eToolTipFlag.SOLID
 	dt.titleText = SURVIVAL_Loot_GetPickupString( lootData, GetLocalViewPlayer() )
-	dt.descText = SURVIVAL_Loot_GetDesc( lootData, GetLocalViewPlayer() )
+	dt.descText = SURVIVAL_Loot_GetDesc( lootData, localPlayer )
+
+
+
+
+
+
+
 }
 
 void function UICallback_OnEquipmentButtonAction( var button, int actionType, bool fromExtendedUse = false )
@@ -1753,6 +1818,18 @@ void function UICallback_PingRequestButton ( var button )
 
 		Quickchat( eCommsAction [ commsData ], null )
 	}
+
+
+
+
+
+
+
+
+
+
+
+
 }
 
 void function UICallback_PingEquipmentItem( var button )
@@ -2836,7 +2913,7 @@ void function UpdateHealHint( entity player )
 
 bool function ShouldShowHealHint( entity player )
 {
-	if ( !IsAlive( player ) )
+	if ( !IsAlive( player ) && !IsWatchingKillReplay() )
 		return false
 
 	if ( Bleedout_IsBleedingOut( player ) )
@@ -2913,6 +2990,13 @@ void function UseHealthPickupRefFromInventory( entity player, string ref )
 		Survival_UseHealthPack( player, ref )
 	}
 }
+
+
+
+
+
+
+
 
 
 
@@ -3397,6 +3481,9 @@ void function UICallback_UpdateTeammateInfo( var elem, bool isCompact )
 
 
 
+		
+		team.sort( SquadMemberIndexSort )
+
 		if ( teammateIndex < team.len() )
 		{
 			Hud_SetHeight( elem, Hud_GetBaseHeight( elem ) )
@@ -3417,6 +3504,80 @@ void function UICallback_UpdateTeammateInfo( var elem, bool isCompact )
 	else
 		thread TEMP_UpdateTeammateRui( elem, isCompact )
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 void function UICallback_UpdateUltimateInfo( var elem )
@@ -3477,75 +3638,7 @@ void function UpdateInventoryUltimateRui( var rui, entity player, entity weapon 
 	
 	Assert ( IsNewThread(), "Must be threaded off." )
 
-	RuiSetGameTime( rui, "hintTime", Time() )
-
-	RuiSetBool( rui, "isTitan", player.IsTitan() )
-	RuiSetBool( rui, "isReverseCharge", false )
-	bool isPaused = weapon.HasMod( "survival_ammo_regen_paused" )
-	RuiSetBool( rui, "isPaused", isPaused )
-	RuiSetBool( rui, "isVisible", true )
-
-	RuiSetFloat( rui, "chargeFrac", 0.0 )
-	RuiSetFloat( rui, "useFrac", 0.0 )
-	RuiSetFloat( rui, "chargeMaxFrac", 1.0 )
-	RuiSetFloat( rui, "minFireFrac", 1.0 )
-	RuiSetInt( rui, "segments", 1 )
-	RuiSetFloat( rui, "refillRate", 1 ) 
-
-	RuiSetImage( rui, "hudIcon", weapon.GetWeaponSettingAsset( eWeaponVar.hud_icon ) )
-
-	RuiSetFloat( rui, "readyFrac", weapon.GetWeaponReadyToFireProgress() )
-	
-
-	RuiSetFloat( rui, "chargeFracCaution", 0.0 )
-	RuiSetFloat( rui, "chargeFracAlert", 0.0 )
-	RuiSetFloat( rui, "chargeFracAlertSpeed", 16.0 )
-	RuiSetFloat( rui, "chargeFracAlertScale", 1.0 )
-
-	RuiSetInt( rui, "ammoMinToFire", weapon.GetWeaponSettingInt( eWeaponVar.ammo_min_to_fire ) )
-
-	ItemFlavor character                    = LoadoutSlot_WaitForItemFlavor( ToEHI( player ), Loadout_Character() )
-	CharacterHudUltimateColorData colorData = CharacterClass_GetHudUltimateColorData( character )
-
-	RuiSetColorAlpha( rui, "ultimateColor", SrgbToLinear( colorData.ultimateColor ), 1 )
-	RuiSetColorAlpha( rui, "ultimateColorHighlight", SrgbToLinear( colorData.ultimateColorHighlight ), 1 )
-
-	switch ( weapon.GetWeaponSettingEnum( eWeaponVar.cooldown_type, eWeaponCooldownType ) )
-	{
-		case eWeaponCooldownType.ammo_timed:
-		case eWeaponCooldownType.ammo_instant:
-		case eWeaponCooldownType.ammo_deployed:
-			RuiSetFloat( rui, "readyFrac", 0.0 )
-
-		case eWeaponCooldownType.ammo:
-			int maxAmmoReady = weapon.UsesClipsForAmmo() ? weapon.GetWeaponSettingInt( eWeaponVar.ammo_clip_size ) : weapon.GetWeaponPrimaryAmmoCountMax( weapon.GetActiveAmmoSource() )
-			int ammoPerShot = weapon.GetWeaponSettingInt( eWeaponVar.ammo_per_shot )
-			int ammoMinToFire = weapon.GetWeaponSettingInt( eWeaponVar.ammo_min_to_fire )
-
-			if ( maxAmmoReady == 0 )
-				maxAmmoReady = 1
-			RuiSetFloat( rui, "minFireFrac", float( ammoMinToFire ) / float( maxAmmoReady ) )
-			if ( ammoPerShot == 0 )
-				ammoPerShot = 1
-			RuiSetInt( rui, "segments", maxAmmoReady / ammoPerShot )
-
-			RuiSetFloat( rui, "chargeFrac", float( weapon.GetWeaponPrimaryClipCount() ) / float( weapon.GetWeaponPrimaryClipCountMax() ) )
-
-			RuiSetFloat( rui, "useFrac", StatusEffect_GetSeverity( weapon, eStatusEffect.simple_timer ) )
-			break
-
-		case eWeaponCooldownType.vortex_drain:
-			RuiSetBool( rui, "isReverseCharge", true )
-			RuiSetFloat( rui, "chargeFrac", 1.0 )
-			RuiSetFloat( rui, "readyFrac", 0.0 )
-			RuiSetFloat( rui, "minFireFrac", 0.0 )
-
-			RuiSetFloat( rui, "chargeFrac", weapon.GetWeaponChargeFraction() )
-			break
-
-		default:
-			Assert( false, "Unsupported cooldown_type: " + weapon.GetWeaponSettingEnum( eWeaponVar.cooldown_type, eWeaponCooldownType ) )
-	}
+	UpdateOffhandRuiCommon( rui, player, weapon, OFFHAND_ULTIMATE, false )
 }
 
 
@@ -3575,6 +3668,13 @@ void function TEMP_UpdatePlayerRui( var rui, entity player )
 				if ( data.lootType == eLootType.ARMOR )
 				{
 					bool isEvolving = EvolvingArmor_IsEquipmentEvolvingArmor( data.ref )
+
+
+
+
+
+
+
 					RuiSetBool( rui, "isEvolvingShield", isEvolving )
 					RuiSetInt( rui, "evolvingShieldKillCounter", EvolvingArmor_GetEvolutionProgress( player ) )
 
@@ -3612,11 +3712,30 @@ void function TEMP_UpdatePlayerRui( var rui, entity player )
 		RuiSetFloat( rui, "cameraViewFrac", StatusEffect_GetSeverity( player, eStatusEffect.camera_view ) )
 		RuiSetBool( rui, "useShadowFormFrame", StatusEffect_HasSeverity( player, eStatusEffect.death_totem_visual_effect ) )
 
+
+			RuiSetInt( rui, "playerOvershield", player.GetPlayerNetInt( TEMPSHIELD_NETVAR ) )
+			int arcFlashState = GetArcFlashState( player )
+			RuiSetBool( rui, "playerOvershieldCharging", arcFlashState == eArcFlashState.CHARGE )
+
+
 		RuiSetInt( rui, "micStatus", GetPlayerMicStatus( player ) )
 
 
 			asset classIcon = CharacterClass_GetCharacterRoleImage( character )
 			RuiSetAsset( rui, "customSmallIcon", classIcon )
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 		SquadLeader_UpdateUnitFrameRui( player, rui )
@@ -3670,6 +3789,9 @@ void function TEMP_UpdateTeammateRui( var elem, bool isCompact )
 
 		}
 
+		
+		team.sort( SquadMemberIndexSort )
+
 		RuiSetBool( rui, "isJIP", false )
 
 		if ( teammateIndex < team.len() )
@@ -3695,6 +3817,19 @@ void function TEMP_UpdateTeammateRui( var elem, bool isCompact )
 					if ( data.lootType == eLootType.ARMOR )
 					{
 						bool isEvolving = EvolvingArmor_IsEquipmentEvolvingArmor( data.ref )
+
+
+
+
+
+
+
+
+
+
+
+
+
 						RuiSetBool( rui, "isEvolvingShield", isEvolving )
 					}
 
@@ -3750,7 +3885,16 @@ void function TEMP_UpdateTeammateRui( var elem, bool isCompact )
 			RuiSetFloat( rui, "bleedoutEndTime", ent.GetPlayerNetTime( "bleedoutEndTime" ) )
 			RuiSetInt( rui, "respawnStatus", ent.GetPlayerNetInt( "respawnStatus" ) )
 			RuiSetFloat( rui, "respawnStatusEndTime", ent.GetPlayerNetTime( "respawnStatusEndTime" ) )
-			RuiSetBool( rui, "useShadowFormFrame", ent.IsShadowForm() )
+
+
+				RuiSetBool( rui, "useShadowFormFrame", ent.IsShadowForm() && !IsPlayerShadowZombie( ent ) )
+
+
+
+				RuiSetInt( rui, "overshield", ent.GetPlayerNetInt( TEMPSHIELD_NETVAR ) )
+				int arcFlashState = GetArcFlashState( ent )
+				RuiSetBool( rui, "overshieldCharging", arcFlashState == eArcFlashState.CHARGE )
+
 
 			RuiSetInt( rui, "micStatus", GetPlayerMicStatus( ent ) )
 
@@ -3773,6 +3917,25 @@ void function TEMP_UpdateTeammateRui( var elem, bool isCompact )
 				}
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+			bool showBleedoutTimer = true
+
+				showBleedoutTimer = !IsStrikeoutGamemode()
+
+			RuiSetBool( rui, "showBleedoutTimer", showBleedoutTimer )
+
+
 		}
 		else
 		{
@@ -3781,20 +3944,16 @@ void function TEMP_UpdateTeammateRui( var elem, bool isCompact )
 				Hud_SetHeight( elem, Hud_GetBaseHeight( elem ) )
 				Hud_Show( elem )
 
-				RuiSetString( rui, "name", Localize( "#JIP_SEARCHING_FOR_SHORT" ))
-
-				vector playerColor
-				if( GetCurrentPlaylistVarBool("has_squad_based_ui", false) )
+				if ( IsValid( player ) )
 				{
-					playerColor = SrgbToLinear( GetPlayerInfoColor(player ) / 255.0 )
+					vector playerColor = Teams_GetTeamColor( player.GetTeam() )
+
+					RuiSetBool( rui, "useCustomCharacterColor", true )
+					RuiSetColorAlpha( rui, "customCharacterColor", playerColor, 1.0 )
 				}
-				else
-					playerColor = SrgbToLinear( GetKeyColor( COLORID_MEMBER_COLOR0, 1 + teammateIndex ) / 255.0 )
 
-				RuiSetBool( rui, "useCustomCharacterColor", true )
-				RuiSetColorAlpha( rui, "customCharacterColor", playerColor, 1.0 )
 				RuiSetBool( rui, "isJIP", true )
-
+				RuiSetString( rui, "name", Localize( "#JIP_SEARCHING_FOR_SHORT" ))
 			}
 			else
 			{

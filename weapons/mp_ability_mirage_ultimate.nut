@@ -7,6 +7,9 @@ global function OnWeaponAttemptOffhandSwitch_ability_mirage_ultimate
 
 const int CLOAK_TRIGGER_RADIUS = 240
 
+const int MIRAGE_ULT_MAX_DECOYS = 5
+
+global function GetMirageCloakDuration
 
 struct
 {
@@ -92,7 +95,14 @@ void function OnWeaponChargeEnd_ability_mirage_ultimate( entity weapon )
 	if ( weapon.GetWeaponPrimaryClipCount() == 0 ) 
 		return
 
-	weapon.SetWeaponPrimaryClipCount( 0 )
+
+
+
+
+
+
+		weapon.SetWeaponPrimaryClipCount( 0 )
+
 	if ( ShouldDoKaleidoscopeUltimate() )
 	{
 
@@ -168,6 +178,25 @@ void function OnWeaponChargeEnd_ability_mirage_ultimate( entity weapon )
 
 
 
+
+float function GetMirageCloakDuration( entity player, float duration )
+{
+
+
+
+
+
+
+	return duration
+}
+
+
+
+
+
+
+
+
 bool function OnWeaponChargeBegin_ability_mirage_ultimate( entity weapon )
 {
 	weapon.EmitWeaponSound_1p3p( "Mirage_Vanish_Activate_1P", "Mirage_Vanish_Activate_3P" )
@@ -187,6 +216,18 @@ bool function OnWeaponChargeBegin_ability_mirage_ultimate( entity weapon )
 bool function ShouldDoKaleidoscopeUltimate()
 {
 	return GetCurrentPlaylistVarBool( "mirage_kaleidoscope_ulti_enabled", true )
+}
+
+int function MirageUltimate_GetMaxKaleidoscopeDecoys( entity player )
+{
+	int maxDecoys = MIRAGE_ULT_MAX_DECOYS
+
+
+
+
+
+
+	return maxDecoys
 }
 
 

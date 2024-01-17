@@ -38,7 +38,6 @@ global const float REGEN_DAMAGE_DELAY_DEFAULT = 6.0
 
 
 
-
 struct {
 
 
@@ -90,6 +89,30 @@ bool function IsHealActive( entity player )
 {
 	return StatusEffect_HasSeverity( player, eStatusEffect.stim_visual_effect )
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -561,6 +584,27 @@ void function HealthRegen_OnLocalPlayerDamaged( float damage, vector damageOrigi
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 void function HealthRegen_OnPlayerDisconnected( entity player )
 {
 	if ( !IsValid( player ) )
@@ -584,7 +628,7 @@ void function HealthRegen_CreateRUI()
 
 void function HealthRegen_OnGameState_Ending()
 {
-	if ( file.healthRegenRui != null )
+	if ( file.healthRegenRui == null )
 		return
 
 	RuiDestroyIfAlive( file.healthRegenRui )

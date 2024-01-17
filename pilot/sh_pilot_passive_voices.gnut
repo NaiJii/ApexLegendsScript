@@ -7,6 +7,13 @@ global function ServerCallback_PlayPassiveVoice
 const asset WRAITH_SENSE_FX = $"P_voices_heard"
 const float WARN_COOLDOWN = 60.0
 
+
+
+
+
+
+
+
 struct VoiceData
 {
 	array<string> voiceDescriptors
@@ -130,6 +137,21 @@ void function Sh_PassiveVoices_Init()
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 }
 
 bool function IsViewTypeCategory( int catId )
@@ -144,6 +166,92 @@ bool function IsViewTypeCategory( int catId )
 
 	return false
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -337,6 +445,20 @@ void function PassiveVoices_PlayRandomDescriptorFromCategory( entity player, int
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 		string category = passiveEnumToStringMap[ catId ]
 		array<string> descriptors = file.voiceData[ category ].voiceDescriptors
 		string descriptor = descriptors.remove( 0 )
@@ -345,6 +467,30 @@ void function PassiveVoices_PlayRandomDescriptorFromCategory( entity player, int
 		EmitSoundOnEntity( player, descriptor )
 
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 void function ServerCallback_PlayPassiveVoice( int catId )
@@ -367,6 +513,7 @@ void function ServerCallback_PlayPassiveVoice( int catId )
 		return
 
 	file.warnTeammatesCatId = catId
+
 	AddOnscreenPromptFunction( "quickchat", TryWraithWarnTeammates, WARN_TEAMMATES_DELAY,"#WRAITH_WARN_TEAMMATES", 100 )
 }
 

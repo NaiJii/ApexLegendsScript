@@ -305,8 +305,20 @@ void function ThemedShop_UpdateGRXDependantElements()
 	file.purchaseMultiplePacksButton_currentQty = packBulkPurchaseCount
 
 	remainingPacksAvailable = GetCurrentMaxEventPackPurchaseCount( GetLocalClientPlayer() )
-	Hud_SetLocked( file.purchaseSinglePackButton, remainingPacksAvailable < 1  )
-	Hud_SetLocked( file.purchaseMultiplePacksButton, remainingPacksAvailable < 2  )
+	bool offerIsPurchasable = true
+
+	if ( activeThemedShopEvent != null )
+	{
+		GRXScriptOffer ornull offer = ThemedShopEvent_GetPackOffer( expect ItemFlavor( activeThemedShopEvent ) )
+
+		if ( offer != null )
+		{
+			offerIsPurchasable = GRXOffer_IsEligibleForPurchase( expect GRXScriptOffer( offer ) )
+		}
+	}
+
+	Hud_SetLocked( file.purchaseSinglePackButton, !offerIsPurchasable || remainingPacksAvailable < 1  )
+	Hud_SetLocked( file.purchaseMultiplePacksButton, !offerIsPurchasable || remainingPacksAvailable < 2  )
 
 	expect ItemFlavor( activeThemedShopEvent )
 	HudElem_SetRuiArg( file.completionRewardBox, "itemImage", HeirloomEvent_GetHeirloomButtonImage( activeThemedShopEvent ) )

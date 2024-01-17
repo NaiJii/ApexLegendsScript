@@ -262,6 +262,7 @@ void function TryDisplayInspectPlayer( int buttonIndex, int menuIndex )
 		Friend teamPlayerToFriend
 		teamPlayerToFriend.name = player.name
 		teamPlayerToFriend.id = player.uid
+		teamPlayerToFriend.unspoofedid = player.firstPartyID
 		teamPlayerToFriend.hardware = player.hardware
 		teamPlayerToFriend.eadpData = CreateEADPDataFromEAID( player.eaid )
 

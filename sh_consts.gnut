@@ -24,7 +24,7 @@ global const DIFFICULTY_HARD = 2
 global const DIFFICULTY_MASTER = 3
 
 
-global const float RUI_BADGAMETIME = -1 * pow( 10, 30 )
+
 
 
 global const bool MEMBER_COLORS = true
@@ -124,6 +124,11 @@ global const GAMEMODE_SURVIVAL_HARDCORE = "survival_hardcore"
 global const GAMEMODE_DATE_NIGHT = "date_night_duos"
 
 
+global const GAMEMODE_HALLOWEEN_18_1 = "halloween_18_1_trios"
+global const GAMEMODE_HALLOWEEN_18_1_HARBINGER = "halloween_18_1_harbinger_trios"
+
+
+global const GAMEMODE_GOLDEN_HORSE = "golden_horse_trios"
 
 
 
@@ -135,14 +140,27 @@ global const GAMEMODE_DATE_NIGHT = "date_night_duos"
 
 
 
+global const GAMEMODE_STRIKEOUT = "strikeout"
+
+
+global const GAMEMODE_BANNERBOMB = "bannerbomb"
 
 
 
 
-global const GAMEMODE_NODE_TRACKER = "node_tracker"
+
+
 
 
 global const GAMEMODE_ARMED_AND_DANGEROUS = "armed_and_dangerous"
+
+
+global const GAMEMODE_SHADOW_ARMY = "shadow_army"
+
+
+
+global const EVENT_ABILITIES = "event_abilities"
+
 
 
 
@@ -239,6 +257,7 @@ global const vector TEAM_COLOR_PARTY = <PARTY_R, PARTY_G, PARTY_B>
 global const vector TEAM_COLOR_YOU = <LOCAL_R, LOCAL_G, LOCAL_B>
 global const vector BURN_COLOR = <BURN_R, BURN_G, BURN_B>
 global const vector CRAFTING_COLOR = <CRAFTING_R, CRAFTING_G, CRAFTING_B>
+global const vector CRAFTING_2PT0_COLOR = <183, 135, 255>
 global const vector COLOR_AIRDROP = <128, 188, 255>
 global const vector COLOR_AIRDROP_RARITY_COMMON = <192, 192, 192>
 global const vector COLOR_AIRDROP_RARITY_RARE = <80, 160, 215>
@@ -384,6 +403,7 @@ global enum eRespawnStyle
 	WAVE_SPAWN_ON_SQUAD,
 	SPAWN_NEAR_SQUAD,
 	CUSTOM_RESPAWN,
+	SPAWN_GROUP_SKYDIVE,
 
 
 
@@ -393,7 +413,6 @@ global enum eRespawnStyle
 
 
 
-	SPAWN_GROUP_SKYDIVE,
 	_COUNT,
 }
 
@@ -742,48 +761,11 @@ global const REQUIRES_PILOT = 1
 global const REQUIRES_TITAN = 2
 
 global const HIGHLIGHT_USE_DEFAULT = -1
-global struct HighlightContext
-{
-	int    highlightId
-	int    contextId
-	string name
-	bool   entityVisible = true
-	int    insideSlot = 0
-	int    outsideSlot = 0
-	int    insideSlotFocused = HIGHLIGHT_USE_DEFAULT
-	int    outsideSlotFocused = HIGHLIGHT_USE_DEFAULT
-	float  outlineRadius = 1
-	bool   adsFade = true
-	bool   afterPostProcess = false
-
-	vector[2] paramVecs
-
-	float nearDist = 0
-	float farDist = -1.0 
-	float farFadeInDist
-	bool  requiresNotFullHealth
-	bool  requiresCanPickupOrdnance
-	bool  requiresCanPickupClip
-	int   requiresClass = REQUIRES_ANY
-	bool  requiresWeakPointsVisible
-	bool  requiresOwnedByLocalPlayer = false
-	bool  requiresStationary = false
-	bool  disableDeathFade = false
-
-	int                        drawFuncId = 0
-	void functionref( entity ) thinkFunction
-
-	int colorID = -1
-
-	bool teamAgnostic = false
-}
 
 global struct ShGlobals
 {
 	table<string, array<void functionref(entity, var)> >    deathCallbacks
 	table<int, array<void functionref(entity, var)> >       damageSourceIdCallbacks
-
-	table<string, HighlightContext> highlight
 }
 
 global ShGlobals shGlobal
@@ -821,9 +803,8 @@ global enum ePresentationType
 	APPLIED_STICKER_SMALL_CELL,
 	APPLIED_STICKER_LARGE_CELL,
 	UNAPPLIED_STICKER,
-
 	WEAPON_TRIAL_CELEBRATIONS,
-
+	MELEE_INSPECT,
 
 	COUNT
 }
@@ -1046,8 +1027,8 @@ global enum eLaunching
 }
 
 
-global const bool MENU_NAV_FORWARD = true
-global const bool MENU_NAV_BACK = false
+
+
 
 
 global const int WEAPONFLAG_AMPED = (1 << 0)
@@ -1075,14 +1056,18 @@ global enum eHitType
 	VORTEX,
 	SHADOW,
 	OVERSHIELD,
+
+
+
 }
 
-global const vector OVERSHIELD_COLOR = <19, 207, 69>
+global const vector TEMPSHIELD_COLOR = <19, 207, 69>
 
 global const int DAMAGEFLAG_ARMOR1 = 64
 global const int DAMAGEFLAG_ARMOR2 = 128
 global const int DAMAGEFLAG_ARMOR3 = 256
 global const int DAMAGEFLAG_ARMOR4 = 512
+global const int DAMAGEFLAG_ARMOR5 = 1024
 
 global enum eCommsAction
 {
@@ -1116,6 +1101,10 @@ global enum eCommsAction
 
 
 
+
+
+
+
 	PING_WEAPON_BOW,
 
 
@@ -1124,6 +1113,15 @@ global enum eCommsAction
 	PING_WEAPON_CAR,
 
 		PING_WEAPON_NEMESIS,
+
+
+		PING_WEAPON_TITAN_SWORD,
+		QUICKCHAT_TITAN_SWORD_READY_FULL,
+
+
+		PING_ATTACHMENT_HOPUP_GOLDEN_HORSE,
+		PING_NPC_LOOT_TICK_GH,
+		QUICKCHAT_GH_MARK_LOOT_TICKS,
 
 	
 	PING_OFFHAND_GRENADE_FIRESTAR,
@@ -1245,7 +1243,16 @@ global enum eCommsAction
 	PING_ITEM_HEALTH_SYRINGE,
 	PING_ITEM_ULTIMATE_ENERGY,
 
-		PING_ITEM_LOOT_SENSOR,
+
+
+
+		PING_ITEM_CANDY
+		PING_ITEM_COPYCAT_KIT
+		PING_ITEM_REV_SHELL
+		PING_ITEM_REV_SHELL_INAIR
+
+
+
 
 
 
@@ -1367,27 +1374,21 @@ global enum eCommsAction
 	SPAWN_BREACH,
 	PING_ENEMY_TETHERED,
 	PING_MAGGIE_WRECKING_BALL,
-
-		PING_MOBILE_SHIELD,
-		PING_ENEMY_MOBILE_SHIELD,
-		PING_CASTLE_WALL,
-		PING_ENEMY_CASTLE_WALL,
-		PING_CASTLE_WALL_ENERGIZED,
-		PING_ENEMY_CASTLE_WALL_ENERGIZED,
-
-
-		PING_BARRICADED_DOOR,
-		PING_BARRICADED_DOOR_OPEN,
-		SUB_TYPE_BARRICADED_DOOR,
-		PING_PIERCING_SPIKES,
-		PING_PIERCING_SPIKES_ENEMY,
-		PING_DARK_VEIL,
-		PING_DARK_VEIL_ENEMY,
-
-
-		PING_BLOODHOUND_WHITE_RAVEN,
-		PING_BLOODHOUND_WHITE_RAVEN_TARGET_LOC,
-
+	PING_MOBILE_SHIELD,
+	PING_ENEMY_MOBILE_SHIELD,
+	PING_CASTLE_WALL,
+	PING_ENEMY_CASTLE_WALL,
+	PING_CASTLE_WALL_ENERGIZED,
+	PING_ENEMY_CASTLE_WALL_ENERGIZED,
+	PING_BARRICADED_DOOR,
+	PING_BARRICADED_DOOR_OPEN,
+	SUB_TYPE_BARRICADED_DOOR,
+	PING_PIERCING_SPIKES,
+	PING_PIERCING_SPIKES_ENEMY,
+	PING_DARK_VEIL,
+	PING_DARK_VEIL_ENEMY,
+	PING_BLOODHOUND_WHITE_RAVEN,
+	PING_BLOODHOUND_WHITE_RAVEN_TARGET_LOC,
 	
 	PING_ENEMY_NPC_SNIPER,
 	PING_ENEMY_NPC_SPECTRE,
@@ -1444,6 +1445,9 @@ global enum eCommsAction
 	PING_VALK_ULT_ENEMY_TAKING_OFF,
 	PING_SPACE_ELEVATOR_HERE,
 	PING_BLACKHOLE_HERE,
+
+	PING_SHIELD_MINE,
+
 	PING_RESPAWN_STATION,
 	PING_RESPAWN_DROPSHIP,
 	PING_EVAC_DROPSHIP,
@@ -1488,6 +1492,12 @@ global enum eCommsAction
 	PING_MATERIALS,
 	REPLY_CRAFTING_NEXT_HARVESTER_OR_WORKBENCH,
 	REPLY_CRAFTING_PING_ALL_WORKBENCHES,
+
+
+
+
+
+
 
 	
 	QUICKCHAT_CELEBRATE,
@@ -1655,8 +1665,8 @@ global enum eCommsAction
 		REPLY_SPAWNREGION,
 
 
-
-
+		SPAWN_EVAC_SHIP,
+		SPAWN_EVAC_ZONE,
 
 
 
@@ -1683,10 +1693,8 @@ global enum eCommsAction
 	PING_ABILITY_ECHO_LOCATOR,
 	PING_ABILITY_ECHO_LOCATOR_ENEMY,
 	PING_ABILITY_ECHO_LOCATOR_FRIENDLY,
-
 	HEARTBEAT_SENSOR_DETECT_ENEMY,
 	HEARTBEAT_SENSOR_NO_ENEMY,
-
 
 	
 	SUB_TYPE_LEVEL1,
@@ -1741,6 +1749,7 @@ global enum eCommsAction
 	FLAVOR_WEAPON_3030,
 	FLAVOR_WEAPON_DRAGON,
 	FLAVOR_WEAPON_CAR,
+	FLAVOR_WEAPON_DEFENDER,
 	FLAVOR_OFFHAND_GRENADE_FIRESTAR,
 	FLAVOR_OFFHAND_GRENADE_FRAG,
 	FLAVOR_OFFHAND_GRENADE_ARC,
@@ -1822,6 +1831,11 @@ global enum eCommsAction
 
 		PING_WEAPON_THROWINGKNIFE,
 		FLAVOR_WEAPON_THROWINGKNIFE
+
+
+
+
+
 
 
 
@@ -1989,6 +2003,26 @@ global enum eCommsAction
 
 
 
+		PING_REDEYED_REV,
+		PING_EVAC_AREA,
+		QUICKCHAT_SKYDIVE_REV_NEARBY,
+		QUICKCHAT_SKYDIVE_SKINBAG_NEARBY,
+		SHADOWARMY_PING_RESPAWN_STATION,
+		PING_LEGEND_START_AREA,
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -2018,7 +2052,6 @@ global const string REVIVE_SHIELD_SCRIPTNAME = "revive_shield"
 global const string GENERIC_PING_PANEL_SCRIPTNAME = "generic_panel"
 global const string GENERIC_PING_PANEL_SCRIPTNAME_COOLDOWN = "generic_panel_cooldown"
 global const string GENERIC_PING_PANEL_SCRIPTNAME_INACTIVE = "generic_panel_inactive"
-global const string JUMP_PAD_TARGETNAME = "jump_pad"
 global const string JUMP_PAD_NEUTRAL_SCRIPTNAME = "jump_pad_neutral"
 global const string SKYDIVE_LAUNCHER_TARGETNAME = "skydive_launcher"
 
@@ -2060,10 +2093,6 @@ global enum eTooltipStyle
 	MINI_PROMO_APEX_PACK,
 	CUSTOM_MATCHES,
 	STORE_CONFIRM,
-
-
-
-
 }
 
 global struct LootTooltipData
@@ -2098,6 +2127,11 @@ global struct CustomMatchTooltipData
 global struct StoreToolTipData
 {
 	vector tooltipAltDescColor
+}
+
+global struct CurrencyToolTipData
+{
+	bool premiumCurrencyIsNegative
 }
 
 global struct PlayerCardTooltipData
@@ -2139,9 +2173,7 @@ global struct ToolTipData
 
 	StoreToolTipData & storeTooltipData
 
-
-
-
+	CurrencyToolTipData & currencyToolTipData
 }
 
 
@@ -2234,6 +2266,7 @@ global enum eFRSettingType
 	SHOWRUI,				
 	SHOWDYNSTATS,			
 	SHOWDYNTIMER,			
+	LEGENDUPGRADES_RESET,	
 	INFINITEMAGS,			
 	SHOWHITMARKS,			
 	SHOW3RDPERSON,			
@@ -2434,6 +2467,7 @@ global enum eRarityTier
 	EPIC = 2,
 	LEGENDARY = 3,
 	MYTHIC = 4,
+	ICONIC = 5,
 	_COUNT,
 }
 
@@ -2593,7 +2627,7 @@ global struct ValkTacTargetData
 	float  downDelay
 	vector normal
 
-
+	int vfxRef
 
 }
 
@@ -2602,6 +2636,20 @@ global const float PLAYER_STANDING_SPEED = 173.5
 global const float PLAYER_STANDING_SPRINT_SPEED = 260
 
 global const int MAX_ACTIVITY_MODE_FOR_BOTS = 5
+
+
+global const string XPROG_PERSISTENCE_MERGED_PLAT_STRUCT_NAME = "xMergedPlat"
+global const table< int, string > HARDWARE_TO_MERGED_PLATFORM = 
+{
+	[HARDWARE_PC] = "pc",
+	[HARDWARE_PS4] = "ps",
+	[HARDWARE_PS5] = "ps",
+	[HARDWARE_SWITCH] = "nx",
+	[HARDWARE_XBOXONE] = "xb",
+	[HARDWARE_XB5] = "xb"
+}
+
+
 
 
 
@@ -2629,7 +2677,7 @@ global struct VortexImpact
 }
 
 
-
+global const FULLMAP_RUI_DRAW_LAYER = RUI_DRAW_POSTEFFECTS
 
 
 global enum eRuiArgType
@@ -2660,6 +2708,25 @@ global enum eRuiArgType
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+global const string POISPAWN_PLACEDCENTER_SCRIPTNAME = "poispawn_placedcenter"
 
 
 

@@ -6,6 +6,9 @@ global function ClosePostGameMenu
 global function PostGame_ToggleVisibilityContinueButton
 global function PostGameGeneral_OnContinue_Activate
 
+global function PostGame_IsContinueButtonRegistered
+global function PostGame_SetContinueButtonRegistered
+
 
 global function PostGame_EnableWeaponsTab
 
@@ -56,6 +59,15 @@ void function InitPostGameMenu( var newMenuArg )
 		TabDef tabDef = AddTab( file.menu, Hud_GetChild( file.menu, "PostGameWeapons" ), "#MENU_WEAPONS" )
 		SetTabBaseWidth( tabDef, 250 )
 	}
+
+
+
+
+
+
+
+
+
 
 	TabData tabData = GetTabDataForPanel( file.menu )
 
@@ -180,7 +192,6 @@ void function OnHidePostGameMenu()
 		DeregisterButtonPressedCallback( KEY_SPACE, PostGameGeneral_OnContinue_Activate )
 		file.callbacksRegistered = false
 	}
-
 	Signal( uiGlobal.signalDummy, "PGDisplay" )
 }
 
@@ -247,4 +258,14 @@ void function PopulateMatchRank( var matchRankRui )
 void function PostGame_ToggleVisibilityContinueButton( bool isVisible )
 {
 	Hud_SetVisible( file.continueButton, isVisible )
+}
+
+bool function PostGame_IsContinueButtonRegistered()
+{
+	return file.callbacksRegistered
+}
+
+void function PostGame_SetContinueButtonRegistered( bool isRegistered )
+{
+	file.callbacksRegistered = isRegistered
 }

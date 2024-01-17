@@ -82,10 +82,10 @@ void function WeaponCharmsPanel_OnShow( var panel )
 	UI_SetPresentationType( ePresentationType.WEAPON_CHARMS )
 
 	file.currentPanel = panel
-	Hud_ScrollToTop( file.panelDataMap[panel].listPanel )
 
 	thread TrackIsOverScrollBar( file.panelDataMap[panel].listPanel )
 	WeaponCharmsPanel_Update( panel )
+	Hud_ScrollToTop( file.panelDataMap[panel].listPanel )
 }
 
 void function WeaponCharmsPanel_OnHide( var panel )
@@ -93,6 +93,12 @@ void function WeaponCharmsPanel_OnHide( var panel )
 	Signal( uiGlobal.signalDummy, "TrackIsOverScrollBar" )
 
 	WeaponCharmsPanel_Update( panel )
+
+	
+	
+	
+	PanelData pd    = file.panelDataMap[panel]
+	Hud_InitGridButtons( pd.listPanel, 0 )
 }
 
 void function WeaponCharmsPanel_OnFocusChanged( var panel, var oldFocus, var newFocus )

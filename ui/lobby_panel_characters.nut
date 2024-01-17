@@ -31,6 +31,9 @@ struct
 	table<var, ItemFlavor> 	buttonToCharacter
 	ItemFlavor ornull	   	presentedCharacter
 	InputDef&				giftFooter
+
+
+
 	bool 					featuredalwaysOwned
 } file
 
@@ -38,8 +41,10 @@ void function InitCharactersPanel( var panel )
 {
 	file.panel = panel
 
+
 	file.characterSelectInfoRui = Hud_GetRui( Hud_GetChild( file.panel, "LobbyClassLegendInfo" ) )
 	file.lobbyClassPerkInfoRui = Hud_GetRui( Hud_GetChild( file.panel, "LobbyClassPerkInfo" ) )
+
 	file.assaultShelfRUI = Hud_GetRui(Hud_GetChild( file.panel, "assaultShelf" ))
 	file.skirmisherShelfRUI = Hud_GetRui(Hud_GetChild( file.panel, "SkirmisherShelf" ))
 	file.reconShelfRUI = Hud_GetRui(Hud_GetChild( file.panel, "reconShelf" ))
@@ -114,10 +119,12 @@ void function InitCharactersPanel( var panel )
 	AddPanelFooterOption( panel, LEFT, BUTTON_A, false, "#A_BUTTON_SELECT", "", null, IsCharacterButtonFocused )
 	AddPanelFooterOption( panel, LEFT, BUTTON_X, false, "#X_BUTTON_TOGGLE_LOADOUT", "#X_BUTTON_TOGGLE_LOADOUT", OpenFocusedCharacterSkillsDialog, IsCharacterButtonFocused )
 	AddPanelFooterOption( panel, LEFT, BUTTON_X, false, "#X_BUTTON_UNLOCK_LEGEND", "#X_BUTTON_UNLOCK_LEGEND", null, CustomizeMenus_IsFocusedItemParentItemLocked )
+	AddPanelFooterOption( panel, LEFT, BUTTON_Y, false, "#Y_BUTTON_SET_FEATURED", "#Y_BUTTON_SET_FEATURED", SetFeaturedCharacterFromFocus, IsReadyAndNonfeaturedCharacterButtonFocused )
+
+
+
 
 	file.giftFooter = AddPanelFooterOption( panel, LEFT, BUTTON_BACK, true, "", "", null )
-
-	AddPanelFooterOption( panel, RIGHT, BUTTON_Y, false, "#Y_BUTTON_SET_FEATURED", "#Y_BUTTON_SET_FEATURED", SetFeaturedCharacterFromFocus, IsReadyAndNonfeaturedCharacterButtonFocused )
 }
 
 bool function IsFocusedCharacterLocked()
@@ -349,6 +356,15 @@ void function OpenFocusedCharacterSkillsDialog( var button )
 	if ( file.buttons.contains( focus ) )
 		OpenCharacterSkillsDialog( file.buttonToCharacter[focus] )
 }
+
+
+
+
+
+
+
+
+
 
 void function InitCharacterButtons()
 {
@@ -730,6 +746,7 @@ void function CharactersPanel_OnShow( var panel )
 #if PC_PROG_NX_UI
 	file.presentedCharacter = null
 #endif
+
 	PresentCharacter( character )
 
 	InitCharacterButtons()
@@ -842,6 +859,9 @@ void function CharactersPanel_OnFocusChanged( var panel, var oldFocus, var newFo
 	}
 
 	UpdatePanelCharacterGiftFooter( file.giftFooter )
+
+
+
 	UpdateFooterOptions()
 
 	printt( ItemFlavor_GetCharacterRef( character ) )
@@ -902,7 +922,6 @@ void function CharacterButton_OnMiddleClick( var button )
 		SetFeaturedCharacterFromButton( button )
 }
 
-
 void function PresentCharacter( ItemFlavor character )
 {
 	if ( file.presentedCharacter == character )
@@ -912,7 +931,14 @@ void function PresentCharacter( ItemFlavor character )
 	RunClientScript( "UIToClient_PreviewCharacterSkin", ItemFlavor_GetGUID( characterSkin ), ItemFlavor_GetGUID( character ) )
 
 
+
+
+
+
+
+
 	
+	ItemFlavor passiveAbility  = CharacterClass_GetPassiveAbilityToShow( character )
 	RuiSetString( file.lobbyClassPerkInfoRui, "classNameString", Localize( CharacterClass_GetRoleTitle (CharacterClass_GetRole( character )).toupper() ) )
 	RuiSetString( file.lobbyClassPerkInfoRui, "classFootnoteString", Localize( CharacterClass_GetRoleSubtitle (CharacterClass_GetRole( character )).toupper() ) )
 	RuiSetString( file.lobbyClassPerkInfoRui, "perkDescriptionString1", Localize( CharacterClass_GetRolePerkShortDescriptionAtIndex(CharacterClass_GetRole( character ), 0).toupper() ))
@@ -928,18 +954,6 @@ void function PresentCharacter( ItemFlavor character )
 	RuiSetString( file.characterSelectInfoRui, "footnoteString", Localize( ItemFlavor_GetShortDescription( character ) ).toupper() )
 	RuiSetFloat( file.characterSelectInfoRui, "startTime", ClientTime() )
 
-	ItemFlavor ornull passiveAbility = null
-	foreach ( ItemFlavor ability in CharacterClass_GetPassiveAbilities( character ) )
-	{
-		if ( CharacterAbility_ShouldShowDetails( ability ) )
-		{
-			
-			passiveAbility = ability
-			break
-		}
-	}
-	expect ItemFlavor( passiveAbility )
-
 	RuiSetString( file.characterSelectInfoRui, "passiveNameString", Localize( ItemFlavor_GetLongName( passiveAbility ) ) )
 	RuiSetString( file.characterSelectInfoRui, "tacticalNameString", Localize( ItemFlavor_GetLongName( CharacterClass_GetTacticalAbility( character ) ) ) )
 	RuiSetString( file.characterSelectInfoRui, "ultimateNameString", Localize( ItemFlavor_GetLongName( CharacterClass_GetUltimateAbility( character ) ) ) )
@@ -947,6 +961,8 @@ void function PresentCharacter( ItemFlavor character )
 	RuiSetImage( file.characterSelectInfoRui, "passiveIconImage", ItemFlavor_GetIcon( passiveAbility ) )
 	RuiSetImage( file.characterSelectInfoRui, "tacticalIconImage", ItemFlavor_GetIcon( CharacterClass_GetTacticalAbility( character ) ) )
 	RuiSetImage( file.characterSelectInfoRui, "ultimateIconImage", ItemFlavor_GetIcon( CharacterClass_GetUltimateAbility( character ) ) )
+
+
 
 
 
@@ -1023,3 +1039,31 @@ void function UpdatePanelCharacterGiftFooter( InputDef footer )
 		footer.activateFunc = null
 	}
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      

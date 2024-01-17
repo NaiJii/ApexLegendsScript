@@ -23,14 +23,14 @@ global function StoryEvent_GetRadioVignetteMilesEvent
 
 
 
-global function StoryEvent_GetHeaderIcon
-global function StoryEvent_GetChapterHeaderImage
-global function StoryEvent_GetChapterAboutBgImage
-global function StoryEvent_OnLobbyPlayPanelSpecialChallengeClicked
-global function StoryEvent_GetChapterTagString
-global function StoryEvent_GetCompletionReward
-global function StoryEvent_GetPrologueLobbyDesc
-global function StoryEvent_GetPlaylistName
+
+
+
+
+
+
+
+
 
 
 
@@ -97,13 +97,13 @@ struct FileStruct_LifetimeLevel
 }
 
 
+FileStruct_LifetimeLevel fileLevel 
 
 
-FileStruct_LifetimeLevel& fileLevel 
 
-struct {
-	
-} fileVM 
+
+
+
 
 
 
@@ -119,8 +119,8 @@ struct {
 void function StoryChallengeEvents_Init()
 {
 
-		FileStruct_LifetimeLevel newFileLevel
-		fileLevel = newFileLevel
+
+
 
 
 	AddCallback_OnItemFlavorRegistered( eItemType.calevent_story_challenges, void function( ItemFlavor ev ) {
@@ -734,74 +734,74 @@ string function StoryEvent_GetRadioVignetteMilesEvent ( var chapter )
 
 
 
-ItemFlavorBag function StoryEvent_GetCompletionReward( ItemFlavor event )
-{
-	Assert( ItemFlavor_GetType( event ) == eItemType.calevent_story_challenges )
 
-	ItemFlavorBag rewards
 
-	asset rewardAsset = GetGlobalSettingsAsset( ItemFlavor_GetAsset(event), "storyCompletionFlavor" )
-	if ( !IsValidItemFlavorSettingsAsset( rewardAsset ) )
-	{
-		Warning( "Skipping completion reward  of story event")
-	}
-	else
-	{
-		rewards.flavors.append( GetItemFlavorByAsset( rewardAsset ) )
-		rewards.quantities.append( GetGlobalSettingsInt( ItemFlavor_GetAsset( event ), "storyCompletionQuantity" ) )
-	}
-	return rewards
-}
-string function StoryEvent_GetPrologueLobbyDesc ( var chapter )
-{
-	Assert( StoryEvent_GetChapterIsPrologue(chapter) )
-	return GetSettingsBlockString( chapter, "prologueLobbyDesc" )
-}
-string function StoryEvent_GetPlaylistName ( var chapter )
-{
-	return GetSettingsBlockString( chapter, "playlistName" )
-}
-asset function StoryEvent_GetHeaderIcon( ItemFlavor event )
-{
-	Assert( ItemFlavor_GetType( event ) == eItemType.calevent_story_challenges )
-	return GetGlobalSettingsAsset( ItemFlavor_GetAsset( event ), "headerIcon" )
-}
-asset function StoryEvent_GetChapterHeaderImage( ItemFlavor event )
-{
-	Assert( ItemFlavor_GetType( event ) == eItemType.calevent_story_challenges )
-	return GetGlobalSettingsAsset( ItemFlavor_GetAsset( event ), "eventChallengeHeaderImage" )
-}
 
-asset function StoryEvent_GetChapterAboutBgImage( ItemFlavor event )
-{
-	Assert( ItemFlavor_GetType( event ) == eItemType.calevent_story_challenges )
-	return GetGlobalSettingsAsset( ItemFlavor_GetAsset( event ), "storyEventAboutHeroImage" )
-}
 
-void function StoryEvent_OnLobbyPlayPanelSpecialChallengeClicked( ItemFlavor event )
-{
-	Assert( ItemFlavor_GetType( event ) == eItemType.calevent_story_challenges )
 
-	Assert( IsLobby() )
-	Assert( IsFullyConnected() )
-	Assert( GetActiveMenu() == GetMenu( "LobbyMenu" ) )
-	Assert( IsTabPanelActive( GetPanel( "PlayPanel" ) ) )
 
-	StoryEventAboutDialog_SetEvent( event )
-	AdvanceMenu( GetMenu( "StoryEventAboutDialog" ) )
-}
-string function StoryEvent_GetChapterTagString( ItemFlavor event, int idx )
-{
-	Assert( ItemFlavor_GetType( event ) == eItemType.calevent_story_challenges )
 
-	if( idx == 0 )
-		return "#CHALLENGE_TAG_PROLOGUE"
-	else if( idx == StoryEvent_GetChaptersCount(event) - 1 )
-		return "#CHALLENGE_TAG_FINALE"
-	else
-		return "#CHALLENGE_TAG_MISSION"
 
-	return ""
-}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 

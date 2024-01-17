@@ -118,27 +118,6 @@ void function UpdateCharacterAbilities( var panel )
 			}
 			else
 			{
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 				{
 					RuiSetImage( contentRui, "rolePerkIcon", CharacterClass_GetCharacterRoleImage( file.character )  )
 					RuiSetString( contentRui, "rolePerkName", roleTitle )

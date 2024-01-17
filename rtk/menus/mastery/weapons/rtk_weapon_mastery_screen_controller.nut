@@ -369,13 +369,20 @@ void function RTKWeaponMasteryScreen_InitializeDataModelThread()
 			else
 				accuracy = ( float( hits ) / float( shots ) ) * 100
 
-			RTKStruct_SetInt( statsStruct, "kills", GetStat_Int( GetLocalClientPlayer(), ResolveStatEntry( CAREER_STATS.weapon_kills, bakeryID ), eStatGetWhen.CURRENT ) )
 			RTKStruct_SetInt( statsStruct, "hits", hits )
 			RTKStruct_SetInt( statsStruct, "shots", shots )
 			RTKStruct_SetFloat( statsStruct, "accuracy", accuracy )
+
+
+
+
+
+
+			RTKStruct_SetInt( statsStruct, "kills", GetStat_Int( GetLocalClientPlayer(), ResolveStatEntry( CAREER_STATS.weapon_kills, bakeryID ), eStatGetWhen.CURRENT ) )
 			RTKStruct_SetInt( statsStruct, "damageDone", GetStat_Int( GetLocalClientPlayer(), ResolveStatEntry( CAREER_STATS.weapon_damage_done, bakeryID ), eStatGetWhen.CURRENT ) )
 			RTKStruct_SetInt( statsStruct, "headshots", GetStat_Int( GetLocalClientPlayer(), ResolveStatEntry( CAREER_STATS.weapon_headshots, bakeryID ), eStatGetWhen.CURRENT ) )
 			RTKStruct_SetInt( statsStruct, "knocks", GetStat_Int( GetLocalClientPlayer(), ResolveStatEntry( CAREER_STATS.weapon_dooms, bakeryID ), eStatGetWhen.CURRENT ) )
+
 		}
 	}
 

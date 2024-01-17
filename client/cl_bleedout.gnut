@@ -335,10 +335,19 @@ void function ShowWoundedMarker( entity woundedPlayer, float endTime )
 		UnitFrameDef unitframe = GetUnitFrame( woundedPlayer )
 	}
 
+	bool showTimer = true
 	if ( Bleedout_GetBleedoutTime( woundedPlayer ) <= 0 )
 	{
-		RuiSetBool( rui, "showTimer", false )
+		showTimer = false
 	}
+
+		if ( IsStrikeoutGamemode() )
+		{
+			showTimer = false
+		}
+
+
+	RuiSetBool( rui, "showTimer", showTimer )
 
 	OnThreadEnd(
 	function() : ( rui, shieldRUI, woundedPlayer, didCC )
@@ -402,7 +411,15 @@ void function TrackForceBleedoutState( entity player, var rui )
 bool function CanSelfRevive( entity player )
 {
 	if ( PlayerHasPassive( player, ePassives.PAS_SELF_REVIVE ) )
+	{
+		if ( Bleedout_GetIsInfiniteSelfResEnabled() )
+			return true
+
+
+
+
 		return true
+	}
 
 
 
@@ -467,6 +484,11 @@ void function BleedoutScreenFX_Start( entity woundedPlayer, float startTime, flo
 
 	if ( !IsValid( woundedPlayer.GetCockpit() ) )
 		return
+
+
+	if ( IsStrikeoutGamemode() )
+		return
+
 
 	if ( woundedPlayer.ContextAction_IsMeleeExecutionTarget() )
 		return

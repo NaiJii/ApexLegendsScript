@@ -90,6 +90,8 @@ global const float EMP_RANGE = 1181.1
 
 
 
+
+
 global const float MAX_FLIGHT_RANGE = 7913 
 const float WARNING_RANGE = 5906 
 const float CAMERA_FLIGHT_SPEED = 450 
@@ -111,7 +113,7 @@ const float CRYPTO_DRONE_STICK_RANGE = 670.0
 const vector CRYPTO_DRONE_HULL_TRACE_MIN	= <-14, -14, 0>
 const vector CRYPTO_DRONE_HULL_TRACE_MAX	= <14, 14, 14>
 
-const asset CRYPTO_DRONE_SIGHTBEAM_FX = $"P_BT_scan_SML_no_streaks"
+const asset CRYPTO_DRONE_SIGHTBEAM_FX = $"P_drone_scan_SML_no_streaks" 
 
 
 const bool CRYPTO_DRONE_USE_SONAR_FX = false
@@ -123,6 +125,16 @@ global const string CRYPTO_DRONE_SCRIPTNAME = "crypto_camera"
 global const string CRYPTO_DRONE_TARGETNAME = "drone_no_minimap_object"
 
 global const string DISABLE_WAYPOINT_SCRIPTNAME = "device_disable_waypoint"
+
+
+
+
+
+
+
+
+
+
 
 struct
 {
@@ -137,6 +149,10 @@ struct
 	
 	
 	
+
+
+
+
 
 
 
@@ -410,7 +426,7 @@ var function OnWeaponToss_ability_crypto_drone( entity weapon, WeaponPrimaryAtta
 
 
 
-				entity camera = CryptoDrone_ReleaseCamera( weapon, attackParams, DEPLOYABLE_CAMERA_THROW_POWER )
+				entity camera = CryptoDrone_ReleaseCamera( weapon, attackParams, Drone_GetDeployableCameraThrowPower( player ) )
 				Signal( player, "Crypto_StopSendPointThink" )
 
 
@@ -450,6 +466,18 @@ var function OnWeaponToss_ability_crypto_drone( entity weapon, WeaponPrimaryAtta
 
 
 	return -1
+}
+
+
+float function Drone_GetDeployableCameraThrowPower( entity player )
+{
+	float throwPower = DEPLOYABLE_CAMERA_THROW_POWER
+
+
+
+
+
+	return throwPower
 }
 
 
@@ -765,6 +793,14 @@ void function AttemptDroneRecall( entity player )
 {
 	if ( !TryCharacterButtonCommonReadyChecks( player ) )
 		return
+
+	
+	if ( IsControllerModeActive() )
+	{
+		if ( TryOnscreenPromptFunction( player, "quickchat" ) )
+			return
+	}
+
 	Remote_ServerCallFunction( "ClientCallback_AttemptDroneRecall" )
 }
 
@@ -984,6 +1020,80 @@ void function CryptoDrone_WeaponInputThink( entity player, entity weapon )
 			weapon.RemoveMod( "crypto_drone_access" )
 	}
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -2664,12 +2774,10 @@ void function TempUpdateRuiDistance( entity player )
 				{
 					targetString = "#CAMERA_INTERACT_DOOR"
 				}
-
 				else if ( trace.hitEnt.GetTargetName() == PASSIVE_REINFORCE_REBUILT_DOOR_SCRIPT_NAME && IsReinforced( trace.hitEnt ) && IsFriendlyTeam( activeCamera.GetTeam(), trace.hitEnt.GetTeam() ) )
 				{
 					targetString = "#ABL_REINFORCE_BREAK_REBUILT"
 				}
-
 
 				else if ( (IsVaultPanel( trace.hitEnt ) || IsVaultPanel( parentEnt )) )
 				{
@@ -2801,7 +2909,6 @@ bool function PlayerCanUseCamera( entity ownerPlayer, bool needsValidCamera )
 
 	return true
 }
-
 
 
 
@@ -3642,10 +3749,8 @@ bool function DroneCanOpenDoor( entity drone, entity door )
 	if ( IsVaultDoor( door ) )
 		return false
 
-
 	if( IsReinforced( door ) && !IsFriendlyTeam( drone.GetTeam(), door.GetTeam() ) )
 		return false
-
 
 	return !IsDoorLocked( door )
 }

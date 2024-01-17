@@ -1,4 +1,3 @@
-
 global function MpWeaponReviveShield_Init
 
 global function OnWeaponOwnerChanged_revive_shield
@@ -1699,5 +1698,3 @@ bool function IsEntNewcastleReviveTarget( entity ent )
 
 
 
-
-      

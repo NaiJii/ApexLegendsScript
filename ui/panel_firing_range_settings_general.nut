@@ -101,6 +101,8 @@ void function InitFiringRangeSettingsGeneralPanel( var panel )
 
 void function SetupSettings()
 {
+	FiringRangeOption option
+
 	
 	for( int i = 0; i < eFRSettingType.COUNT_; i++ )
 	{
@@ -109,7 +111,15 @@ void function SetupSettings()
 
 	file.generalSettingsToHud[ eFRSettingType.SHOWDYNSTATS ] <- Hud_GetChild( file.contentPanel, "SwitchDynamicStats" )
 	file.generalSettingsToHud[ eFRSettingType.SHOWDYNTIMER ] <- Hud_GetChild( file.contentPanel, "SwitchDynamicTimer" )
+
+
+
+
+
+
+
 	file.generalSettingsToHud[ eFRSettingType.INFINITEMAGS ] <- Hud_GetChild( file.contentPanel, "SwitchInfiniteAmmo" )
+
 	file.generalSettingsToHud[ eFRSettingType.SHOWHITMARKS ] <- Hud_GetChild( file.contentPanel, "SwitchHitIndicators" )
 	file.generalSettingsToHud[ eFRSettingType.SHOW3RDPERSON ] <- Hud_GetChild( file.contentPanel, "Switch3rdPerson" )
 
@@ -134,6 +144,8 @@ void function SetupSettings()
 
 	SetupSettingsButton( file.generalSettingsToHud[ eFRSettingType.SHOWDYNTIMER ], "#FRSETTING_SHOWDYNTIMER", "#FRSETTING_SHOWDYNTIMER_DESC", $"", false, false )
 	AddButtonEventHandler( file.generalSettingsToHud[ eFRSettingType.SHOWDYNTIMER ], UIE_CHANGE, void function( var btn ){ Firing_Range_GeneralSettingChanged( eFRSettingType.SHOWDYNTIMER, btn ) } )
+
+
 
 	SetupSettingsButton( file.generalSettingsToHud[ eFRSettingType.INFINITEMAGS ], "#FRSETTING_INFINITEMAGS", "#FRSETTING_INFINITEMAGS_DESC", $"", false, false )
 	AddButtonEventHandler( file.generalSettingsToHud[ eFRSettingType.INFINITEMAGS ], UIE_CHANGE, void function( var btn ){ Firing_Range_GeneralSettingChanged( eFRSettingType.INFINITEMAGS, btn ) } )
@@ -183,8 +195,6 @@ void function SetupSettings()
 
 	file.resetButton_DebounceLocked[ "SwitchCombatRefreshDummies" ] <- false
 	file.resetButton_DebounceLocked[ "SwitchCombatClearAndSpawnNewDummies" ] <- false
-
-	FiringRangeOption option
 
 	option = CreateFiringRangeOption( "#DYNDUMMIE_FUNC_REFRESH_LABEL", "#DYNDUMMIE_FUNC_REFRESH_DESC", CRng_RefreshDummies )
 	SetUpOptionsButton( Hud_GetChild( file.contentPanel, "SwitchCombatRefreshDummies" ), option )
@@ -286,6 +296,10 @@ void function UpdateDetails()
 {
 	
 	Hud_SetEnabled( file.generalSettingsToHud[ eFRSettingType.SHOWDYNSTATS ], !file.setting_DebounceLocked[ eFRSettingType.SHOWDYNSTATS ] && file.rangeState == eFiringRangeChallengeState.FR_CHALLENGE_INACTIVE)
+
+
+
+
 	Hud_SetEnabled( file.generalSettingsToHud[ eFRSettingType.INFINITEMAGS ], !file.setting_DebounceLocked[ eFRSettingType.INFINITEMAGS ] )
 	Hud_SetEnabled( file.generalSettingsToHud[ eFRSettingType.SHOWHITMARKS ], !file.setting_DebounceLocked[ eFRSettingType.SHOWHITMARKS ] )
 	Hud_SetEnabled( file.generalSettingsToHud[ eFRSettingType.SHOW3RDPERSON ], !file.setting_DebounceLocked[ eFRSettingType.SHOW3RDPERSON ] )
@@ -330,7 +344,7 @@ void function UpdateDetails()
 	Hud_SetEnabled( Hud_GetChild( file.contentPanel, "SwitchCombatClearAndSpawnNewDummies" ), 	file.isRangeMaster && spawningOn && !file.resetButton_DebounceLocked[ "SwitchCombatClearAndSpawnNewDummies" ])
 
 
-	Hud_SetEnabled( Hud_GetChild( file.contentPanel, "SwitchResetDoors" ), 	file.isRangeMaster && !file.resetButton_DebounceLocked[ "SwitchResetDoors" ])
+		Hud_SetEnabled( Hud_GetChild( file.contentPanel, "SwitchResetDoors" ), 	file.isRangeMaster && !file.resetButton_DebounceLocked[ "SwitchResetDoors" ])
 
 
 }
@@ -462,6 +476,15 @@ void function CRng_ResetDoors( var _ )
 	Remote_ServerCallFunction( "UCB_ResetDoors" )
 	thread DebounceLock_ResetButton_Thread( ctrlName )
 }
+
+
+
+
+
+
+
+
+
 
 
 void function DebounceLock_ResetButton_Thread( string resetName )

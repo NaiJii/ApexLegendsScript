@@ -10,6 +10,7 @@ global function TreasureBox_SecondsUntilNextPickup
 void function TreasureBox_SharedInit()
 {
 
+	RegisterCustomItemPromptUpdate( "treasure_box", TreasureBox_UpdateLootRuiWithData )
 
 
 
@@ -17,9 +18,8 @@ void function TreasureBox_SharedInit()
 
 
 
-
-
-
+	RegisterCustomItemGroundAction( "treasure_box", TreasureBox_GroundAction )
+	RegisterCustomItemPickupAction( "treasure_box", TreasureBox_ItemPickup )
 
 }
 
@@ -105,69 +105,69 @@ string function TreasureBox_GetCooldownDesc( entity player, ItemFlavor quest )
 
 
 
+void function TreasureBox_UpdateLootRuiWithData( entity player, var rui, LootData data, int lootContext, LootRef lootRef, bool isInMenu )
+{
+	ItemFlavor ornull quest = SeasonQuest_GetActiveSeasonQuest( GetUnixTimestamp() )
+	if ( quest == null )
+		return
+	expect ItemFlavor( quest )
+
+	int delta = TreasureBox_SecondsUntilNextPickup( player, quest )
+	if ( delta <= 0 )
+		return
+
+	if ( SeasonQuest_AllTreasurePacksHaveBeenCollectedForPlayer( player, quest ) )
+		RuiSetString( rui, "subText", "#TREASUREBOX_ALLPACKSGOT_HINT" )
+	else
+		RuiSetString( rui, "subText", TreasureBox_GetCooldownDesc( player, quest ) )
+}
+
+
+
+LootActionStruct function TreasureBox_GroundAction( entity player, LootRef lootRef )
+{
+	LootData lootData = lootRef.lootData
+	LootActionStruct as
+
+	if ( TreasureBox_PlayerCanPickUpItem( player ) )
+	{
+		as.action = eLootAction.PICKUP
+	}
+	else
+	{
+		as.action = eLootAction.NONE
+
+		ItemFlavor ornull quest = SeasonQuest_GetActiveSeasonQuest( GetUnixTimestamp() )
+		if ( quest != null )
+		{
+			expect ItemFlavor( quest )
+			if ( SeasonQuest_AllTreasurePacksHaveBeenCollectedForPlayer( player, quest ) )
+				as.displayString = "#TREASUREBOX_ALLPACKSGOT_PROMPT"
+			else
+				as.displayString = "#TREASUREBOX_COOLDOWN_PROMPT"
+		}
+	}
+
+	return as
+}
+
+bool function TreasureBox_ItemPickup( entity pickup, entity player, int pickupFlags, entity deathBox, int ornull desiredCount, LootData data )
+{
+	ItemFlavor ornull quest = SeasonQuest_GetActiveSeasonQuest( GetUnixTimestamp() )
+	if ( quest == null )
+		return false
+	expect ItemFlavor( quest )
+
+	if ( TreasureBox_SecondsUntilNextPickup( player, quest ) > 0 )
+		return false
 
 
 
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+	return true
+}
 
 
 int function GetSeasonDayForUnixTime( int time, ItemFlavor season )
@@ -211,43 +211,43 @@ int function SecondsUntilNextPickup_( entity player, ItemFlavor quest )
 }
 
 
-
-
-
-
-
-
-
-
+struct cachedAnswer_t
+{
+	ItemFlavor ornull questOrNull
+	int lifetimePickups
+	int timestamp
+	int result
+}
+table<entity, cachedAnswer_t> s_cachedAnswersPerPlayer
 
 
 int function TreasureBox_SecondsUntilNextPickup( entity player, ItemFlavor quest )
 {
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+	int timeNow = GetUnixTimestamp()
+	int lifetimePickups = SeasonQuest_GetTreasurePacksCountForPlayer( player, quest )
+	if ( player in s_cachedAnswersPerPlayer )
+	{
+		cachedAnswer_t cached = s_cachedAnswersPerPlayer[player]
+		int secondsSinceWeAsked = (timeNow - cached.timestamp)
+		if ( (cached.questOrNull == quest) && (cached.lifetimePickups == lifetimePickups) && (secondsSinceWeAsked >= 0) && (secondsSinceWeAsked < SECONDS_PER_HOUR) )
+			return (cached.result - secondsSinceWeAsked)
+	}
+	else
+	{
+		cachedAnswer_t newCache
+		s_cachedAnswersPerPlayer[player] <- newCache
+	}
 
 
 	int result = SecondsUntilNextPickup_( player, quest )
 
 
-
-
-
-
-
+	cachedAnswer_t cached = s_cachedAnswersPerPlayer[player]
+	cached.questOrNull = quest
+	cached.lifetimePickups = lifetimePickups
+	cached.timestamp = timeNow
+	cached.result = result
 
 
 	return result

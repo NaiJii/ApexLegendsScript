@@ -14,6 +14,7 @@ global struct RTKLabelValueModel
 global struct RTKBadgeModel
 {
 	asset badgeRuiAsset
+	asset imageAsset
 	int   tier
 }
 
@@ -25,7 +26,11 @@ global struct RTKRankedBadgeModel
 	string splitLabel
 
 	bool isPlacementMode
+	bool isLadderOnlyRank
 	int completedMatches
+	int maxMatches
+	bool useDynamicPips
+	bool isPromotional
 	int startPip
 	array<bool> wonMatches
 
@@ -33,6 +38,8 @@ global struct RTKRankedBadgeModel
 	int emblemDisplayMode
 	int ladderPosition
 	int rankScore
+	string divisionName
+	vector rankColor
 }
 
 global struct RTKAccountProgressModel
@@ -311,9 +318,10 @@ void function SetStatsData( rtk_struct dataModelStruct, int gameMode, string sea
 
 			rtk_struct badge1 = RTKStruct_GetStruct( rankedModel, "badge1" )
 
-			if ( rankedPeriodItemType == eItemType.ranked_2pt0_period && !Ranked_HasCompletedProvisionalMatches( player ) )
+			if ( rankedPeriodItemType == eItemType.ranked_2pt0_period && !Ranked_HasCompletedProvisionalMatches( player ) && isRankedPeriodActive )
 			{
 				int matchesCompleted = Ranked_GetNumProvisionalMatchesCompleted( player )
+				int maxMatches = Ranked_GetNumProvisionalMatchesRequired()
 
 				RTKStruct_SetAssetPath( badge1, "badgeRuiAsset", RANKED_PLACEMENT_BADGE )
 				RTKStruct_SetString( badge1, "rankedIcon", string( badge1Division.tier.icon ) )
@@ -328,6 +336,10 @@ void function SetStatsData( rtk_struct dataModelStruct, int gameMode, string sea
 				RTKStruct_SetBool( badge1, "isPlacementMode", true )
 				RTKStruct_SetInt( badge1, "completedMatches", matchesCompleted )
 				RTKStruct_SetInt( badge1, "startPip", 0 )
+
+				RTKStruct_SetInt( badge1, "maxMatches", maxMatches )
+				RTKStruct_SetBool( badge1, "useDynamicPips", false )
+				RTKStruct_SetBool( badge1, "isPromotional", false )
 
 				rtk_array wonMatches = RTKStruct_GetArray( badge1, "wonMatches" )
 				RTKArray_Clear( wonMatches )
@@ -414,12 +426,18 @@ RankData function GetRankData( entity player, string rankedPeriodGUID, bool forF
 		}
 		else
 		{
-			rank.score = Ranked_GetHistoricalRankScore( player, rankedPeriodGUID, rewardOnHighestWatermark )
+
 
 			if ( isRankedPeriodActive )
+			{
+				rank.score = GetPlayerRankScore( player )
 				rank.ladderPosition = Ranked_GetLadderPosition( player )
+			}
 			else
+			{
+				rank.score = Ranked_GetHistoricalRankScore( player, rankedPeriodGUID, rewardOnHighestWatermark )
 				rank.ladderPosition = Ranked_GetHistoricalLadderPosition( player, rankedPeriodGUID, forFirstSplit )
+			}
 		}
 	}
 	else 

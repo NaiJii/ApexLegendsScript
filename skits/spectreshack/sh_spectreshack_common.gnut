@@ -92,7 +92,7 @@ void function SpectreShacks_MapInit()
 
 		if( SpectreShack_PingFromMap_Enabled() )
 		{
-			Remote_RegisterServerFunction( FUNCNAME_PingArmoryFromMap, "entity" )
+			Remote_RegisterServerFunction( FUNCNAME_PingArmoryFromMap, "typed_entity", "prop_dynamic" )
 			Remote_RegisterClientFunction( FUNCNAME_SetArmoryClientEnt, "entity" )
 		}
 

@@ -36,6 +36,7 @@ void function InitMatchmakingOverlay()
 		printt( "matchStatusRuis ", GetParentMenu( el ).GetHudName() )
 
 	RegisterSignal( "UpdateMatchmakingStatus" )
+	RegisterSignal( "MatchmakeFromMatchRotations" )
 	RegisterSignal( "BypassWaitBeforeRestartingMatchmaking" )
 	RegisterSignal( "CancelRestartingMatchmaking" )
 	RegisterSignal( "LeaveParty" )

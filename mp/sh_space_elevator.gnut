@@ -48,7 +48,7 @@ const bool SPACEELEVATOR_LIFETIME_DEBUG = false
 const float SPACEELEVATOR_TUNING_RADIUS = 70
 const int SPACEELEVATOR_TUNING_HEIGHT = 1200
 
-const float SPACEELEVATOR_TUNING_UP_SPEED = 375
+const float SPACEELEVATOR_TUNING_UP_SPEED = 300
 const float SPACEELEVATOR_TUNING_HORIZ_SPEED = 170
 const float SPACEELEVATOR_TUNING_HORIZ_ACCEL = 2000
 const float SPACEELEVATOR_TUNING_TO_CENTER_SPEED = 50
@@ -58,7 +58,7 @@ const float SPACEELEVATOR_TUNING_INPUT_THRESHOLD = 0.2
 const float SPACEELEVATOR_TUNING_EJECT_UP_SPEED = 450
 const float SPACEELEVATOR_TUNING_EJECT_HORIZ_SPEED = 400
 const float SPACEELEVATOR_TUNING_MAX_EJECT_TIME = 0.5
-const float SPACEELEVATOR_TUNING_MAX_HOVER_TIME = 2.0
+const float SPACEELEVATOR_TUNING_MAX_HOVER_TIME = 0.5
 
 const float SPACEELEVATOR_TUNING_PLAYER_VIEWPOINT_OFFSET = 33
 const float SPACEELEVATOR_TUNING_AWAY_FROM_CENTER_DIST = 40
@@ -67,17 +67,19 @@ const float SPACEELEVATOR_TUNING_HOVER_HEIGHT_PCT = 0.9
 const float SPACEELEVATOR_TUNING_LIFETIME = 10
 const float SPACEELEVATOR_TUNING_KEEP_ALIVE_MAX_TIME = 5
 
+
+
+
+
+
+
+
 const asset SPACEELEVATOR_SHAFT_MDL_ASSET = $"mdl/fx/nova_elevator_shield.rmdl"
 const asset SPACEELEVATOR_SHAFT_FX = $"p_wpn_grav_lift_column"
 const float SPACEELEVATOR_SHAFT_SPACING = 160
 const float SPACEELEVATOR_SHAFT_BOTTOM_SPACING = 150
 
 const float SPACEELEVATOR_MAX_FRICTION_SCALE = 2500
-
-
-
-
-
 
 
 
@@ -90,6 +92,11 @@ struct ElevatorEffectData
 
 struct
 {
+
+
+
+
+
 
 
 
@@ -110,6 +117,10 @@ void function MpSpaceElevator_Init()
 	
 	PrecacheParticleSystem( SPACEELEVATOR_SHAFT_FX )
 	PrecacheParticleSystem( FX_PROJECTILE_DESTROYED )
+
+
+
+
 
 	PrecacheParticleSystem( HORIZON_FINISHER_REPULSOR_FLASH )
 
@@ -132,6 +143,115 @@ void function MpSpaceElevator_Init()
 		StatusEffect_RegisterDisabledCallback( eStatusEffect.in_space_elevator, SpaceElevatorTac_1PFX_Stop )
 
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+int function GetSpaceElevatorHeight( entity player )
+{
+	int result = SPACEELEVATOR_TUNING_HEIGHT
+
+
+
+
+
+
+
+
+
+
+
+
+
+	return result
+}
+
+float function GetSpaceElevatorLifetime( entity player )
+{
+	float result = SPACEELEVATOR_TUNING_LIFETIME
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	return result
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -719,6 +839,27 @@ void function SPACEELEVATOR_TriggerEnter( entity trigger, entity ent )
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 bool function ShouldSpaceElevatorAffectPlayer( entity player )
 {
 	if ( !IsAlive( player ) )
@@ -861,6 +1002,7 @@ void function ApplyElevatorEffects( entity player, entity trigger, array<entity>
 
 
 
+
 	}
 }
 
@@ -889,6 +1031,12 @@ void function SPACEELEVATOR_InTriggerThread( entity trigger, entity player )
 				if ( ShouldSpaceElevatorAffectPlayer( player ) )
 				{
 					SPACEELEVATOR_EjectPlayer( player, trigger )
+
+
+
+
+
+
 				}
 			}
 		}
@@ -993,26 +1141,6 @@ void function SPACEELEVATOR_InTriggerThread( entity trigger, entity player )
 }
 
 
-float function GetPlayerElevatorProgress( entity elevator, entity player )
-{
-	float progress = 1.0
-	if ( IsValid( player ) )
-	{
-		vector playerPos = player.GetOrigin()
-
-		vector elevatorPos = elevator.GetOrigin()
-
-		vector triggerToPlayer = playerPos - elevatorPos
-
-		vector elevatorDirection = elevator.GetUpVector()
-		float distanceAlongLine  = DotProduct( triggerToPlayer, elevatorDirection )
-
-		progress = distanceAlongLine / SPACEELEVATOR_TUNING_HEIGHT
-	}
-	return progress
-}
-
-
 void function SPACEELEVATOR_EjectPlayer( entity player, entity trigger )
 {
 
@@ -1037,6 +1165,19 @@ void function SPACEELEVATOR_EjectPlayer( entity player, entity trigger )
 
 
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1187,7 +1328,7 @@ void function CL_SpaceElevatorProgressRUIThread( entity player, entity base )
 		vector triggerToPlayer = playerPos - basePos
 		float playerHeight     = triggerToPlayer.z
 
-		progress = Clamp( playerHeight / (SPACEELEVATOR_TUNING_HEIGHT * SPACEELEVATOR_TUNING_HOVER_HEIGHT_PCT), 0.0, 1.0 )
+		progress = Clamp( playerHeight / (GetSpaceElevatorHeight( player ) * SPACEELEVATOR_TUNING_HOVER_HEIGHT_PCT), 0.0, 1.0 )
 
 		if ( file.elevatorProgressRui != null )
 		{

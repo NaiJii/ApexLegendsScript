@@ -109,6 +109,13 @@ global enum eGradeFlags
 	IS_LOCKED = (1 << 3),
 }
 
+global enum eEntitiesDidLoadPriority
+{
+	
+	LOW,
+	HIGH
+}
+
 global struct RingBuffer
 {
 	array<var> 	arr
@@ -212,7 +219,7 @@ void function InitWeaponScripts()
 
 
 
-
+		HopupGoldenHorse_Init()
 
 
 	MpAbilityShifter_Init()
@@ -251,11 +258,13 @@ void function InitWeaponScripts()
 
 
 
-
+		MpWeaponTitanSword_Init()
 
 	MpWeaponZipline_Init()
 	MpWeaponAlternatorSMG_Init()
 	MpWeaponShotgun_Init()
+
+
 
 	MpWeaponThermiteGrenade_Init()
 	MeleeWraithKunai_Init()
@@ -282,14 +291,10 @@ void function InitWeaponScripts()
 	MpWeaponLobaHeirloomPrimary_Init()
 	MeleeSeerHeirloom_Init()
 	MpWeaponSeerHeirloomPrimary_Init()
-
-		MeleeWraithKunai_rt01_Init()
-		MpWeaponWraithKunai_rt01_Primary_Init()
-
-
-		MeleeAshHeirloom_Init()
-		MpWeaponAshHeirloomPrimary_Init()
-
+	MeleeWraithKunai_rt01_Init()
+	MpWeaponWraithKunai_rt01_Primary_Init()
+	MeleeAshHeirloom_Init()
+	MpWeaponAshHeirloomPrimary_Init()
 
 		MeleeHorizonHeirloom_Init()
 		MpWeaponHorizonHeirloomPrimary_Init()
@@ -300,12 +305,27 @@ void function InitWeaponScripts()
 		MpWeaponRevenantScythePrimary_rt01_Init()
 
 
+		MeleeFuseHeirloom_Init()
+		MpWeaponFuseHeirloomPrimary_Init()
 
 
 
 
 
 
+
+
+		MeleeArtifactSword_Init()
+		MpWeaponArtifactSwordPrimary_Init()
+
+
+
+
+
+
+
+		MeleeCryptoHeirloomRt01_Init()
+		MpWeaponCryptoHeirloomRt01Primary_Init()
 
 
 
@@ -318,8 +338,8 @@ void function InitWeaponScripts()
 	MeleeRevenantScythe_Init()
 	MpWeaponRevenantScythePrimary_Init()
 
-
-
+		MeleeShadowsquadHands_Init()
+		MpWeaponShadowsquadHandsPrimary_Init()
 
 
 		MeleeBoxingRing_Init()
@@ -332,6 +352,17 @@ void function InitWeaponScripts()
 
 		MpAbilityPortableAutoLoader_Init()
 		MpWeaponDebuffZone_Init()
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -430,13 +461,9 @@ void function InitWeaponScripts()
 
 
 
-
-
-
-
-
-
-
+		MpAbilityConduitArcFlash_Init()
+		Mp_ability_shield_mines_init()
+		Mp_ability_shield_mines_line_init()
 
 
 
@@ -456,6 +483,9 @@ void function InitWeaponScripts()
 		
 		MpAbilityShadowPounceFree_Init()
 		
+
+
+
 
 
 
@@ -537,6 +567,8 @@ void function InitWeaponScripts()
 
 
 
+	MpAbilityRiseFromTheAshes_Init()
+
 
 
 
@@ -547,7 +579,6 @@ void function InitWeaponScripts()
 		MpAbilityShieldThrow_Init()
 		MpAbilityArmoredLeap_Init()
 		MpWeaponReviveShield_Init()
-
 
 
 
@@ -579,11 +610,9 @@ void function InitWeaponScripts()
 
 
 
-		MpWeaponFerroWall_Init()
-		MpAbilitySpikeStrip_Init()
-		MpAbilityReinforce_Init()
-
-
+	MpWeaponFerroWall_Init()
+	MpAbilitySpikeStrip_Init()
+	MpAbilityReinforce_Init()
 
 
 
@@ -618,7 +647,7 @@ void function InitWeaponScripts()
 
 
 
-
+		MpAbilityCopycatKit_Init()
 
 
 	VOID_RING_Init()
@@ -628,9 +657,7 @@ void function InitWeaponScripts()
 
 
 
-
-		MpWeaponNemesis_Init()
-
+	MpWeaponNemesis_Init()
 
 
 
@@ -992,6 +1019,21 @@ float function EvaluatePolynomial( float x, array<float> coefficientArray )
 bool function GetReplayDisabled()
 {
 	return GetGlobalNonRewindNetBool( "replayDisabled" )
+}
+
+float function GetRoundWinningKillReplayStartupWait()
+{
+	return GetCurrentPlaylistVarFloat( "round_winning_kill_replay_startup_wait", 2.1 )
+}
+
+float function GetRoundWinningKillReplayLength()
+{
+	return GetCurrentPlaylistVarFloat( "round_winning_kill_replay_length", 5.9 )
+}
+
+float function GetRoundWinningKillReplayTotalLength()
+{
+	return GetRoundWinningKillReplayStartupWait() + GetRoundWinningKillReplayLength()
 }
 
 table function ArrayValuesToTableKeys( arr )
@@ -2228,6 +2270,17 @@ bool function PointWithinDistOfAnyPoint( Point point, array<Point> pointArray, f
 	foreach ( Point pt in pointArray )
 	{
 		if ( DistanceSqr( pt.origin, point.origin ) < distSq )
+			return true
+	}
+
+	return false
+}
+
+bool function PointIsEqualToAPointInList( Point testPt, array< Point > pointArray )
+{
+	foreach( Point pt in pointArray )
+	{
+		if(( testPt.origin == pt.origin ) && ( testPt.angles == pt.angles ))
 			return true
 	}
 
@@ -3972,7 +4025,12 @@ bool function GameTeams_TeamHasDeadPlayers( int team )
 }
 
 typedef EntitiesDidLoadCallbackType void functionref()
-array<EntitiesDidLoadCallbackType> _EntitiesDidLoadTypedCallbacks
+struct EntityDidLoadCallback {
+	EntitiesDidLoadCallbackType callbackFunc
+	int priority
+}
+array< EntityDidLoadCallback > _EntitiesDidLoadTypedCallbacks
+
 
 void function RunCallbacks_EntitiesDidLoad()
 {
@@ -3980,15 +4038,31 @@ void function RunCallbacks_EntitiesDidLoad()
 	if ( "forcedReloading" in level )
 		return
 
+	
+	_EntitiesDidLoadTypedCallbacks.sort( int function( EntityDidLoadCallback a, EntityDidLoadCallback b ){
+		if ( a.priority > b.priority )
+			return -1
+		else if (  a.priority < b.priority )
+			return 1
+		return 0
+	} )
+
 	foreach ( callback in _EntitiesDidLoadTypedCallbacks )
 	{
-		thread callback()
+		thread callback.callbackFunc()
 	}
 }
 
 
-void function AddCallback_EntitiesDidLoad( EntitiesDidLoadCallbackType callback )
+
+
+
+void function AddCallback_EntitiesDidLoad( EntitiesDidLoadCallbackType callbackFunc, int priority = eEntitiesDidLoadPriority.LOW )
 {
+	EntityDidLoadCallback callback
+	callback.callbackFunc = callbackFunc
+	callback.priority = priority
+
 	_EntitiesDidLoadTypedCallbacks.append( callback )
 }
 
@@ -4488,6 +4562,16 @@ float function HealthRatio( entity ent )
 	int health    = ent.GetHealth()
 	int maxHealth = ent.GetMaxHealth()
 	return float( health ) / maxHealth
+}
+
+Point function GetPointFromEnt( entity ent )
+{
+	Point result
+
+	result.origin = ent.GetOrigin()
+	result.angles = ent.GetAngles()
+
+	return result
 }
 
 
@@ -5510,57 +5594,74 @@ LineSegment function ClampLineSegmentToWorldBounds2D( vector p0, vector p1, floa
 
 LineSegment function ClampLineSegmentToRectangle2D( vector p0, vector p1, vector rectP0, vector rectP1 )
 {
-	vector topLeft     = rectP0
-	vector bottomLeft  = <rectP0.x, rectP1.y, 0>
-	vector topRight    = <rectP1.x, rectP0.y, 0>
-	vector bottomRight = rectP1
+	vector bottomLeft 	= rectP0
+	vector topLeft  	= <rectP0.x, rectP1.y, 0>
+	vector bottomRight  = <rectP1.x, rectP0.y, 0>
+	vector topRight 	= rectP1
 
-	vector newP0 = <p0.x, p0.y, 0>
-	vector newP1 = <p1.x, p1.y, 0>
-
-	
-	if ( Do2DLinesIntersect( p0, p1, topLeft, bottomLeft ) )
-	{
-		if ( p0.x < topLeft.x )
-			newP0 = Get2DLineIntersection( p0, p1, topLeft, bottomLeft )
-		if ( p1.x < topLeft.x )
-			newP1 = Get2DLineIntersection( p0, p1, topLeft, bottomLeft )
-	}
+	PassByReferenceVector newP0
+	PassByReferenceVector newP1
+	newP0.value = <p0.x, p0.y, 0>
+	newP1.value = <p1.x, p1.y, 0>
 
 	
-	if ( Do2DLinesIntersect( p0, p1, topRight, bottomRight ) )
-	{
-		if ( p0.x > bottomRight.x )
-			newP0 = Get2DLineIntersection( p0, p1, topRight, bottomRight )
-		if ( p1.x > bottomRight.x )
-			newP1 = Get2DLineIntersection( p0, p1, topRight, bottomRight )
-	}
+	if ( p0.x < topLeft.x )
+		Get2DLineIntersection( p0, p1, topLeft, bottomLeft, newP0 )
+	if ( p1.x < topLeft.x )
+		Get2DLineIntersection( p0, p1, topLeft, bottomLeft, newP1 )
 
 	
-	if ( Do2DLinesIntersect( p0, p1, topLeft, topRight ) )
-	{
-		if ( p0.y < topLeft.y )
-			newP0 = Get2DLineIntersection( p0, p1, topLeft, topRight )
-		if ( p1.y < topLeft.y )
-			newP1 = Get2DLineIntersection( p0, p1, topLeft, topRight )
-	}
+	if ( p0.x > bottomRight.x )
+		Get2DLineIntersection( p0, p1, topRight, bottomRight, newP0 )
+	if ( p1.x > bottomRight.x )
+		Get2DLineIntersection( p0, p1, topRight, bottomRight, newP1 )
 
 	
-	if ( Do2DLinesIntersect( p0, p1, bottomLeft, bottomRight ) )
-	{
-		if ( p0.y > bottomRight.y )
-			newP0 = Get2DLineIntersection( p0, p1, bottomLeft, bottomRight )
-		if ( p1.y > bottomRight.y )
-			newP1 = Get2DLineIntersection( p0, p1, bottomLeft, bottomRight )
-	}
+	if ( p0.y > topLeft.y )
+		Get2DLineIntersection( p0, p1, topLeft, topRight, newP0 )
+	if ( p1.y > topLeft.y )
+		Get2DLineIntersection( p0, p1, topLeft, topRight, newP1 )
+
+	
+	if ( p0.y < bottomRight.y )
+		Get2DLineIntersection( p0, p1, bottomLeft, bottomRight, newP0 )
+	if ( p1.y < bottomRight.y )
+		Get2DLineIntersection( p0, p1, bottomLeft, bottomRight, newP1 )
 
 	LineSegment lineSegment
-	lineSegment.start = newP0
-	lineSegment.end = newP1
+	lineSegment.start = newP0.value
+	lineSegment.end = newP1.value
 
 	return lineSegment
 }
 
+
+
+
+
+
+void function Get2DLineIntersection( vector A, vector B, vector C, vector D, PassByReferenceVector P )
+{
+	float s1_x = B.x - A.x
+	float s1_y = B.y - A.y
+	float s2_x = D.x - C.x
+	float s2_y = D.y - C.y
+
+	float determinant = -s2_x * s1_y + s1_x * s2_y
+
+	if ( fabs( determinant ) < FLT_EPSILON )
+		return
+
+	float s = (-s1_y * (A.x - C.x) + s1_x * (A.y - C.y)) / determinant
+	float t = (s2_x * (A.y - C.y) - s2_y * (A.x - C.x)) / determinant
+
+	if ( s >= 0.0 && s <= 1.0 && t >= 0.0 && t <= 1.0 )
+	{
+		
+		vector intersection = < A.x + (t * s1_x), A.y + (t * s1_y), 0.0>
+		P.value = intersection
+	}
+}
 
 bool function Do2DLinesIntersect( vector A, vector B, vector C, vector D )
 {
@@ -5586,20 +5687,6 @@ bool function Do2DLinesIntersect( vector A, vector B, vector C, vector D )
 
 	return !(r < 0 || r > 1 || s < 0 || s > 1)
 }
-
-
-vector function Get2DLineIntersection( vector A, vector B, vector C, vector D )
-{
-	float dy1 = B.y - A.y
-	float dx1 = B.x - A.x
-	float dy2 = D.y - C.y
-	float dx2 = D.x - C.x
-	float x   = ((C.y - A.y) * dx1 * dx2 + dy1 * dx2 * A.x - dy2 * dx1 * C.x) / (dy1 * dx2 - dy2 * dx1)
-	float y   = A.y + (fabs( 0.0 - dx1 ) > 0.00001 ? (dy1 / dx1) * (x - A.x) : 0.0)
-	vector p  = <x, y, 0>
-	return p
-}
-
 
 int function GetSlotForWeapon( entity player, entity weapon )
 {
@@ -6003,15 +6090,21 @@ array<entity> function GetPlayerArray_ConnectedNotSpectatorTeam()
 }
 
 
-entity function GetJumpmasterForTeam( int team )
+entity function GetJumpmasterForTeam( int team, bool mustBeAlive = true )
 {
 	entity jumpMaster
 
-	array<entity> teammates = GetPlayerArrayOfTeam_Alive( team )
+	array<entity> teammates = mustBeAlive ? GetPlayerArrayOfTeam_Alive( team ) : GetPlayerArrayOfTeam( team )
+
 	foreach ( entity player in teammates )
 	{
-		if ( !player.GetPlayerNetBool( "playerInPlane" ) )
-			continue
+
+
+
+
+			if ( !player.GetPlayerNetBool( "playerInPlane" ) )
+				continue
+
 
 		if ( !player.GetPlayerNetBool( "isJumpingWithSquad" ) )
 			continue
@@ -6024,14 +6117,19 @@ entity function GetJumpmasterForTeam( int team )
 }
 
 
-int function GetNumPlayersJumpingWithSquad( int team )
+int function GetNumPlayersJumpingWithSquad( int team, bool mustBeAlive = true  )
 {
 	int count               = 0
-	array<entity> teammates = GetPlayerArrayOfTeam_Alive( team )
+	array<entity> teammates = mustBeAlive ? GetPlayerArrayOfTeam_Alive( team ) : GetPlayerArrayOfTeam( team )
 	foreach ( entity player in teammates )
 	{
-		if ( !player.GetPlayerNetBool( "playerInPlane" ) )
-			continue
+
+
+
+
+			if ( !player.GetPlayerNetBool( "playerInPlane" ) )
+				continue
+
 
 		if ( !player.GetPlayerNetBool( "isJumpingWithSquad" ) )
 			continue
@@ -6329,6 +6427,52 @@ table< var, array< entity > > function GetAllMatchReservationParties()
 }
 
 
+void function PollPartyMembersInSquad( entity player )
+{
+	if ( IsValid( player ) )
+		thread PollPartyMembersInSquad_Thread( player )
+}
+
+void function PollPartyMembersInSquad_Thread( entity player )
+{
+	EndSignal( player, "OnDestroy" )
+
+	bool allMembersPresentInSquad = false
+
+	while ( true )
+	{
+		table< string, bool > activeSquadMembers
+		Party party = GetParty()
+
+		int team = player.GetTeam()
+		foreach ( entity teammate in GetPlayerArrayOfTeam( team ) )
+		{
+			if ( IsValid( teammate ) && teammate.IsConnectionActive() )
+				activeSquadMembers[teammate.GetUserID()] <- true
+		}
+
+		bool allPresent = true
+		foreach ( partyMember in party.members )
+		{
+			if ( !( partyMember.uid in activeSquadMembers ) )
+			{
+				allPresent = false
+				break
+			}
+		}
+
+		if ( allPresent != allMembersPresentInSquad )
+		{
+			allMembersPresentInSquad = allPresent
+			RunUIScript( "UpdateSystemMenuPartySquadPresence", allPresent )
+		}
+
+		wait 0.1
+	}
+}
+
+
+
 Point function CreatePoint( vector origin, vector angles )
 {
 	Point data
@@ -6426,7 +6570,7 @@ void function GivePlayerSettingsMods( entity player, array<string> additionalMod
 }
 
 
-void function TakePlayerSettingsMods( entity player, array<string> modsToTake )
+void function TakePlayerSettingsMods( entity player, array<string> modsToTake, bool isHealthReset = true )
 {
 	array<string> mods = player.GetPlayerSettingsMods()
 	int oldMaxHealth = player.GetMaxHealth()
@@ -6658,11 +6802,14 @@ void function RemoveRefEntAreaFromInvalidOriginsForPlacingPermanentsOnto( entity
 }
 
 
-bool function IsOriginInvalidForPlacingPermanentOnto( vector origin )
+bool function IsOriginInvalidForPlacingPermanentOnto( vector origin, entity realmEnt )
 {
 	foreach ( entity refEnt, RefEntAreaData data in file.invalidAreasRelativeToEntForPlacingPermanentsOnto )
 	{
 		if ( !IsValid( refEnt ) )
+			continue
+
+		if( IsValid( realmEnt ) && !refEnt.DoesShareRealms( realmEnt ) )
 			continue
 
 		vector localPos = WorldPosToLocalPos_NoEnt( origin, refEnt.GetOrigin(), refEnt.GetAngles() )

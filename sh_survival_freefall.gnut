@@ -7,9 +7,11 @@ global function CodeCallback_PlayerSkydiveAnticipateEnd
 global function GetSkyDiveTrailPackageForPlayerWithOverrides
 
 
+global function AddCallback_PlayerFreefallActiveChanged
 global function Freefall_SetDisplaySeaHeightForLevel
 global function Freefall_SetPlaneHeight
 global function GetSeaHeightForDisplay
+
 
 
 
@@ -22,6 +24,9 @@ const asset PLAYER_WIND_FX 	= $"P_wind_cruising"
 global const string JUMPTOWER_PING_NAME = "jump_tower"
 
 
+
+
+const CONSTRAINEDDIVE_RADIUS_DEFAULT = 984.252 
 
 
 
@@ -236,6 +241,8 @@ global const string JUMPTOWER_PING_NAME = "jump_tower"
 		bool nearbySquadsMinimapEnabled
 
 		bool emoteCallbackRegistered = false
+
+		array< void functionref( entity, bool ) > playerFreefallActiveChanged_Callbacks
 	} file
 
 
@@ -257,6 +264,7 @@ void function SurvivalFreefall_Init()
 	Remote_RegisterServerFunction( "ClientCallback_StopFreefallFollowMode" )
 	Remote_RegisterServerFunction( "ClientCallback_SkydiveEmote", "int", INT_MIN, INT_MAX )
 	Remote_RegisterServerFunction( "ClientCallback_SkydiveEmoteNext" )
+
 
 
 
@@ -1701,6 +1709,108 @@ SkyDiveTrailPackage function GetSkyDiveTrailPackageForPlayerWithOverrides( entit
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 void function CL_AttemptDropEmote( entity player )
 {
 	printt( "CLIENT EMOTE" )
@@ -1797,21 +1907,23 @@ void function SetSkydiveStartingConvars()
 	}
 }
 
+
+
+
+
 void function UpdateSkydiveRui_Emotes( var rui, entity player )
 {
-	RuiSetBool( rui, "emoteAvailable", false )
-
 	if ( player != GetLocalClientPlayer() )
 		return
+	bool canEmote = !player.Player_IsSkydiveAnticipating() && player.GetPlayerNetBool( "freefallEmoteAvailable" ) 
 
-	table<int, ItemFlavor> emotes = GetValidPlayerSkydiveEmotes( player )
-	bool emoteAreAvailable = ((emotes.len() > 0) && !player.Player_IsSkydiveAnticipating() && player.GetPlayerNetBool( "freefallEmoteAvailable" )) 
-	if ( !emoteAreAvailable )
-		return
+	array<ItemFlavor> emotes = ItemFlavor_GetQuipArrayForCharacter( player, LoadoutSlot_GetItemFlavor( LocalClientEHI(), Loadout_Character() ) )
+	bool emoteAvailable = canEmote && emotes.len() > 0
+	RuiSetBool( rui, "emoteAvailable", emoteAvailable )
 
-	RuiSetBool( rui, "emoteAvailable", true )
-	string emoteHint = (EmoteMenuOnHold() && (emotes.len() > 1)) ? "#FREEFALL_EMOTE_HINT_MENU" : "#FREEFALL_EMOTE_HINT"
-	RuiSetString( rui, "emoteHintString", emoteHint )
+	table<int, ItemFlavor> skydiveEmotes = GetValidPlayerSkydiveEmotes( player )
+	bool skydiveAvailable = canEmote && skydiveEmotes.len() > 0
+	RuiSetBool( rui, "skydiveAvailable", skydiveAvailable )
 }
 
 void function UpdateSkydiveRui_MusicTrackInfo( var rui )
@@ -1834,12 +1946,20 @@ void function UpdateSkydiveRui_MusicTrackInfo( var rui )
 	RuiSetString( rui, "musicpackName", ItemFlavor_GetLongName( item ) )
 }
 
+void function AddCallback_PlayerFreefallActiveChanged( void functionref( entity, bool ) func )
+{
+	file.playerFreefallActiveChanged_Callbacks.append( func )
+}
+
 void function PlayerFreefallActiveChanged( entity player, bool isFreefallActive )
 {
 	if ( player != GetLocalViewPlayer() )
 		return
 
 	Rumble_Play( "skydive_jump", {} )
+
+	foreach( func in file.playerFreefallActiveChanged_Callbacks )
+		func( player, isFreefallActive )
 
 	if ( player == GetLocalClientPlayer() )
 	{
@@ -1919,8 +2039,8 @@ void function PlayerFreefallEmoteAvailableChanged( entity player, bool isFreefal
 	printt( "PlayerFreefallEmoteAvailableChanged", isFreefallEmoteAvailable )
 	if ( file.skydiveRui != null )
 	{
-		
-		RuiSetBool( file.skydiveRui, "emoteAvailable", isFreefallEmoteAvailable )
+		bool hasSkydiveEmotes = GetValidPlayerSkydiveEmotes( player ).len() > 0
+		RuiSetBool( file.skydiveRui, "skydiveAvailable", isFreefallEmoteAvailable && hasSkydiveEmotes )
 	}
 }
 
@@ -2306,6 +2426,12 @@ void function CodeCallback_PlayerSkydiveBegin( entity player )
 
 
 
+
+
+
+
+
+
 	
 
 
@@ -2576,6 +2702,10 @@ void function Freefall_OnPlayerCreated( entity skyDivingPlayer )
 
 void function Client_OnPlayerSpawned( entity localPlayer )
 {
+
+
+
+
 	if( file.skydiveRui != null )
 	{
 		RuiDestroyIfAlive( file.skydiveRui )

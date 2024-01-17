@@ -1,13 +1,16 @@
 
 
 global const DEPLOYABLE_THROW_POWER = 500.0
-global const DEPLOYABLE_BOUNCE_DOT = 0.7
+global const DEPLOYABLE_BOUNCE_DOT = DOT_45DEGREE 
 
 global function ThrowDeployable
 global function OnProjectileCollision_weapon_deployable
 
 global function OnProjectileCollision_weapon_deployable_LDOV
 global function OnProjectileCollision_weapon_deployable_noVehicles
+
+
+
 
 
 entity function ThrowDeployable(
@@ -88,6 +91,28 @@ vector function GetDeployableThrowVelocity( entity player, vector baseAngles, fl
 }
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 void function OnProjectileCollision_weapon_deployableInternal( entity projectile, DeployableCollisionParams cp )
 {
 
@@ -97,24 +122,9 @@ void function OnProjectileCollision_weapon_deployableInternal( entity projectile
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 	PlantStickyEntityThatBouncesOffWalls( projectile, cp, DEPLOYABLE_BOUNCE_DOT, <90, 0, 0> )
 }
+
 void function OnProjectileCollision_weapon_deployable( entity projectile, vector pos, vector normal, entity hitEnt, int hitBox, bool isCritical, bool isPassthrough )
 {
 	DeployableCollisionParams cp

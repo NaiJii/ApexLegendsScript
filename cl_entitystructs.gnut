@@ -70,6 +70,7 @@ global struct ClientEntityStruct
 	array<void functionref( entity vehicle )>                              onVehicleCollideCallbacks
 	array<void functionref( entity vehicle )>                              onPlayerUseButtonPressed
 	array<void functionref( entity vehicle )>                              onPlayerUseButtonReleased
+	array<void functionref( entity player )>                               onPlayerLandedCallbacks
 	array<void functionref( entity )>                                      onEntityDestroyedCallbacks
 
 	string enemyHighlight = ""
@@ -93,9 +94,7 @@ global struct ClientEntityStruct
 
 	int cameraMaxRangeFXHandle = -1
 
-
-		bool castleWallIsEnergized = false
-
+	bool castleWallIsEnergized = false
 
 
 
@@ -103,10 +102,6 @@ global struct ClientEntityStruct
 
 
 	bool munitionsDropSpawned = false
-
-
-
-
 
 
 	bool                       eyeForQuality_isScanned
@@ -221,6 +216,14 @@ global struct ClientPlayerStruct
 
 
 
+
+
+
+
+
+
+
+
 		table< int, bool > FRSettings_Bools
 		table< int, int >  FRSettings_Ints
 		table< int, bool > FRDummieBehaviors_Bools
@@ -285,8 +288,6 @@ global struct ClientWeaponStruct
 	entity translocate_predictedInitialProjectile = null
 	entity translocate_predictedRedirectedProjectile = null
 	table ornull translocate_impactRumbleObj = null
-	
-	bool   translocate_isADSForced = false
 
 
 

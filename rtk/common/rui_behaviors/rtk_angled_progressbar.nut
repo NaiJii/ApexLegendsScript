@@ -19,6 +19,7 @@ global struct RTKAngledProgressBar_Properties
 	float angle
 
 	bool isDoubleSided = false
+	bool isDraining = false
 }
 
 void function RTKAngledProgressBar_InitMetaData( string behaviorType, string structType )
@@ -77,6 +78,7 @@ void function RTKAngledProgressBar_OnDrawBegin( rtk_behavior self )
 		panel.SetRuiArgFloat( "progressBgAlpha", self.PropGetFloat( "progressBgAlpha" ) )
 
 		panel.SetRuiArgFloat( "angle", self.PropGetFloat( "angle" ) )
+		panel.SetRuiArgBool( "isDraining", self.PropGetBool( "isDraining" ) )
 	}
 }
 

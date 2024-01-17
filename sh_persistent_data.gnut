@@ -9,6 +9,7 @@ global function ShPersistentData_LevelInit_Finish
 
 
 
+
 global function AddCallback_OnPersistentDataReady
 global function GetPersistentIntArray
 global function IsPersistenceBitSet
@@ -47,16 +48,33 @@ global function DEV_ShouldIgnorePersistence
 
 
 
+global function ServerToClient_OnPersistentDataReady
 
 
 
-global function ClientToUI_OnPersistentDataReady
+
 
 
 #if DEV
 global bool dev_should_ignore_persistence = false
 global function SetShouldIgnorePersistence
 #endif
+
+
+
+
+
+
+global function SafeGetPersistentVar
+global function SafeGetPersistentVarAsInt
+
+
+
+
+
+
+
+
 
 
 
@@ -127,7 +145,7 @@ void function ShPersistentData_LevelInit_Begin()
 
 
 
-
+		Remote_RegisterClientFunction( "ServerToClient_OnPersistentDataReady" )
 
 }
 
@@ -159,6 +177,7 @@ bool function DEV_ShouldIgnorePersistence()
 	return dev_should_ignore_persistence
 }
 #endif
+
 
 
 
@@ -625,22 +644,86 @@ bool function IsAnyPersistenceBitSet( entity player, string persistenceVar )
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-void function ClientToUI_OnPersistentDataReady()
+void function ServerToClient_OnPersistentDataReady()
 {
+	RunUIScript( "ClientToUI_OnPersistentDataReady" )
+
 	foreach( OnPersistentDataReadyCallbackType cb in fileLevel.onPersistentDataReadyCallbacks )
 		cb( GetLocalClientPlayer() )
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+var function SafeGetPersistentVar( entity player, string key )
+{
+	if ( IsValid( player ) && player.IsConnectionActive() )
+		return player.GetPersistentVar( key )
+	return null
+}
+
+int function SafeGetPersistentVarAsInt( entity player, string key )
+{
+	if ( IsValid( player ) && player.IsConnectionActive() )
+		return player.GetPersistentVarAsInt( key )
+	return 0
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

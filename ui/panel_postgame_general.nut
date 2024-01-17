@@ -2,6 +2,7 @@ global function InitPostGameGeneralPanel
 
 global function InitXPEarnedDisplay
 global function PostGameGeneral_CanNavigateBack
+global function PostGameGeneral_SetDisableNavigateBack
 global function PostGameGeneral_SetSkippableWait
 
 const PROGRESS_BAR_FILL_TIME = 2.0
@@ -32,7 +33,7 @@ struct PinnedXPAndStarsProgressBar
 	int         currentPassLevel
 }
 
-table<string, array< array< int > > > xpDisplayGroups = {
+global table<string, array< array< int > > > xpDisplayGroups = {
 	survival = [
 		[
 			eXPType.WIN_MATCH,
@@ -268,7 +269,11 @@ var function DisplayPostGameSummary( bool isFirstTime )
 	Hud_SetVisible( Hud_GetChild( file.panel, "XPProgressBarAccount" ), false )
 	PostGame_ToggleVisibilityContinueButton( false )
 
-	bool showRankedSummary = GetPersistentVarAsInt( "showRankedSummary" ) != 0
+
+	bool showRankedSummary = Ranked_GetXProgMergedPersistenceData( GetLocalClientPlayer(), RANKED_SHOW_RANKED_SUMMARY_PERSISTENCE_VAR_NAME ) != 0
+
+
+
 	string postMatchSurveyMatchId = string( GetPersistentVar( "postMatchSurveyMatchId" ) )
 	float postMatchSurveySampleRateLowerBound = expect float( GetPersistentVar( "postMatchSurveySampleRateLowerBound" ) )
 	if ( GetActiveBattlePass() == null && !showRankedSummary && isFirstTime && TryOpenSurvey( eSurveyType.POSTGAME, postMatchSurveyMatchId, postMatchSurveySampleRateLowerBound ) )
@@ -379,67 +384,25 @@ var function DisplayPostGameSummary( bool isFirstTime )
 
 	if ( character != null && isFirstTime )
 	{
+		expect ItemFlavor( character )
 		table<ItemFlavor, GladCardBadgeTierData> unlockedBadgeMap
 
-		expect ItemFlavor( character )
-		array<ItemFlavor> allBadges = GetAllItemFlavorsOfType( eItemType.gladiator_card_badge )
 		table<int, int> grxPostGameRewardGUIDToPersistenceIdx = GRX_GetPostGameRewards()
-		foreach ( badge in allBadges )
+		foreach ( int guid, int _ in grxPostGameRewardGUIDToPersistenceIdx )
 		{
-			bool isCharacterBadge = GladiatorCardBadge_IsCharacterBadge( badge )
-			if ( isCharacterBadge && character != GladiatorCardBadge_GetCharacterFlavor( badge ) )
+			if ( !IsValidItemFlavorGUID( guid ) )
 				continue
 
-			array<GladCardBadgeTierData> tierDataList = GladiatorCardBadge_GetTierDataList( badge )
-
-			
-			if ( ItemFlavor_GetGRXMode( badge ) == GRX_ITEMFLAVORMODE_REGULAR )
-			{
-				if ( ItemFlavor_GetGUID( badge ) in grxPostGameRewardGUIDToPersistenceIdx )
-				{
-					unlockedBadgeMap[badge] <- tierDataList[0]
-					GRX_MarkRewardAcknowledged( ItemFlavor_GetGUID( badge ), grxPostGameRewardGUIDToPersistenceIdx[ ItemFlavor_GetGUID( badge ) ] )
-				}
-
-				continue
-			}
-			
-
-			string unlockStatRef = GladiatorCardBadge_GetUnlockStatRef( badge, GladiatorCardBadge_GetCharacterFlavor( badge ) )
-			if( !GladiatorCardBadge_IsGeneralStat( unlockStatRef ) )
+			ItemFlavor item = GetItemFlavorByGUID( guid )
+			if ( ItemFlavor_GetType( item ) != eItemType.gladiator_card_badge )
 				continue
 
-			if ( !IsValidStatEntryRef( unlockStatRef ) )
-				continue
-
-			
-			if ( unlockStatRef == ACCOUNT_BADGE_STAT )
-				continue
-
-			foreach ( tierData in tierDataList )
-			{
-				StatEntry se = GetStatEntryByRef( unlockStatRef )
-
-				int currentVal = GetStat_Int( player, se, eStatGetWhen.CURRENT )
-				if ( currentVal < tierData.unlocksAt )
-					continue
-
-				if ( (se.flags & eStatFlags.STORE_START_OF_PREVIOUS_MATCH) == 0 )
-					continue
-
-				int previousVal = GetStat_Int( player, se, eStatGetWhen.START_OF_PREVIOUS_MATCH )
-				if ( previousVal >= tierData.unlocksAt )
-					continue
-
-				if ( currentVal >= tierData.unlocksAt && previousVal < tierData.unlocksAt )
-				{
-					unlockedBadgeMap[badge] <- tierData
-
-					if ( GetCurrentPlaylistVarBool( "do_on_demand_stats", true ) )
-						Remote_ServerCallFunction( "ClientCallback_UpdateSOPMStatValue", se.index )
-				}
-			}
+			unlockedBadgeMap[ item ] <- GladiatorCardBadge_GetTierDataList( item )[0]
+			GRX_MarkRewardAcknowledged( guid, grxPostGameRewardGUIDToPersistenceIdx[ guid ] )
 		}
+
+		foreach ( BadgeDisplayData displayData in GladiatorCardBadge_GetPostGameStatUnlockBadgesDisplayData() )
+			unlockedBadgeMap[ displayData.badge ] <- displayData.tierData
 
 		if ( unlockedBadgeMap.len() > 0 )
 		{
@@ -670,6 +633,11 @@ float function CalculateAccountLevelingUpDuration( int start_accountLevel, int e
 	}
 
 	return totalDelay
+}
+
+void function PostGameGeneral_SetDisableNavigateBack( bool disableNavigateBack )
+{
+	file.disableNavigateBack = disableNavigateBack
 }
 
 bool function PostGameGeneral_CanNavigateBack()

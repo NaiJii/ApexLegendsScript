@@ -51,11 +51,12 @@ global function GameMode_RunServerInits
 global function GameMode_RunClientInits
 global function GameMode_RunSharedInits
 global function GameMode_IsDefined
+global function GameMode_AreRoundsEnabled
 
 
-
-
-
+global function GameMode_RunScoreboardInit
+global function GameMode_SetScoreboardSetupFunc
+global function GameMode_GetScoreboardSetupFunc
 
 
 global function GameMode_AddServerInit
@@ -74,9 +75,9 @@ global function GameMode_SetTimedEventsEnabled
 global function GameMode_GetLoadoutSelectTime
 
 
-
-
-
+global function GameMode_DoesModeDisplayIconsForAllFriendlyTeams
+global function GameMode_DoesModeDisplayIconsForAllTeams
+global function GameMode_OverrideCompletedResolutionCleanupFunc
 
 
 global struct GamemodeSettings
@@ -116,7 +117,7 @@ global struct GamemodeSettings
 	void functionref(entity) customIntroAnnouncementFunc
 
 
-
+		void functionref() scoreboardInitFunc
 
 }
 
@@ -178,7 +179,7 @@ struct
 	table<string, GamemodeSettings> gameModeDefs
 
 
-
+		void functionref() completedResolutionCleanupFunc
 
 } file
 
@@ -211,14 +212,10 @@ void function GameModes_Init()
 	GameMode_SetColor( gameMode, [147, 204, 57, 255] )
 
 
-	AddCallback_UI_FeatureTutorialDialog_PopulateTabsForMode( ShadowRoyale_PopulateAboutText, GAMEMODE_SHADOW_ROYALE )
-	AddCallback_UI_FeatureTutorialDialog_SetTitle( FeatureTutorial_GetGameModeName, GAMEMODE_SHADOW_ROYALE )
 
 
 
 
-	AddCallback_UI_FeatureTutorialDialog_PopulateTabsForMode( Survival_Hardcore_PopulateAboutText, GAMEMODE_SURVIVAL_HARDCORE )
-	AddCallback_UI_FeatureTutorialDialog_SetTitle( FeatureTutorial_GetGameModeName, GAMEMODE_SURVIVAL_HARDCORE )
 
 
 
@@ -231,23 +228,17 @@ void function GameModes_Init()
 
 
 
-		AddCallback_UI_FeatureTutorialDialog_PopulateTabsForMode( CombatRange_PopulateAboutText, COMBATRANGE )
-		AddCallback_UI_FeatureTutorialDialog_SetTitle( FeatureTutorial_GetGameModeName, COMBATRANGE )
 
 
 
 
 
 
-	AddCallback_UI_FeatureTutorialDialog_PopulateTabsForMode( Survival_Heatwave_PopulateAboutText, GAMEMODE_HEATWAVE )
-	AddCallback_UI_FeatureTutorialDialog_SetTitle( FeatureTutorial_GetGameModeName, GAMEMODE_HEATWAVE )
 
 
 
 
 
-	AddCallback_UI_FeatureTutorialDialog_PopulateTabsForMode( Date_Night_PopulateAboutText, GAMEMODE_DATE_NIGHT )
-	AddCallback_UI_FeatureTutorialDialog_SetTitle( FeatureTutorial_GetGameModeName, GAMEMODE_DATE_NIGHT )
 
 
 
@@ -276,14 +267,10 @@ void function GameModes_Init()
 
 
 
-		AddCallback_UI_FeatureTutorialDialog_PopulateTabsForMode( Armed_And_Dangerous_PopulateAboutText, GAMEMODE_ARMED_AND_DANGEROUS )
-		AddCallback_UI_FeatureTutorialDialog_SetTitle( FeatureTutorial_GetGameModeName, GAMEMODE_ARMED_AND_DANGEROUS )
 
 
 
 
-		AddCallback_UI_FeatureTutorialDialog_PopulateTabsForMode( NodeTracker_PopulateAboutText, GAMEMODE_NODE_TRACKER )
-		AddCallback_UI_FeatureTutorialDialog_SetTitle( NodeTracker_PopulateAboutTitle, GAMEMODE_NODE_TRACKER )
 
 
 
@@ -297,6 +284,65 @@ void function GameModes_Init()
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+		RegisterSignal( "GameModes_CompletedResolutionCleanup" )
+		GameMode_OverrideCompletedResolutionCleanupFunc( GameModes_DefaultCompletedResolutionCleanupFunc )
 
 
 
@@ -328,8 +374,8 @@ void function GameModes_Init()
 	GameMode_SetColor( gameMode, [147, 204, 57, 255] )
 	GameMode_SetTimedEventsEnabled( gameMode, true )
 
-		AddCallback_UI_FeatureTutorialDialog_PopulateTabsForMode( Control_PopulateAboutText, GAMEMODE_CONTROL )
-		AddCallback_UI_FeatureTutorialDialog_SetTitle( FeatureTutorial_GetGameModeName, GAMEMODE_CONTROL )
+
+
 
 
 
@@ -361,24 +407,6 @@ void function GameModes_Init()
 	GameMode_SetColor( gameMode, [212, 83, 152, 255] )
 	GameMode_SetTimedEventsEnabled( gameMode, true )
 
-		AddCallback_UI_FeatureTutorialDialog_PopulateTabsForMode( FreeDM_PopulateAboutText, GAMEMODE_FREEDM )
-		AddCallback_UI_FeatureTutorialDialog_SetTitle( FeatureTutorial_GetGameModeName, GAMEMODE_FREEDM )
-
-
-
-
-
-	AddCallback_UI_FeatureTutorialDialog_PopulateTabsForMode( SWAT_PopulateAboutText, TDM_SWAT )
-		AddCallback_UI_FeatureTutorialDialog_SetTitle( FeatureTutorial_GetGameModeName, TDM_SWAT )
-	AddCallback_UI_FeatureTutorialDialog_PopulateTabsForMode( TDM_PopulateAboutText, TEAM_DEATHMATCH )
-		AddCallback_UI_FeatureTutorialDialog_SetTitle( FeatureTutorial_GetGameModeName, TEAM_DEATHMATCH )
-
-
-
-
-
-		AddCallback_UI_FeatureTutorialDialog_PopulateTabsForMode( WinterExpress_PopulateAboutText, GAMEMODE_WINTER_EXPRESS )
-		AddCallback_UI_FeatureTutorialDialog_SetTitle( FeatureTutorial_GetGameModeName, GAMEMODE_WINTER_EXPRESS )
 
 
 
@@ -388,6 +416,24 @@ void function GameModes_Init()
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	GameModes_Init_SV_CL()
 
 
 	
@@ -730,17 +776,17 @@ string function GameMode_GetGameEndingConversation( string gameModeName )
 }
 
 
+void function GameMode_SetScoreboardSetupFunc( string gameModeName, void functionref() func )
+{
+	Assert( gameModeName in file.gameModeDefs, "No MP Gametype specified in _settings.nut" )
+	file.gameModeDefs[gameModeName].scoreboardInitFunc = func
+}
 
-
-
-
-
-
-
-
-
-
-
+void functionref() function GameMode_GetScoreboardSetupFunc( string gameModeName )
+{
+	Assert( gameModeName in file.gameModeDefs, "No MP Gametype specified in _settings.nut" )
+	return file.gameModeDefs[gameModeName].scoreboardInitFunc
+}
 
 
 array<string> function GameMode_GetScoreboardColumnTitles( string gameModeName )
@@ -781,11 +827,11 @@ void function GameMode_RunServerInits()
 }
 
 
-
-
-
-
-
+void function GameMode_RunScoreboardInit()
+{
+	Assert( GAMETYPE in file.gameModeDefs, "No MP Gametype specified in _settings.nut" )
+	file.gameModeDefs[GAMETYPE].scoreboardInitFunc()
+}
 
 
 void function GameMode_RunClientInits()
@@ -854,33 +900,38 @@ float function GameMode_GetLoadoutSelectTime()
 	return GetCurrentPlaylistVarFloat( "pick_loadout_time", 5.0 )
 }
 
+bool function GameMode_AreRoundsEnabled()
+{
+	return GetCurrentPlaylistVarBool( "survival_rounds_enabled", false )
+}
+
+
+bool function GameMode_DoesModeDisplayIconsForAllFriendlyTeams( string mode )
+{
+	return AllianceProximity_IsUsingAlliances()
+}
+
+
+
+bool function GameMode_DoesModeDisplayIconsForAllTeams( string mode )
+{
+	return false
+}
 
 
 
 
+void function GameModes_DefaultCompletedResolutionCleanupFunc()
+{
+	Signal( clGlobal.levelEnt, "GameModes_CompletedResolutionCleanup" )
+}
 
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+void function GameMode_OverrideCompletedResolutionCleanupFunc( void functionref() func )
+{
+	file.completedResolutionCleanupFunc = func
+}
 
 

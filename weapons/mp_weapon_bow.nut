@@ -146,6 +146,10 @@ void function MpWeaponBow_Init()
 	PrecacheModel( SINGLE_ARROW_MODEL )
 	PrecacheModel( SINGLE_ARROW_MODEL_PICKUP )
 
+
+
+
+
 	file.fxLightAssets1p = {}
 	string settingStr
 	foreach ( string optic, array<string> attachments in fxLightPointsForOptic )
@@ -326,7 +330,14 @@ var function OnWeaponPrimaryAttack_weapon_bow( entity weapon, WeaponPrimaryAttac
 		speedMultiplier = GraphCapped( adjustedChargeFrac, 0.0, 1.0, baseSpeed, file.fullChargeSpeed )
 	}
 	speedMultiplier /= baseSpeed        
+
+
+
+		GoldenHorsePurple_OnWeaponPrimaryAttack( weapon, attackParams )
+
 	weapon.FireWeapon_Default( attackParams.pos, attackParams.dir, speedMultiplier, 1.0, ignoreSpread )
+
+		GoldenHorsePurple_PostFire( weapon )
 
 
 	MarksmansTempo_OnFire( weapon, file.bowTempoSettings, true )
@@ -918,3 +929,30 @@ void function StopChargeFX( entity weapon )
 		weapon.StopWeaponEffect( fx1p, $"" )
 	}
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

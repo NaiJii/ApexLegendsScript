@@ -82,6 +82,8 @@ global function CloseAllMenus
 global function CloseAllDialogs
 global function CloseAllToTargetMenu
 global function PrintMenuStack
+global function OpenOverlay
+global function CloseOverlay
 global function GetActiveMenu
 global function IsMenuVisible
 global function IsPanelActive
@@ -109,6 +111,7 @@ global function RemoveEventHandlerFromButtonClass
 global function GetTopNonDialogMenu
 global function SetDialog
 global function SetPopup
+global function SetOverlay
 global function SetClearBlur
 global function SetPanelClearBlur
 global function ClearMenuBlur
@@ -178,9 +181,7 @@ global function IncrementNumDialogFlowDialogsDisplayed
 global function OpenDevMenu
 global function DEV_SetLoadScreenFinished
 global function AutomateUi
-
 global function DEV_AdvanceToBattlePassMilestoneMenu
-
 #endif
 
 const string SOUND_MATCHMAKING_CANCELED = "ui_networks_invitation_canceled" 
@@ -225,6 +226,7 @@ struct
 	bool isShowingMap = false 
 	bool modeSelectMenuOpen = false
 	var activeMenu = null
+	var activeOverlay = null
 
 #if DEV
 	float uiAutomationLastTime = 0
@@ -300,7 +302,11 @@ void function UICodeCallback_ToggleInGameMenu()
 	var ingameMenu = GetMenu( "SystemMenu" )
 
 	
-	if ( MenuStack_Contains( GetMenu( "CharacterSelectMenuNew" ) ) || MenuStack_Contains( GetMenu( "PrivateMatchSpectCharSelectMenu" ) ) )
+	if ( MenuStack_Contains( GetMenu( "CharacterSelectMenu" ) )
+
+			|| MenuStack_Contains( GetMenu( "SpecialCharacterSelectMenu" ) )
+
+			|| MenuStack_Contains( GetMenu( "PrivateMatchSpectCharSelectMenu" ) ) )
 		return
 
 	if ( IsDialog( activeMenu ) )
@@ -349,6 +355,8 @@ void function ToggleInventoryOrOpenOptions()
 	if( !IsConnected() )
 		 return
 
+	EndSignal( uiGlobal.signalDummy, "LevelShutdown" )
+
 	float startTime = UITime()
 	float duration  = 0.3
 	float endTIme   = startTime + duration
@@ -374,6 +382,14 @@ void function ToggleInventoryOrOpenOptions()
 		return
 	}
 
+
+
+
+
+
+
+
+
 	if ( (UITime() >= endTIme && InputIsButtonDown( BUTTON_START )) || (InputIsButtonDown( KEY_ESCAPE ) && !SURVIVAL_IsAnInventoryMenuOpened()) )
 	{
 		if ( IsShowingMap() && InputIsButtonDown( KEY_ESCAPE ) )
@@ -392,7 +408,7 @@ void function ToggleInventoryOrOpenOptions()
 
 		if( IsFiringRangeGameMode() && !IsControllerModeActive() && !InputIsButtonDown( KEY_TAB ) )
 		{
-			RunClientScript( "UICallback_OpenCharacterSelectNewMenu" )
+			RunClientScript( "UICallback_OpenCharacterSelectMenu" )
 			return
 		}
 
@@ -706,6 +722,7 @@ bool function UICodeCallback_LevelLoadingStarted( string levelname )
 	Signal( uiGlobal.signalDummy, "EndFooterUpdateFuncs" )
 	Signal( uiGlobal.signalDummy, "EndSearchForPartyServerTimeout" )
 	Signal( uiGlobal.signalDummy, "EndSetMainProfileForCrossProgressionTimeout" )
+	Signal( uiGlobal.signalDummy, "EndMigrateFlow" )
 
 	uiGlobal.loadingLevel = levelname
 
@@ -826,8 +843,8 @@ void function UIFullyConnectedInitialization()
 	ShLoadouts_LevelInit_Begin()
 	DeathBoxListPanel_VMInit()
 	SurvivalGroundList_LevelInit()
-	ShSkydiveTrails_LevelInit()
 	ShCharacters_LevelInit()
+	ShSkydiveTrails_LevelInit()
 	ShPassives_Init()
 	ShCharacterAbilities_LevelInit()
 	ShCharacterCosmetics_LevelInit()
@@ -836,6 +853,9 @@ void function UIFullyConnectedInitialization()
 	TimeGatedLoginRewards_Init()
 	CollectionEvents_Init()
 	ThemedShopEvents_Init()
+
+		MilestoneEvents_Init()
+
 	BuffetEvents_Init()
 
 
@@ -866,8 +886,9 @@ void function UIFullyConnectedInitialization()
 	ShBattlepassPresaleVoucher_LevelInit()
 	ShBattlepassPurchasableXP_LevelInit()
 
+		ShEventAbilities_Init()
 
-
+	Sh_Boosts_Init()
 	ShMusic_LevelInit()
 	ShBattlePass_LevelInit()
 
@@ -887,6 +908,12 @@ void function UIFullyConnectedInitialization()
 	ShPing_Init()
 	ShQuickchat_Init()
 	ShChallenges_LevelInit_PreStats()
+
+
+
+
+	ShRewardSetTracker_LevelInit()
+
 	ShItems_LevelInit_Finish()
 	ShItemPerPlayerState_LevelInit()
 	UserInfoPanels_LevelInit()
@@ -894,7 +921,13 @@ void function UIFullyConnectedInitialization()
 	UiNewnessQueries_LevelInit()
 	ShStatsInternals_LevelInit()
 	ShStats_LevelInit()
+
+		Sh_RankedTrials_Init() 
+
 	ShChallenges_LevelInit_PostStats()
+
+
+
 	ShPlaylist_Init()
 
 	ShPersistentData_LevelInit_Finish()
@@ -927,9 +960,7 @@ void function UIFullyConnectedInitialization()
 		Gifting_LevelInit()
 
 
-
-		Sh_Mastery_Init()
-
+	Sh_Mastery_Init()
 }
 
 void function UICodeCallback_FullyConnected( string levelname )
@@ -1189,6 +1220,10 @@ void function AdvanceMenu( var newMenu )
 	
 	
 
+	
+	if ( IsOverlay( newMenu ) )
+		return
+
 	var currentMenu = GetActiveMenu()
 
 	if ( currentMenu )
@@ -1281,14 +1316,6 @@ void function UpdateMenuBlur( var menu )
 void function ClearMenuBlur( var menu )
 {
 	Hud_SetAboveBlur( menu, false )
-}
-
-
-bool function IsCharacterSelectMenu( var menu )
-{
-	if ( menu == GetMenu( "CharacterSelectMenuNew" ) )
-		return true
-	return false
 }
 
 
@@ -1874,7 +1901,11 @@ void function ShowGameSummaryIfNeeded()
 		}
 
 
-		if ( GetPersistentVar( "showRankedSummary" ) )
+
+		if ( Ranked_GetXProgMergedPersistenceData( GetLocalClientPlayer(), RANKED_SHOW_RANKED_SUMMARY_PERSISTENCE_VAR_NAME ) != 0 )
+
+
+
 		{
 #if DEV
 				printt( "Postgame menu debug: Calling OpenRankedSummary( true )" )
@@ -1902,7 +1933,6 @@ bool function IsLoadScreenFinished()
 }
 
 #if DEV
-
 void function DEV_AdvanceToBattlePassMilestoneMenu()
 {
 
@@ -1912,7 +1942,6 @@ void function DEV_AdvanceToBattlePassMilestoneMenu()
 	}
 
 }
-
 #endif
 
 #if DEV
@@ -1939,14 +1968,23 @@ bool function AreDialogFlowPersistenceValuesSet( string persistenceVar, var valu
 	return true
 }
 
-var function GetDialogFlowTablesValueOrPersistence( string persistenceVar, float timeBeforeDialogFlowTableValuesAreOutdated = 5.0 ) 
+
+
+var function GetDialogFlowTablesValueOrPersistence( string persistenceVar, bool useScriptTable = false, float timeBeforeDialogFlowTableValuesAreOutdated = 5.0 )
 {
+	if ( useScriptTable )
+	{
+		timeBeforeDialogFlowTableValuesAreOutdated = 9999
+	}
+
 	if ( (persistenceVar in file.dialogFlowPersistenceChecksValuesTable ) )
 	{
 		Assert( persistenceVar in file.dialogFlowPersistenceChecksTimeTable )
 
-		if ( file.dialogFlowPersistenceChecksTimeTable[ persistenceVar] + timeBeforeDialogFlowTableValuesAreOutdated > UITime() )
+		if ( file.dialogFlowPersistenceChecksTimeTable[ persistenceVar ] + timeBeforeDialogFlowTableValuesAreOutdated > UITime() )
+		{
 			return file.dialogFlowPersistenceChecksValuesTable[ persistenceVar ]
+		}
 	}
 
 	return GetPersistentVar( persistenceVar )
@@ -1965,6 +2003,7 @@ void function DialogFlow()
 		return
 
 	bool persistenceAvailable = IsPersistenceAvailable()
+	bool hasActiveBattlePass = GetActiveBattlePass() != null
 
 	if ( DialogFlow_ShouldOpenPromoDialog() )
 	{
@@ -1979,14 +2018,14 @@ void function DialogFlow()
 
 		DialogFlow_DidCausePotentiallyInterruptingPopup()
 	}
-	else if ( DisplayTreasureBoxRewards() )
+	else if ( hasActiveBattlePass && DisplayTreasureBoxRewards() )
 	{
 		IncrementNumDialogFlowDialogsDisplayed()
 
 		DialogFlow_DidCausePotentiallyInterruptingPopup()
 	}
 
-	else if ( DisplayQuestFinalRewards() )
+	else if ( hasActiveBattlePass && DisplayQuestFinalRewards() )
 	{
 		IncrementNumDialogFlowDialogsDisplayed()
 
@@ -1996,7 +2035,7 @@ void function DialogFlow()
 	else if ( persistenceAvailable && TryEntitlementMenus() )
 	{
 	}
-	else if ( PlayerHasStarterPack( null ) && persistenceAvailable && ( GetDialogFlowTablesValueOrPersistence ("starterAcknowledged", 9999 )  == false ) )
+	else if ( PlayerHasStarterPack( null ) && persistenceAvailable && ( GetDialogFlowTablesValueOrPersistence ( "starterAcknowledged", true )  == false ) )
 	{
 		SetDialogFlowPersistenceTables( "starterAcknowledged", true )
 		Remote_ServerCallFunction( "ClientCallback_MarkEntitlementMenuSeen", STARTER_PACK )
@@ -2007,7 +2046,7 @@ void function DialogFlow()
 
 		DialogFlow_DidCausePotentiallyInterruptingPopup()
 	}
-	else if ( PlayerHasFoundersPack( null ) && persistenceAvailable && ( GetDialogFlowTablesValueOrPersistence( "founderAcknowledged", 9999 ) == false )  )
+	else if ( PlayerHasFoundersPack( null ) && persistenceAvailable && ( GetDialogFlowTablesValueOrPersistence( "founderAcknowledged", true ) == false )  )
 	{
 		SetDialogFlowPersistenceTables( "founderAcknowledged", true )
 		Remote_ServerCallFunction( "ClientCallback_MarkEntitlementMenuSeen", FOUNDERS_PACK )
@@ -2085,14 +2124,12 @@ void function DialogFlow()
 
 		DialogFlow_DidCausePotentiallyInterruptingPopup()
 	}
-
-	else if ( IsBattlepassMilestoneEnabled() && persistenceAvailable && Lobby_OpenBattlePassMilestoneDialog() )
+	else if ( hasActiveBattlePass && IsBattlepassMilestoneEnabled() && persistenceAvailable && Lobby_OpenBattlePassMilestoneDialog() )
 	{
 		IncrementNumDialogFlowDialogsDisplayed()
 
 		DialogFlow_DidCausePotentiallyInterruptingPopup()
 	}
-
 	else
 	{
 		file.dialogFlowComplete = true
@@ -2293,6 +2330,14 @@ void function InitMenus()
 	AddPanel( mainMenu, "EstablishUserPanel", InitEstablishUserPanel )
 	AddPanel( mainMenu, "MainMenuPanel", InitMainMenuPanel )
 
+
+		var crossProgressionDialog = AddMenu( "CrossProgressionDialog", $"resource/ui/menus/dialog_cross_progression.menu", InitCrossProgressionDialog )
+
+	
+	
+	
+	
+
 	AddMenu( "PlayVideoMenu", $"resource/ui/menus/play_video.menu", InitPlayVideoMenu )
 
 	var lobbyMenu   = AddMenu( "LobbyMenu", $"resource/ui/menus/lobby.menu", InitLobbyMenu )
@@ -2329,12 +2374,15 @@ void function InitMenus()
 	var storePanel = AddPanel( lobbyMenu, "StorePanel", InitStorePanel )
 	AddPanel( storePanel, "LootPanel", InitLootPanel )
 	AddMenu( "PackInfoDialog", $"resource/ui/menus/dialogs/pack_information_dialog.menu", InitPackInfoDialog )
+
+		AddMenu( "MilestonePackInfoDialog", $"resource/ui/menus/dialogs/milestone_information_dialog.menu", InitMilestonePackInfoDialog )
+
 	AddPanel( storePanel, "HeirloomShopPanel", HeirloomShopPanel_Init )
 	AddPanel( storePanel, FEATURED_STORE_PANEL, InitOffersPanel )
 	AddPanel( storePanel, SPECIALS_STORE_PANEL, InitSpecialsPanel )
 	AddPanel( storePanel, SEASONAL_STORE_PANEL, InitSpecialsPanel )
 
-
+		AddPanel( storePanel, PERSONALIZED_STORE_PANEL, InitPersonalizedStore )
 
 
 
@@ -2447,7 +2495,16 @@ void function InitMenus()
 	AddPanel( customizeCharacterMenu, "CharacterExecutionsPanel", InitCharacterExecutionsPanel )
 
 
+		AddPanel( customizeCharacterMenu, "LegendMeleePanel", InitRTKLegendMeleePanel )
 		AddPanel( customizeCharacterMenu, "LegendLorePanel", InitRTKLegendLorePanel )
+
+
+			var meleeCustomizationMenu = AddMenu( "MeleeCustomizationMenu", $"resource/ui/menus/dialogs/customize_melee.menu", InitMeleeCustomizationMenu )
+			AddPanel( meleeCustomizationMenu, "MeleeCustomizationPanel", InitMeleeCustomizationPanel )
+
+
+
+
 
 
 	var customizeWeaponMenu = AddMenu( "CustomizeWeaponMenu", $"resource/ui/menus/customize_weapon.menu", InitCustomizeWeaponMenu )
@@ -2528,7 +2585,10 @@ void function InitMenus()
 	AddPanel( customizeConsumablesMenu, "StickersPanel2", InitConsumableStickersPanel )
 	AddPanel( customizeConsumablesMenu, "StickersPanel3", InitConsumableStickersPanel )
 
-	AddMenu( "CharacterSelectMenuNew", $"resource/ui/menus/character_select_new.menu", UI_InitCharacterSelectNewMenu )
+	AddMenu( "CharacterSelectMenu", $"resource/ui/menus/character_select.menu", UI_InitCharacterSelectMenu )
+
+	AddMenu( "SpecialCharacterSelectMenu", $"resource/ui/menus/special_character_select.menu", InitSpecialCharacterSelectMenu )
+
 
 	var deathScreenMenu = AddMenu( "DeathScreenMenu", $"resource/ui/menus/death_screen.menu", InitDeathScreenMenu )
 	AddPanel( deathScreenMenu, "DeathScreenGenericScoreboardPanel", InitTeamsScoreboardPanel )
@@ -2536,10 +2596,11 @@ void function InitMenus()
 	AddPanel( deathScreenMenu, "DeathScreenSpectate", InitDeathScreenSpectatePanel )
 	AddPanel( deathScreenMenu, "DeathScreenSquadSummary", InitDeathScreenSquadSummaryPanel )
 
-	AddMenu( "PostGameRankedMenu", $"resource/ui/menus/post_game_ranked.menu", InitPostGameRankedMenu )
+	var postGameRankedMenu = AddMenu( "PostGameRankedMenu", $"resource/ui/menus/post_game_ranked.menu", InitPostGameRankedMenu )
+	AddPanel( postGameRankedMenu, "MatchSummaryPanel", InitPostGameRankedSummaryPanel )
+
 	AddMenu( "RankedInfoMenu", $"resource/ui/menus/ranked_info.menu", InitRankedInfoMenu )
 	AddMenu( "RankedInfoMoreMenu", $"resource/ui/menus/ranked_info_more.menu", InitRankedInfoMoreMenu ) 
-	AddMenu( "AboutGameModeMenu", $"resource/ui/menus/about_game_mode.menu", InitAboutGameModeMenu )
 
 	AddMenu( "PostGameWeaponTrialCelebrationsMenu", $"resource/ui/menus/postgame_weapon_trial_celebrations.menu", InitPostGameWeaponTrialCelebrationsMenu )
 
@@ -2549,16 +2610,11 @@ void function InitMenus()
 
 
 
-
-
-
-
-
-
-
+	var progressionModifiersMenu = AddMenu( "ProgressionModifiersMenu", $"resource/ui/menus/progression_modifiers.menu", InitRTKProgressionModifiersMenu )
+	AddPanel( progressionModifiersMenu, "ProgressionModifiersInfoPanel", InitRTKProgressionModifiersInfoPanel )
+	AddPanel( progressionModifiersMenu, "ProgressionModifiersBoostPanel", InitRTKProgressionModifiersBoostPanel )
 
 	AddMenu( "BattlePassMilestoneMenu", $"resource/ui/menus/battlepass_milestone.menu", InitBattlepassMilestoneMenu )
-
 
 	var inventoryMenu = AddMenu( "SurvivalInventoryMenu", $"resource/ui/menus/survival_inventory.menu", InitSurvivalInventoryMenu )
 	AddPanel( inventoryMenu, "SurvivalQuickInventoryPanel", InitSurvivalQuickInventoryPanel )
@@ -2583,9 +2639,16 @@ void function InitMenus()
 	AddMenu( "Notifications", $"resource/ui/menus/notifications.menu", InitNotificationsMenu )
 
 	var postGameMenu = AddMenu( "PostGameMenu", $"resource/ui/menus/postgame.menu", InitPostGameMenu )
-	AddPanel( postGameMenu, "PostGameGeneral", InitPostGameGeneralPanel )
+
+
+
+		AddPanel( postGameMenu, "PostGameGeneral", InitRTKPostGameSummary )
+
 
 		AddPanel( postGameMenu, "PostGameWeapons", InitRTKPostGameWeaponsPanel )
+
+
+
 
 
 	AddMenu( "Dialog", $"resource/ui/menus/dialog.menu", InitDialogMenu )
@@ -2606,6 +2669,8 @@ void function InitMenus()
 	AddPanel( characterSkillsDialog,"CharacterAbilitiesPanel", InitCharacterAbilitiesPanel )
 
 
+
+
 		AddPanel( characterSkillsDialog,"CharacterRolesPanel", InitCharacterRolesPanel )
 
 	
@@ -2623,11 +2688,16 @@ void function InitMenus()
 
 
 
+
 	
 	
 
 		var controlSpawnSelectorMenu = AddMenu( "ControlSpawnSelector", $"resource/ui/menus/control_respawn_menu.menu", InitControlSpawnMenu )
 		AddPanel( controlSpawnSelectorMenu, "ControlRespawn_GenericScoreboardPanel", InitTeamsScoreboardPanel )
+
+
+
+
 
 
 
@@ -2651,20 +2721,20 @@ void function InitMenus()
 	AddMenu( "ConfirmPackBundlePurchaseDialog", $"resource/ui/menus/dialogs/confirm_pack_bundle_purchase.menu", InitConfirmPackBundlePurchaseDialog )
 
 
+		var confirmMultiPackBundlePurchaseDialogMenu = AddMenu( "ConfirmMultiPackBundlePurchaseDialog", $"resource/ui/menus/dialogs/confirm_multi_pack_bundle_purchase.menu", InitConfirmMultiPackBundlePurchaseDialog )
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+		AddPanel( confirmMultiPackBundlePurchaseDialogMenu, "DialogContentPackHeader", InitMultiPackDisclosureHeaderPanel )
+		
+		AddPanel( confirmMultiPackBundlePurchaseDialogMenu, "DialogContentApexPackContent", InitApexPackDisclosureDialogContentPanel )
+		
+		AddPanel( confirmMultiPackBundlePurchaseDialogMenu, "DialogContentEventPackContent", InitEventPackDisclosureDialogContentPanel )
+		
+		AddPanel( confirmMultiPackBundlePurchaseDialogMenu, "DialogContentThematicPackContent0", InitThematicPackDisclosureDialogContentPanel0 )
+		AddPanel( confirmMultiPackBundlePurchaseDialogMenu, "DialogContentThematicPackContent1", InitThematicPackDisclosureDialogContentPanel1 )
+		AddPanel( confirmMultiPackBundlePurchaseDialogMenu, "DialogContentThematicPackContent2", InitThematicPackDisclosureDialogContentPanel2 )
+		AddPanel( confirmMultiPackBundlePurchaseDialogMenu, "DialogContentThematicPackContent3", InitThematicPackDisclosureDialogContentPanel3 )
+		
+		AddPanel( confirmMultiPackBundlePurchaseDialogMenu, "DialogContentEventThematicPackContent", InitEventThematicPackDisclosureDialogContentPanel )
 
 
 	AddMenu( "ConfirmBattlepassPurchaseDialog", $"resource/ui/menus/dialogs/confirm_battle_pass_purchase.menu", InitBattlepassPurchaseDialog )
@@ -2680,10 +2750,6 @@ void function InitMenus()
 
 	AddMenu( "ErrorDialog", $"resource/ui/menus/dialogs/ok_dialog.menu", InitErrorDialog )
 	AddMenu( "AccessibilityDialog", $"resource/ui/menus/dialogs/accessibility_dialog.menu", InitAccessibilityDialog )
-
-
-
-
 
 	AddMenu( "ReportPlayerDialog", $"resource/ui/menus/dialog_report_player.menu", InitReportPlayerDialog )
 	AddMenu( "ReportPlayerReasonPopup", $"resource/ui/menus/dialog_report_player_reason.menu", InitReportReasonPopup )
@@ -2768,6 +2834,12 @@ void function InitMenus()
 
 
 		var EventShopTierDialog = AddMenu( "EventShopTierDialog", $"resource/ui/menus/dialog_event_shop.menu", InitEventShopTierDialog )
+		var SweepstakesFlowDialog = AddMenu( "SweepstakesFlowDialog", $"resource/ui/menus/dialog_sweepstakes_flow.menu", InitSweepstakesFlowDialog )
+		var SweepstakesRulesDialog = AddMenu( "SweepstakesRulesDialog", $"resource/ui/menus/dialog_sweepstakes_rules.menu", InitSweepstakesRulesDialog )
+
+
+
+
 
 
 #if DEV
@@ -3063,6 +3135,37 @@ void function CloseMenuWrapper( var menu )
 	}
 }
 
+void function OpenOverlay( var overlay )
+{
+	if ( !IsOverlay( overlay ) )
+		return
+
+	
+	if ( file.activeOverlay != null )
+		return
+
+	UpdateMenuBlur( overlay )
+	OpenMenuWrapper( overlay, true )
+
+	file.activeOverlay = overlay
+}
+
+void function CloseOverlay( var overlay )
+{
+	if ( !IsOverlay( overlay ) )
+		return
+
+	
+	if ( file.activeOverlay != overlay )
+		return
+
+	CloseMenuWrapper( overlay )
+	if ( file.activeMenu )
+		UpdateMenuBlur( file.activeMenu )
+
+	file.activeOverlay = null
+}
+
 
 void function AddButtonEventHandler( var button, int event, void functionref( var ) func )
 {
@@ -3290,6 +3393,12 @@ void function InitGlobalMenuVars()
 
 
 }
+
+
+
+
+
+
 
 
 bool function _IsMenuThinkActive()
@@ -3540,6 +3649,14 @@ void function SetPopup( var menu, bool val )
 	uiGlobal.menuData[ menu ].clearBlur = false
 }
 
+void function SetOverlay( var menu, bool val )
+{
+	if ( menu == null )
+		return
+
+	uiGlobal.menuData[ menu ].isOverlay = val
+}
+
 
 void function SetClearBlur( var menu, bool val )
 {
@@ -3568,6 +3685,14 @@ bool function IsPopup( var menu )
 		return false
 
 	return uiGlobal.menuData[ menu ].isPopup
+}
+
+bool function IsOverlay( var menu )
+{
+	if ( menu == null )
+		return false
+
+	return uiGlobal.menuData[ menu ].isOverlay
 }
 
 bool function ShouldClearBlur( var menu )

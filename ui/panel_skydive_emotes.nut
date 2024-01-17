@@ -45,7 +45,7 @@ void function SkydiveEmotesPanel_OnShow( var panel )
 	AddCallback_OnTopLevelCustomizeContextChanged( panel, SkydiveEmotesPanel_Update )
 	SkydiveEmotesPanel_Update( panel )
 
-	CharacterEmotesPanel_SetHintSub( "" )
+	CharacterEmotesPanel_SetHintSub( "", true )
 }
 
 

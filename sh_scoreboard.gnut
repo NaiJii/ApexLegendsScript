@@ -209,10 +209,16 @@ void function ClientToUI_ToggleScoreboard()
 
 	if ( ShouldShowCharSelectForScoreboard() )
 	{
+		
+		entity player = GetLocalViewPlayer()
+
+		if( !CharacterSelect_Menu_ShouldOpen( player ) )
+			return
+
 		printf( "%s() - Showing character select because we're in Firing Range.", FUNC_NAME() )
 		RunUIScript( "TryCloseSurvivalInventory", null )
 		EmitSoundOnEntity( GetLocalViewPlayer(), "UI_Menu_accept" )
-		OpenCharacterSelectNewMenu( true )
+		OpenCharacterSelectMenu( true )
 		return
 	}
 

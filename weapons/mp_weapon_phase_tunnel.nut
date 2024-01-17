@@ -74,26 +74,15 @@ const float PHASE_TUNNEL_PLACEMENT_HEIGHT_STANDING = 45.0
 const float PHASE_TUNNEL_PLACEMENT_HEIGHT_CROUCHING = 20
 
 
-
 const float PHASE_TUNNEL_LIFETIME = 45.0 
 const float PHASE_TUNNEL_MAX_DISTANCE = 6000.0
 const float PHASE_TUNNEL_LONG_DISTANCE = 3000.0
-
-
-
-
-
 const float PHASE_TUNNEL_SPEED_INCREMENT_AMOUNT = 0.1
 const float PHASE_TUNNEL_SPEED_INCREMENT_PERCENT = 20
-
 const float PHASE_TUNNEL_VALIDITY_TEST_TIME = 0.25
 const float PHASE_TUNNEL_TELEPORT_TRAVEL_TIME_MIN = 0.3
-
 const float PHASE_TUNNEL_TELEPORT_TRAVEL_TIME_LONG = 2.0
 const float PHASE_TUNNEL_TELEPORT_TRAVEL_TIME_MAX = 3.5
-
-
-
 const float PHASE_TUNNEL_TELEPORT_DBOUNCE = 0.5
 const float PHASE_TUNNEL_TELEPORT_DBOUNCE_PROJECTILE = 1.0
 const float PHASE_TUNNEL_USE_COOLDOWN_TIME = 0.25
@@ -102,11 +91,10 @@ const float PHASE_TUNNEL_MIN_PORTAL_DIST_SQR = 128.0 * 128.0
 const float PHASE_TUNNEL_MIN_GEO_REVERSE_DIST = 48.0
 
 const bool PHASE_TUNNEL_DEBUG_DRAW_PROJECTILE_TELEPORT = false
-const bool PHASE_TUNNEL_DEBUG_DRAW_PLAYER_TELEPORT = false
-
+const bool PHASE_TUNNEL_DEBUG_DRAW_CREATE_TUNNEL = false
+const bool PHASE_TUNNEL_DEBUG_DRAW_PLAYER_TRAVEL = false
 
 const bool PHASE_TUNNEL_SPEED_INCREMENT_DEBUG = false
-
 global struct PhaseTunnelPathNodeData
 {
 	vector origin
@@ -178,6 +166,10 @@ global struct PhaseTunnelData
 	PhaseTunnelPortalData&     startPortal
 	PhaseTunnelPortalData&     endPortal
 	bool                       expired
+
+
+
+
 
 
 
@@ -2029,6 +2021,72 @@ var function OnWeaponPrimaryAttack_ability_phase_tunnel( entity weapon, WeaponPr
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 entity function GetDoorForHitEnt( entity hitEnt )
 {
 	if ( IsDoor( hitEnt ) )
@@ -2072,7 +2130,7 @@ array< entity > function PhaseTunnel_GetPortalIgnoreEnts()
 }
 
 
-bool function PhaseTunnel_IsPortalExitPointValid( entity player, vector testOrg, entity ignoreEnt = null, bool onlyCheckWorld = false, bool isCrouched = false )
+bool function PhaseTunnel_IsPortalExitPointValid( entity player, vector testOrg, entity ignoreEnt = null, bool onlyCheckWorld = false, bool isCrouched = false, bool DEBUG_DRAW = false )
 {
 	int solidMask            = onlyCheckWorld ? TRACE_MASK_PLAYERSOLID_BRUSHONLY : TRACE_MASK_PLAYERSOLID
 	vector mins
@@ -2103,7 +2161,7 @@ bool function PhaseTunnel_IsPortalExitPointValid( entity player, vector testOrg,
 
 	if ( result.startSolid || result.fraction < 1 || result.surfaceNormal != <0, 0, 0> )
 	{
-		if ( PHASE_TUNNEL_DEBUG_DRAW_PLAYER_TELEPORT )
+		if ( DEBUG_DRAW )
 			DebugDrawBox( result.endPos, mins, maxs, COLOR_RED, 1, 20.0 )
 
 		if ( !onlyCheckWorld )
@@ -2113,7 +2171,7 @@ bool function PhaseTunnel_IsPortalExitPointValid( entity player, vector testOrg,
 			return false
 	}
 
-	if ( PHASE_TUNNEL_DEBUG_DRAW_PLAYER_TELEPORT )
+	if ( DEBUG_DRAW )
 		DebugDrawBox( result.endPos, mins, maxs, COLOR_GREEN, 1, 20.0 )
 
 	return true

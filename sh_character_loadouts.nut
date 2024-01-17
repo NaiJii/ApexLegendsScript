@@ -37,12 +37,12 @@ struct {
 	int identicalLoadoutIndex = -1
 
 
+		var           loadoutInfoRui = null
+		array<var>    loadoutRuiElements
+		table<int,string> characterClassToLoadoutNameTable
 
-
-
-
-
-
+		bool		  isDetailsPanelShowing = false
+		bool          is16x10 = false
 
 } file
 
@@ -55,8 +55,8 @@ void function CharacterLoadouts_Init()
 		CharacterLoadouts_SetIdenticalLoadoutIndex( 0 ) 
 
 
-
-
+		if ( GetCurrentPlaylistVarBool( "character_loadouts_class_based", false ) )
+			Init_CharacterClassToLoadoutNameTable()
 
 
 
@@ -70,13 +70,13 @@ void function CharacterLoadouts_Init()
 
 
 
+		file.loadoutInfoRui = RuiCreate( $"ui/loadout_selection_info.rpak", clGlobal.topoFullScreen, RUI_DRAW_HUD, 1 )
 
-
-
-
-
-
-
+		AddCallback_OnCharacterSelectMenuOpened( Callback_OnCharacterSelectOpened )
+		AddCallback_OnCharacterSelectMenuClosed( Callback_OnCharacterSelectClosed )
+		AddCallback_CharacterSelectMenu_OnCharacterFocused( Callback_OnCharacterFocusChanged )
+		AddCallback_CharacterSelectMenu_OnCharacterLocked( Callback_OnCharacterLocked )
+		AddCallback_OnCharacterSelectDetailsToggled( Callback_OnCharacterDetailsToggled )
 
 }
 
@@ -90,9 +90,6 @@ void function SetDefaultLoadouts()
 			"health_pickup_health_small:2 health_pickup_combo_small:2" )
 		string defaultequipmentLoadoutPlaylist  = GetCurrentPlaylistVarString ( "default_loadout_equipment",
 			"armor_pickup_lv1_evolving helmet_pickup_lv1 incapshield_pickup_lv1" )
-
-
-
 
 
 
@@ -266,26 +263,21 @@ array< string > function ParseEquipmentLoadoutText( string loadoutText, bool use
 	else if ( useDefaultLoadout )
 		equipmentToAdd = file.equipmentLoadoutDefault
 
-
-
-
+	if ( GetCurrentPlaylistVarBool( "should_give_lvl0_evo_armor", true ) )
 	{
-		if ( GetCurrentPlaylistVarBool( "should_give_lvl0_evo_armor", true ) )
+		bool give0Armor = true
+		foreach ( string equipmentRef in equipmentToAdd )
 		{
-			bool give0Armor = true
-			foreach ( string equipmentRef in equipmentToAdd )
+			if ( SURVIVAL_Loot_GetLootDataByRef( equipmentRef ).lootType == eLootType.ARMOR )
 			{
-				if ( SURVIVAL_Loot_GetLootDataByRef( equipmentRef ).lootType == eLootType.ARMOR )
-				{
-					give0Armor = false
-					break
-				}
+				give0Armor = false
+				break
 			}
-			if ( give0Armor )
-			{
-				equipmentToAdd.append( "armor_pickup_lv0_evolving" )
-				displayIgnoredItems.append( "armor_pickup_lv0_evolving" )
-			}
+		}
+		if ( give0Armor )
+		{
+			equipmentToAdd.append( "armor_pickup_lv0_evolving" )
+			displayIgnoredItems.append( "armor_pickup_lv0_evolving" )
 		}
 	}
 
@@ -412,6 +404,15 @@ void function PopulateCharacterLoadouts()
 }
 
 
+void function Init_CharacterClassToLoadoutNameTable()
+{
+	string prefix = "#CHARACTER_CLASS_LOADOUT_"
+	foreach ( key, value in eCharacterClassRole )
+	{
+		string loadoutName = prefix + key.toupper()
+		file.characterClassToLoadoutNameTable[ value ] <- loadoutName
+	}
+}
 
 
 
@@ -656,232 +657,221 @@ void function PopulateCharacterLoadouts()
 
 
 
+void function Callback_OnCharacterSelectOpened()
+{
+	file.is16x10 = GetNearestAspectRatio( GetScreenSize().width, GetScreenSize().height ) == 1.6
 
+	RuiSetBool( file.loadoutInfoRui, "isVisible", true )
+	RuiSetBool( file.loadoutInfoRui, "is16x10", file.is16x10 )
 
+	ItemFlavor character = LoadoutSlot_GetItemFlavor( ToEHI( GetLocalClientPlayer() ), Loadout_Character() )
+	DisplayLoadoutForCharacter( character )
+}
 
+void function Callback_OnCharacterSelectClosed()
+{
+	RuiSetBool( file.loadoutInfoRui, "isVisible", false )
 
+	foreach( ruiAsset in file.loadoutRuiElements )
+	{
+		RuiDestroy( ruiAsset )
+	}
+	file.loadoutRuiElements.clear()
 
+}
 
+void function Callback_OnCharacterFocusChanged( ItemFlavor character )
+{
+	DisplayLoadoutForCharacter( character )
+}
 
+void function Callback_OnCharacterLocked( ItemFlavor character )
+{
+	DisplayLoadoutForCharacter( character )
+}
 
+void function Callback_OnCharacterDetailsToggled( bool isDetailsPanelVisible )
+{
+	if ( file.loadoutInfoRui == null )
+		return
 
+	file.isDetailsPanelShowing = !isDetailsPanelVisible
 
+	RuiSetBool( file.loadoutInfoRui, "isDetailMode", !isDetailsPanelVisible )
+	foreach( rui in file.loadoutRuiElements )
+	{
+		RuiSetBool( rui, "isDetailMode", !isDetailsPanelVisible )
+	}
+}
 
+string function GetIdenticalLoadoutCharSelectPrefix()
+{
+	string playlistName = GetCurrentPlaylistName()
+	if ( playlistName.find( "freelance" ) >= 0 )
+		return ""
 
+	return Localize( "#DEFAULT_CHAR_SELECT_LOADOUT_PREFIX" )
+}
 
+void function DisplayLoadoutForCharacter( ItemFlavor character )
+{
+	string characterRef = ItemFlavor_GetCharacterRef( character ).tolower()
 
+	
+	foreach( ruiAsset in file.loadoutRuiElements )
+	{
+		RuiDestroy( ruiAsset )
+	}
+	file.loadoutRuiElements.clear()
 
+	bool shouldShowLoadout = file.characterFlavorToDisplayedWeaponLoadout[characterRef].len() > 0 ||
+	file.characterFlavorToDisplayedConsumableLoadout[characterRef].len() > 0 ||
+	file.characterFlavorToDisplayedEquipmentLoadout[characterRef].len() > 0
 
+	
+	if ( !shouldShowLoadout )
+	{
+		RuiSetBool( file.loadoutInfoRui, "isVisible", false )
+		return
+	}
+	else
+	{
+		RuiSetBool( file.loadoutInfoRui, "isVisible", true )
+	}
 
+	if ( GetCurrentPlaylistVarBool( "character_loadouts_identical", false ) )
+	{
+		RuiSetString( file.loadoutInfoRui, "characterLoadoutName", GetIdenticalLoadoutCharSelectPrefix() )
+	}
+	else if ( GetCurrentPlaylistVarBool( "character_loadouts_class_based", false ) )
+	{
+		int role = CharacterClass_GetRole( character )
+		Assert( role in file.characterClassToLoadoutNameTable[ role ], "Attempting to DisplayLoadoutForCharacter using a Character Class that is not in characterClassToLoadoutNameTable" )
+		RuiSetString( file.loadoutInfoRui, "characterLoadoutName", Localize( file.characterClassToLoadoutNameTable[ role ] ) )
+	}
+	else
+	{
+		RuiSetString( file.loadoutInfoRui, "characterLoadoutName", Localize( "#" + characterRef + "_NAME" ) )
+	}
 
+	
+	for ( int i = 0; i < file.characterFlavorToDisplayedWeaponLoadout[characterRef].len(); i++ )
+	{
+		string weaponRef    = file.characterFlavorToDisplayedWeaponLoadout[characterRef][i]
+		LootData weaponData = SURVIVAL_Loot_GetLootDataByRef( weaponRef )
+		var weaponRuiAsset  = RuiCreate( $"ui/loadout_selection_icon_weapon.rpak", clGlobal.topoFullScreen, RUI_DRAW_HUD, 1 )
 
+		RuiSetBool( weaponRuiAsset, "isDetailMode", file.isDetailsPanelShowing )
+		RuiSetAsset( weaponRuiAsset, "iconImage", weaponData.hudIcon )
+		RuiSetInt( weaponRuiAsset, "weaponIndex", i )
+		if ( ShouldShrinkWeaponIcon( weaponRef ) )
+			RuiSetFloat2( weaponRuiAsset, "iconSize", <150, 75, 0.0> )
 
+		string ammoRef = GetWeaponAmmoType( weaponRef )
+		if ( ammoRef != "" )
+		{
+			
+			LootData ammoData = SURVIVAL_Loot_GetLootDataByRef( ammoRef )
+			RuiSetAsset( weaponRuiAsset, "ammoImage", ammoData.hudIcon )
+		}
 
+		RuiSetString( weaponRuiAsset, "weaponName", Localize( "#WPN_" + weaponData.baseWeapon.slice(10) + "_SHORT" ) )
 
+		file.loadoutRuiElements.append( weaponRuiAsset )
 
+		
+		array<string> attachmentRefs
+		if( !SURVIVAL_Weapon_IsAttachmentLocked ( weaponRef ) )
+		{
+			attachmentRefs = file.characterFlavorToWeaponLoadout[characterRef].weaponAttachmentsByWeapon[weaponRef]
+		}
+		else
+		{
+			attachmentRefs = SURVIVAL_Weapon_GetBaseMods( weaponRef )
+		}
+		int attachmentSlot = 0
+		for ( int j = 0; j < attachmentRefs.len(); j++ )
+		{
+			if ( !SURVIVAL_Loot_IsRefValid( attachmentRefs[j] ) )
+				continue
+			LootData attachmentData = SURVIVAL_Loot_GetLootDataByRef( attachmentRefs[j] )
+			var attachmentRuiAsset  = RuiCreate( $"ui/loadout_selection_icon_attachment.rpak", clGlobal.topoFullScreen, RUI_DRAW_HUD, 1 )
 
+			RuiSetBool( attachmentRuiAsset, "isDetailMode", file.isDetailsPanelShowing )
+			RuiSetAsset( attachmentRuiAsset, "iconImage", attachmentData.hudIcon )
+			RuiSetInt( attachmentRuiAsset, "attachmentIndex", attachmentSlot )
+			RuiSetInt( attachmentRuiAsset, "weaponIndex", i )
+			RuiSetInt( attachmentRuiAsset, "lootTier", attachmentData.tier )
 
+			attachmentSlot++
 
+			file.loadoutRuiElements.append( attachmentRuiAsset )
+		}
+	}
 
+	
+	for ( int i = 0; i < file.characterFlavorToDisplayedEquipmentLoadout[characterRef].len(); i++ )
+	{
+		string equipmentRef    = file.characterFlavorToDisplayedEquipmentLoadout[characterRef][i]
+		LootData equipmentData = SURVIVAL_Loot_GetLootDataByRef( equipmentRef )
+		var equipmentRuiAsset  = RuiCreate( $"ui/loadout_selection_icon_equipment.rpak", clGlobal.topoFullScreen, RUI_DRAW_HUD, 1 )
 
+		RuiSetBool( equipmentRuiAsset, "isDetailMode", file.isDetailsPanelShowing )
+		RuiSetAsset( equipmentRuiAsset, "iconImage", equipmentData.hudIcon )
+		RuiSetInt( equipmentRuiAsset, "lootTier", equipmentData.tier )
+		RuiSetInt( equipmentRuiAsset, "equipmentIndex", i )
 
+		file.loadoutRuiElements.append( equipmentRuiAsset )
+	}
 
+	
+	table<string, int> trackedConsumableCount
+	table<string, var> trackConsumableRuiAssets
+	int consumableCounter = 0
+	int equipmentIndex = -1
+	for ( int i = 0; i < file.characterFlavorToDisplayedConsumableLoadout[characterRef].len(); i++ )
+	{
+		string consumableRef    = file.characterFlavorToDisplayedConsumableLoadout[characterRef][i]
 
+		if ( consumableRef in trackedConsumableCount )
+		{
+			trackedConsumableCount[consumableRef]++
+			RuiSetInt( trackConsumableRuiAssets[consumableRef], "itemCount", trackedConsumableCount[consumableRef] )
+		}
+		else
+		{
+			LootData consumableData = SURVIVAL_Loot_GetLootDataByRef( consumableRef )
+			var consumableRuiAsset  = RuiCreate( $"ui/loadout_selection_icon_equipment.rpak", clGlobal.topoFullScreen, RUI_DRAW_HUD, 1 )
+			if ( equipmentIndex == -1 )
+				equipmentIndex = i
+			else
+				equipmentIndex++
+			RuiSetBool( consumableRuiAsset, "isDetailMode", file.isDetailsPanelShowing )
+			RuiSetAsset( consumableRuiAsset, "iconImage", consumableData.hudIcon )
+			RuiSetInt( consumableRuiAsset, "lootTier", consumableData.tier )
+			RuiSetInt( consumableRuiAsset, "equipmentIndex", equipmentIndex )
+			RuiSetBool( consumableRuiAsset, "isConsumable", true )
 
+			trackedConsumableCount[consumableRef] <- 1
+			trackConsumableRuiAssets[consumableRef] <- consumableRuiAsset
 
+			file.loadoutRuiElements.append( consumableRuiAsset )
+			consumableCounter++
+		}
+	}
 
+	foreach( ruiAsset in file.loadoutRuiElements )
+		RuiSetBool( ruiAsset, "is16x10", file.is16x10 )
 
+}
 
+bool function ShouldShrinkWeaponIcon( string weaponRef )
+{
+	
+		
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+	return false
+}
 
 
 

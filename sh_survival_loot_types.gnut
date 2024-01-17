@@ -257,6 +257,15 @@ void function SURVIVAL_LootTypes_InitShared()
 
 
 
+		lt = RegisterLootType( eLootType.CANDY_PICKUP )
+		lt.equipmentSlot = ""
+		lt.groundActionFunc = GroundAction_ForCustomItem
+		lt.groundUseLongActionFunc = GroundLongAction_ForBackpackItem
+		lt.groundAltActionFunc = GroundAltAction_None
+		lt.backpackAction = eLootAction.USE
+
+
+
 
 
 
@@ -532,21 +541,26 @@ LootActionStruct function GroundAction_ForEquipment( entity player, LootRef loot
 
 
 
+		
+		if ( lootData.ref.find( COPYCAT_NAME ) == 0 )
+		{
+			array<entity> offhandWeapons = player.GetOffhandWeapons()
+			string kitAbilityRef = GetWeaponInfoFileKeyField_GlobalString ( lootData.ref, "disguise_ability" )
 
+			if ( kitAbilityRef != "" )
+			{
+				foreach ( offhand in offhandWeapons )
+				{
+					if ( kitAbilityRef == offhand.GetWeaponClassName() )
+					{
+						as.action = eLootAction.NONE
 
+						as.displayString = Localize( "#SURVIVAL_PICKUP_COPYCAT_KIT_DUPE_LEGEND_ERROR" )
 
-
-
-
-
-
-
-
-
-
-
-
-
+					}
+				}
+			}
+		}
 
 
 	return as

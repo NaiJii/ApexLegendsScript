@@ -22,9 +22,9 @@ const string PIN_MESSAGE_TYPE_PROMO = "motd"
 const float PROMO_TRANS_DURATION = 0.5
 const float PROMO_PREVIEW_BUTTON_WIDTH = 320
 const string PROMO_PREVIEW_BUTTON_NAME = "PromoPreviewButton"
-const float MIN_ACCEPTABLE_LOAD_TIME_SECONDS = 5
-const float MAX_ACCEPTABLE_LOAD_TIME_SECONDS = 15
-const float LOAD_TIME_INCREASE_FACTOR = 1.5
+const float MIN_ACCEPTABLE_LOAD_TIME_SECONDS = 10
+const float MAX_ACCEPTABLE_LOAD_TIME_SECONDS = 20
+const float LOAD_TIME_INCREASE_FACTOR = 1.2 
 struct PromoDialogPageData
 {
 	asset  image = $""

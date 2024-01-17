@@ -30,6 +30,7 @@ global function DEV_PrintGiftingInboxMessages
 
 
 
+
 struct{
 	array<GRXScriptInboxMessage> inboxMessages
 	bool UIisFullyConnected = false
@@ -49,13 +50,12 @@ bool function IsTwoFactorAuthenticationEnabled()
 
 
 
-bool function IsPlayerLeveledForGifting()
+bool function IsPlayerLeveledForGifting_Internal( entity player )
 {
-	entity localPlayer = GetLocalClientPlayer()
-	if ( !IsValid( localPlayer ) )
+	if ( !IsValid( player ) )
 		return false
 
-	int currentXP = GetPlayerAccountXPProgress( ToEHI( localPlayer ) )
+	int currentXP = GetPlayerAccountXPProgress( ToEHI( player ) )
 
 	int currentLevel = GetAccountLevelForXP( currentXP )
 
@@ -68,13 +68,27 @@ bool function IsPlayerLeveledForGifting()
 
 
 
-bool function IsPlayerWithinGiftingLimit()
+bool function IsPlayerLeveledForGifting()
 {
-	int limitCounter = GRX_GetGiftingLimitCounter()
+	return IsPlayerLeveledForGifting_Internal( GetLocalClientPlayer() )
+}
+
+
+
+bool function IsPlayerWithinGiftingLimit_Internal( entity player )
+{
+	int limitCounter = GRX_GetGiftingLimitCounter( player )
 	if  ( limitCounter <  GetGiftingMaxLimitPerResetPeriod() )
 		return true
 
 	return false
+}
+
+
+
+bool function IsPlayerWithinGiftingLimit()
+{
+	return IsPlayerWithinGiftingLimit_Internal( GetLocalClientPlayer() )
 }
 
 
@@ -109,7 +123,7 @@ bool function RefreshTwoFactorAuthenticationAndIsEnabled()
 
 int function Gifting_GetRemainingDailyGifts()
 {
-	return GetGiftingMaxLimitPerResetPeriod() - GRX_GetGiftingLimitCounter()
+	return GetGiftingMaxLimitPerResetPeriod() - GRX_GetGiftingLimitCounter( GetLocalClientPlayer() )
 }
 
 
@@ -136,12 +150,16 @@ bool function HasFriendshipTenureBeenLongEnough( int friendshipCreationTime )
 	if ( !IsConnected() )
 		return false
 
+	int minFriendshipInDays = GetConVarInt( "mtx_giftingMinFriendshipInDays" )
+#if DEV
+		if (minFriendshipInDays == 0)
+			return true
+#endif
 	int currentTime = GetUnixTimestamp()
 	int friendshipLengthInSeconds = currentTime - friendshipCreationTime
 
 	
 	int friendshipLengthInDays = friendshipLengthInSeconds / (  60 * 60 * 24 )
-	int minFriendshipInDays = GetConVarInt( "mtx_giftingMinFriendshipInDays" )
 
 	return friendshipLengthInDays >= minFriendshipInDays
 }
@@ -359,6 +377,18 @@ string function GetFriendNameFromNucleusPId( string id, array<EadpPeopleData> fr
 
 	return name
 }
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

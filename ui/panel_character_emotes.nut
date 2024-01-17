@@ -143,13 +143,16 @@ void function Tabs_OnChanged( TabDef tabDef )
 	}
 }
 
-void function CharacterEmotesPanel_SetHintSub( string hintSub )
+void function CharacterEmotesPanel_SetHintSub( string hintSub, bool isSkydive = false )
 {
 	if ( hintSub != "" )
 		hintSub = "\n\n" + Localize( hintSub )
 
-	RunClientScript( "SetHintTextOnHudElem", Hud_GetChild( file.panel, "HintMKB" ), "#HINT_SOCIAL_WHEEL_MKB", hintSub )
-	RunClientScript( "SetHintTextOnHudElem", Hud_GetChild( file.panel, "HintGamepad" ), "#HINT_SOCIAL_WHEEL_GAMEPAD", hintSub )
+	string hintMKB = isSkydive ? "#HINT_SKYDIVE_WHEEL" : "#HINT_SOCIAL_WHEEL_MKB"
+	string hintPad = isSkydive ? "#HINT_SKYDIVE_WHEEL" : "#HINT_SOCIAL_WHEEL_GAMEPAD"
+
+	RunClientScript( "SetHintTextOnHudElem", Hud_GetChild( file.panel, "HintMKB" ), hintMKB, hintSub )
+	RunClientScript( "SetHintTextOnHudElem", Hud_GetChild( file.panel, "HintGamepad" ), hintPad, hintSub )
 }
 
 

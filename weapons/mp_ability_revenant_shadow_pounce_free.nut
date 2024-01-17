@@ -48,18 +48,20 @@ const string SHADOW_POUNCE_TARGET_INDICATOR_MOD = "shadow_pounce_target_indicato
 const int MAX_IDEAL_UP_ANGLE = -15 
 const int MAX_DOWN_ANGLE = 75 
 const int GROUND_CHECK_START_ANGLE = 20
+const int GROUND_CHECK_ANGLE_ADJUSTMENT = 15
+const float GROUND_CHECK_TRACE_DIST = 200.0
 const int MAX_VERTICAL_PITCH_ANGLE = -80 
 const int MAX_EYE_ANGLE_INCREASE = 35 
 const int VELOCITY_MULTIPLIER_MIN = 700
 const int VELOCITY_MULTIPLIER_MAX = 1150
 const float HIGH_ANGLE_VELOCITY_DIVISOR_MAX = 1.5
-const float GROUND_CHECK_TRACE_DIST = 200.0
-const float MAX_FOV_LERP_OFFSET = -7.0
-const float MAX_CODE_FOV = 115.0 
 
 const float SHADOW_POUNCE_MAX_HOLD_TIME = 1.3
 const vector SHADOW_POUNCE_VIEWPUNCH = < 35, -35, 5 >
+const float MAX_FOV_LERP_OFFSET = -7.0
+const float MAX_CODE_FOV = 115.0 
 const float SHADOW_POUNCE_WALL_CLIMB_DISABLE_DURATION = 0.75
+const float SHADOW_POUNCE_WEAPON_STOW_MIN = 0.2
 const int SHADOW_POUNCE_WALL_CLIMB_ONLY_FROM_WALL = 0
 const int SHADOW_POUNCE_TARGET_INDICATOR = 0
 const int SHADOW_POUNCE_CHARGE_UI = 0
@@ -68,8 +70,10 @@ const int SHADOW_POUNCE_DISABLE_WEAPON_TYPES = WPT_ALL_EXCEPT_VIEWHANDS_OR_INCAP
 
 struct
 {
-	table<entity, string> cachedLastWeaponName
+	table< entity, string> cachedLastWeaponName
 	table< entity, float > chargePercentage
+	table< entity, int > disableWallRunHandle
+	table< entity, float > weaponStowTime
 
 
 		int pounceTargetFXHandle
@@ -79,6 +83,7 @@ struct
 	
 	float maxChargeTime
 	float wallClimbDisableDuration
+	float weaponStowMinTime
 	bool shadowPounce_TargetIndicator
 	bool shadowPounce_ChargeUI
 	bool wallClimbOnlyFromWall
@@ -87,6 +92,7 @@ struct
 	int maxVerticalPitchAngle
 	int maxDownAngle
 	int groundCheckStartAngle
+	int groundCheckAngleAdjustment
 	float groundCheckTraceDist
 	int maxEyeAngleIncrease
 	int minVelocityMultiplier
@@ -116,14 +122,16 @@ void function MpAbilityShadowPounceFree_Init()
 	
 	file.maxChargeTime = GetCurrentPlaylistVarFloat( "shadow_pounce_max_charge_time", SHADOW_POUNCE_MAX_HOLD_TIME )
 	file.wallClimbDisableDuration = GetCurrentPlaylistVarFloat( "shadow_pounce_wall_climb_disable_duration", SHADOW_POUNCE_WALL_CLIMB_DISABLE_DURATION )
-	file.shadowPounce_TargetIndicator = ( GetCurrentPlaylistVarInt( "shadow_pounce_target_indicator", SHADOW_POUNCE_TARGET_INDICATOR ) > 0 ) ? true : false
-	file.shadowPounce_ChargeUI = ( GetCurrentPlaylistVarInt( "shadow_pounce_charge_ui", SHADOW_POUNCE_CHARGE_UI ) > 0 ) ? true : false
-	file.wallClimbOnlyFromWall = ( GetCurrentPlaylistVarInt( "shadow_pounce_wall_climb_from_wall", SHADOW_POUNCE_WALL_CLIMB_ONLY_FROM_WALL ) > 0 ) ? true : false
+	file.weaponStowMinTime = GetCurrentPlaylistVarFloat( "shadow_pounce_weapon_stow_time", SHADOW_POUNCE_WEAPON_STOW_MIN )
+	file.shadowPounce_TargetIndicator = ( GetCurrentPlaylistVarInt( "shadow_pounce_target_indicator", SHADOW_POUNCE_TARGET_INDICATOR ) > 0 )
+	file.shadowPounce_ChargeUI = ( GetCurrentPlaylistVarInt( "shadow_pounce_charge_ui", SHADOW_POUNCE_CHARGE_UI ) > 0 )
+	file.wallClimbOnlyFromWall = ( GetCurrentPlaylistVarInt( "shadow_pounce_wall_climb_from_wall", SHADOW_POUNCE_WALL_CLIMB_ONLY_FROM_WALL ) > 0 )
 
 	file.maxIdealPitchAngle = GetCurrentPlaylistVarInt( "shadow_pounce_max_ideal_pitch_angle", MAX_IDEAL_UP_ANGLE )
 	file.maxVerticalPitchAngle = GetCurrentPlaylistVarInt( "shadow_pounce_max_vertical_pitch_angle", MAX_VERTICAL_PITCH_ANGLE )
 	file.maxDownAngle = GetCurrentPlaylistVarInt( "shadow_pounce_max_down_angle", MAX_DOWN_ANGLE )
 	file.groundCheckStartAngle = GetCurrentPlaylistVarInt( "shadow_pounce_ground_check_start_angle", GROUND_CHECK_START_ANGLE )
+	file.groundCheckAngleAdjustment = GetCurrentPlaylistVarInt( "shadow_pounce_ground_check_angle_adjustment", GROUND_CHECK_ANGLE_ADJUSTMENT )
 	file.groundCheckTraceDist = GetCurrentPlaylistVarFloat( "shadow_pounce_ground_trace_dist", GROUND_CHECK_TRACE_DIST )
 	file.maxEyeAngleIncrease = GetCurrentPlaylistVarInt( "shadow_pounce_max_eye_angle_increase", MAX_EYE_ANGLE_INCREASE )
 	file.minVelocityMultiplier = GetCurrentPlaylistVarInt( "shadow_pounce_min_velocity_mod", VELOCITY_MULTIPLIER_MIN )
@@ -169,7 +177,7 @@ void function OnWeaponDeactivate_shadow_pounce_free( entity weapon )
 
 
 	if( !weapon.w.wasFired )
-		ClearWallClimbStatusEffect( weapon )
+		ClearWallClimbStatusEffect( weaponOwner )
 }
 
 void function OnWeaponOwnerChanged_shadow_pounce_free( entity weapon, WeaponOwnerChangedParams changeParams )
@@ -204,13 +212,18 @@ void function OnWeaponTossPrep_shadow_pounce_free( entity weapon, WeaponTossPrep
 
 	player.Signal( SHADOW_POUNCE_END_CHARGE_SIGNAL )
 	weapon.w.wasFired = false
-	ClearWallClimbStatusEffect( weapon )
+	ClearWallClimbStatusEffect( player )
 
 	weapon.w.startChargeTime = Time() + weapon.GetWeaponSettingFloat( eWeaponVar.toss_pullout_time )
 	if( !file.wallClimbOnlyFromWall || weapon.w.fromWall )
 	{
-		int wallClimbID = StatusEffect_AddEndless( player, eStatusEffect.disable_wall_run, 1.0 )
-		weapon.w.statusEffects.append( wallClimbID )
+		if( player in file.disableWallRunHandle )
+		{
+			StatusEffect_Stop( player, file.disableWallRunHandle[player] )
+			file.disableWallRunHandle[player] = StatusEffect_AddEndless( player, eStatusEffect.disable_wall_run, 1.0 )
+		}
+		else
+			file.disableWallRunHandle[player] <- StatusEffect_AddEndless( player, eStatusEffect.disable_wall_run, 1.0 )
 	}
 
 
@@ -220,7 +233,6 @@ void function OnWeaponTossPrep_shadow_pounce_free( entity weapon, WeaponTossPrep
 
 		if( file.shadowPounce_ChargeUI )
 			thread ShadowPounce_ChargeUI_Thread( player, weapon )
-
 		if( file.shadowPounce_TargetIndicator )
 			thread ShadowPounce_UpdateIndicator( player, weapon )
 		if( file.maxFovOffset != 0.0 )
@@ -246,10 +258,11 @@ var function OnWeaponToss_shadow_pounce_free( entity weapon, WeaponPrimaryAttack
 {
 	entity player = weapon.GetWeaponOwner()
 
+	float maxChargeTime = ShadowPounce_GetMaxChargeTime( player )
 	if( player in file.chargePercentage )
-		file.chargePercentage[player] = Clamp( (Time() - weapon.w.startChargeTime ) / file.maxChargeTime, 0.0, 1.0 )
+		file.chargePercentage[player] = Clamp( (Time() - weapon.w.startChargeTime ) / maxChargeTime, 0.0, 1.0 )
 	else
-		file.chargePercentage[player] <- Clamp( (Time() - weapon.w.startChargeTime ) / file.maxChargeTime, 0.0, 1.0 )
+		file.chargePercentage[player] <- Clamp( (Time() - weapon.w.startChargeTime ) / maxChargeTime, 0.0, 1.0 )
 
 	player.Signal( SHADOW_POUNCE_END_CHARGE_SIGNAL )
 }
@@ -264,10 +277,15 @@ var function OnWeaponTossReleaseAnimEvent_shadow_pounce_free( entity weapon, Wea
 
 
 	player.Signal( SHADOW_POUNCE_END_CHARGE_SIGNAL )
-	thread ClearWallClimbStatusEffectAfterDelay_Thread( player, weapon )
+	thread ClearWallClimbStatusEffectAfterDelay_Thread( player )
 
 	ShadowPounce_LaunchPlayer( player, weapon.w.startChargeTime  )
 	weapon.w.wasFired = true
+
+
+
+
+
 
 
 
@@ -284,17 +302,36 @@ var function OnWeaponTossReleaseAnimEvent_shadow_pounce_free( entity weapon, Wea
 	return weapon.GetWeaponSettingInt( eWeaponVar.ammo_per_shot )
 }
 
+
+
+
+
+
+
+
+float function ShadowPounce_GetMaxChargeTime( entity player )
+{
+	float result = file.maxChargeTime
+
+
+
+
+
+
+
+
+	return result
+}
+
 void function ShadowPounce_LaunchPlayer( entity player, float startTime )
 {
 	if( !IsValid( player ) )
 		return
 
 	vector launchVelocity = ShadowPounce_CalcLaunchVelocity( player, startTime )
-	
-	
-	
-	
-	player.PlayerLaunch( launchVelocity )
+	player.PlayerLaunch( launchVelocity, true )
+
+
 
 
 
@@ -323,7 +360,7 @@ vector function ShadowPounce_CalcLaunchVelocity( entity player, float startTime 
 		TraceResults groundTrace = TraceLine( player.EyePosition(), traceEnd, player, TRACE_MASK_SOLID )
 
 		if( IsValid( groundTrace.hitEnt ) )
-			pitch = float( file.groundCheckStartAngle )
+			pitch = float( file.groundCheckAngleAdjustment )
 	}
 	
 	if( pitch == clamp( pitch, file.maxIdealPitchAngle, file.maxDownAngle ) )
@@ -356,29 +393,26 @@ vector function ShadowPounce_CalcLaunchVelocity( entity player, float startTime 
 	return launchVelocity
 }
 
-void function ClearWallClimbStatusEffect( entity weapon )
+void function ClearWallClimbStatusEffect( entity player )
 {
-	if( !IsValid( weapon ) )
+	if( !IsValid( player ) )
 		return
 
-	entity weaponOwner = weapon.GetWeaponOwner()
-	if ( IsValid( weaponOwner ) )
+	player.Signal( SHADOW_POUNCE_END_CHARGE_SIGNAL )
+	if( player in file.disableWallRunHandle )
 	{
-		weaponOwner.Signal( SHADOW_POUNCE_END_CHARGE_SIGNAL )
-		foreach( effect in weapon.w.statusEffects )
-			StatusEffect_Stop( weaponOwner, effect )
+		StatusEffect_Stop( player, file.disableWallRunHandle[player] )
+		delete file.disableWallRunHandle[player]
 	}
-
-	weapon.w.statusEffects.clear()
 }
 
-void function ClearWallClimbStatusEffectAfterDelay_Thread( entity player, entity weapon )
+void function ClearWallClimbStatusEffectAfterDelay_Thread( entity player )
 {
 	Assert( IsNewThread(), "Must be threaded off" )
 	EndSignal( player, "OnDeath", "OnDestroy", "BleedOut_OnStartDying" )
 
 	OnThreadEnd(
-		function() : ( weapon )
+		function() : ( player )
 		{
 
 
@@ -388,6 +422,21 @@ void function ClearWallClimbStatusEffectAfterDelay_Thread( entity player, entity
 
 	wait file.wallClimbDisableDuration
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -662,8 +711,9 @@ void function ShadowPounce_ChargeUI_Thread( entity player, entity weapon )
 
 	while( true )
 	{
-		float chargeTime = clamp( Time() - weapon.w.startChargeTime, 0.0, file.maxChargeTime )
-		float chargeFrac = chargeTime/file.maxChargeTime
+		float maxChargeTime = ShadowPounce_GetMaxChargeTime( player )
+		float chargeTime = clamp( Time() - weapon.w.startChargeTime, 0.0, maxChargeTime )
+		float chargeFrac = chargeTime / maxChargeTime
 		RuiSetFloat( rui, "chargeFrac", chargeFrac )
 		WaitFrame()
 	}
@@ -684,8 +734,9 @@ void function ShadowPounce_ChargeFov_Thread( entity player, entity weapon )
 		{
 			if( IsAlive( player ) && IsValid( weapon ) )
 			{
-				float chargeTime = clamp( Time() - weapon.w.startChargeTime, 0.0, file.maxChargeTime )
-				float chargeFrac = chargeTime/file.maxChargeTime
+				float maxChargeTime = ShadowPounce_GetMaxChargeTime( player )
+				float chargeTime = clamp( Time() - weapon.w.startChargeTime, 0.0, maxChargeTime )
+				float chargeFrac = chargeTime/maxChargeTime
 				thread ShadowPounce_LerpOutFov_Thread( player, chargeFrac, maxFovOffset )
 			}
 			else
@@ -695,11 +746,30 @@ void function ShadowPounce_ChargeFov_Thread( entity player, entity weapon )
 		}
 	} )
 
+	bool lowCharge = false
+	bool midCharge = false
+	bool fullCharge = false
 	while( true )
 	{
-		float chargeTime = clamp( Time() - weapon.w.startChargeTime, 0.0, file.maxChargeTime )
-		float chargeFrac = chargeTime/file.maxChargeTime
+		float maxChargeTime = ShadowPounce_GetMaxChargeTime( player )
+		float chargeTime = clamp( Time() - weapon.w.startChargeTime, 0.0, maxChargeTime )
+		float chargeFrac = chargeTime/maxChargeTime
 		player.SetFOVOffset( chargeFrac * maxFovOffset )
+		if( ( chargeFrac >= 0.33 ) && ( !lowCharge ) )
+		{
+			lowCharge = true
+			Rumble_Play( "rumble_burn_card_activate", {} )
+		}
+		if( ( chargeFrac >= 0.66 ) && ( !midCharge ) )
+		{
+			midCharge = true
+			Rumble_Play( "rumble_burn_card_activate", {} )
+		}
+		if( ( chargeFrac >= 1.0 ) && ( !fullCharge ) )
+		{
+			fullCharge = true
+			Rumble_Play( "rumble_titanfall_request", {} )
+		}
 		WaitFrame()
 	}
 }

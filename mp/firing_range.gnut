@@ -205,6 +205,14 @@ const bool DEBUG_RESPAWNING = false
 
 
 
+
+
+
+
+
+
+
+
 global function SCB_CloseCharacterSelectMenu
 global function FiringRange_IsCharacterSwitchingEnabled
 global function SCB_FiringRange_EnableCharacterChange
@@ -212,6 +220,11 @@ global function SCB_FiringRange_SetPlayerInFinale
 global function FiringRange_IsPlayerInFinale
 
 global function SCB_Broadcast_FRSetting_FriendlyFire_Change
+
+
+
+
+
 
 
 global function SCB_DynStats_ResetStats
@@ -352,11 +365,19 @@ void function FiringRangeGameMode_Init()
 	if ( !IsFiringRangeGameMode() )
 		return
 
+	
+	Assert( GetMapName() == "mp_rr_canyonlands_staging_mu1", "Invalid: the firing range playlist only supports mp_rr_canyonlands_staging_mu1" )
+
 	Remote_RegisterServerFunction( "UCB_SV_FRSetting_FriendlyFire_Toggle" )
 
 	Remote_RegisterServerFunction( "UCB_SV_FRSetting_FriendlyFire", "bool", "bool" )
 	Remote_RegisterClientFunction( "SCB_CloseCharacterSelectMenu" )
 	Remote_RegisterClientFunction( "SCB_Broadcast_FRSetting_FriendlyFire_Change", "entity" )
+
+
+
+
+
 
 	Remote_RegisterServerFunction( "UCB_SV_FRSetting_DummieHelmetMatchShields", "bool", "bool" )
 
@@ -390,6 +411,10 @@ void function FiringRangeGameMode_Init()
 
 
 			Remote_RegisterServerFunction( "UCB_ResetDoors" )
+
+
+
+
 
 
 		Remote_RegisterServerFunction( "UICallback_FRDummies_Reset" )
@@ -1182,7 +1207,8 @@ int function FRS_PVar_Get_Int( entity player, int settingType )
 
 void function SCB_CloseCharacterSelectMenu()
 {
-	CloseCharacterSelectNewMenu()
+	RunUIScript( "CloseAllDialogs" )
+	CloseCharacterSelectMenu()
 }
 
 void function SCB_Broadcast_FRSetting_FriendlyFire_Change( entity playerThatChanged )
@@ -1496,6 +1522,54 @@ void function SCB_Broadcast_FRDummie_Speed_Change( entity playerThatChanged, int
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 bool function CheckFRSettingsBroadcastDebounce( int SCBType )
 {
 	if( !( SCBType in file.lastFRSettingsBroadcastTimes ) )
@@ -1554,7 +1628,7 @@ void function SCB_FiringRange_EnableCharacterChange( bool enable )
 {
 	file.characterSwitchingEnabled = enable
 	if ( !enable )
-		CloseCharacterSelectNewMenu()
+		CloseCharacterSelectMenu()
 	RunUIScript( "EnableCharacterChangeInFiringRange", enable )
 }
 
@@ -1568,6 +1642,68 @@ bool function FiringRange_IsPlayerInFinale()
 {
 	return file.inFinale
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -3566,6 +3702,13 @@ void function IntroDisplayThread()
 		entity viewPlayer = GetLocalViewPlayer()
 		if ( IsValid( viewPlayer ) )
 			MapZones_ZoneIntroText( viewPlayer, ("#" + GetMapName()), -1 )
+
+
+
+
+
+
+
 
 		wait 6.0
 		SCB_Broadcast_RangeMaster_Change()

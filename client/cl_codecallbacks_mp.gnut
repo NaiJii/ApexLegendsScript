@@ -33,6 +33,7 @@ global function ClientCodeCallback_SpectatorPlayerTagModeChanged
 global function ClientCodeCallback_SpectatorVisibleEnemiesChanged
 global function ClientCodeCallback_SpectatorUiStateChanged
 global function ServerCallback_YouRespawned
+global function ServerCallback_YouDiedNoAttacker
 global function ServerCallback_YouDied
 global function ClientCodeCallback_SaveResumed
 global function ClientCodeCallback_OnSelectedWeaponChanged
@@ -580,6 +581,11 @@ array <void functionref(entity, float, int, float)> s_callbacksOnYouDied
 void function AddCallback_OnYouDied( void functionref( entity attacker, float healthFrac, int damageSourceId, float recentHealthDamage ) func )
 {
 	s_callbacksOnYouDied.append( func )
+}
+
+void function ServerCallback_YouDiedNoAttacker( float healthFrac, int damageSourceId, float recentHealthDamage )
+{
+	ServerCallback_YouDied( null, healthFrac, damageSourceId, recentHealthDamage )
 }
 
 void function ServerCallback_YouDied( entity attacker, float healthFrac, int damageSourceId, float recentHealthDamage )

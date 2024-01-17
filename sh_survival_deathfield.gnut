@@ -5,7 +5,22 @@ global function Sh_ArenaDeathField_Init
 
 
 
+
+
+
+
+
+
 global function TeamShouldSeeBeaconMarker
+
+global function GetRingTuningOverrideVar
+
+
+
+
+
+
+
 
 
 
@@ -100,8 +115,11 @@ global function Cl_GetDeathFieldStage
 global function Cl_SURVIVAL_GetDeathField
 global function Cl_SURVIVAL_GetDeathFieldCurrentRadius
 global function Cl_SURVIVAL_GetDeathFieldCenter
+global function Cl_SURVIVAL_PosInsideDeathField
+global function Cl_SURVIVAL_PosInSafeZone
 global function ServerCallback_UpdateSurveyBeaconHUDVisibility
 global function ServerCallback_SurveyBeaconNotifications
+global function SURVIVAL_Deathfield_GetStartRadius
 global function SURVIVAL_AddCallback_OnDeathFieldStartShrink
 global function SURVIVAL_AddCallback_OnDeathFieldStopShrink
 global function UpdateSurveyBeaconHint
@@ -113,6 +131,10 @@ global function SURVIVAL_GetCurrentDeathFieldStage
 global function SURVIVAL_GetCurrentRoundString
 global function SURVIVAL_IsFinalDeathFieldStage
 global function Survival_GetNumDeathfieldStages
+
+
+
+
 
 global function AddCallback_OnSurvivalDeathFieldStageChanged
 global function RemoveCallback_OnSurvivalDeathFieldStageChanged
@@ -136,6 +158,13 @@ table < float, string > distanceToSound =
 const asset DEATHFIELD_EFFECT = $"P_ring_FP_hit_01"
 const string COLOR_CORRECTION = "materials/correction/outside_ring.raw_hdr"
 const asset OBSERVER_DEATHFIELD_EFFECT = $"P_Observer_outside_heat_1p"
+
+
+
+
+
+
+
 
 const string DESIGNER_PLACED_CIRCLE_END_SCRIPT_NAME = "circle_end_location_override"
 const string DESIGNER_PLACED_CIRCLE_END_RADIUS_NAME = "selection_radius"
@@ -174,6 +203,18 @@ const asset NEXT_ZONE_SURVEY_BEACON_MODEL = $"mdl/communication/terminal_usable_
 #if DEV
 const string DUMMY_ZONE_WP_NAME = "dev_dummy_circle"
 #endif
+
+
+
+
+
+
+
+
+
+
+
+
 
 global struct DeathFieldData
 {
@@ -256,6 +297,11 @@ struct
 
 
 
+
+
+
+
+
 	array<DeathFieldStageData> deathFieldStageData
 
 	float					   	overrideStartRadius = -1
@@ -276,6 +322,7 @@ struct
 		bool											  trackingObserverDeathfield
 		int												  fieldEffectHandle
 		float 											  ringOpacityOverrideValue
+		array< int > 									  deathFieldFxIdx
 
 
 	array<void functionref( int stage, float nextCircleStartTime )> onSurvivalDeathFieldStageChangedCallbacks
@@ -334,6 +381,13 @@ void function Sh_ArenaDeathField_Init()
 
 	RegisterSignal( "NewDeathFieldStarting" )
 	RegisterSignal( "UpdateSurveyBeaconVisibility" )
+
+
+
+
+
+
+
 
 
 
@@ -434,6 +488,19 @@ void function Sh_ArenaDeathField_Init()
 			}
 		}
 
+		if ( file.ringOpacityOverrideEnabled )
+		{
+			file.deathFieldFxIdx = [ GetParticleSystemIndex( $"P_ring_radCP1_opaCP2_1k_x_1k" ), GetParticleSystemIndex( $"P_ring_radCP1_opaCP2_1k_x_5k" ), GetParticleSystemIndex( $"P_ring_radCP1_opaCP2_1k_x_100k" ) ]
+
+		}
+		else if ( file.usePreciseRingFx )
+		{
+			file.deathFieldFxIdx = [ GetParticleSystemIndex( $"P_survival_radius_CP_1k_x_1k" ), GetParticleSystemIndex( $"P_survival_radius_CP_1k_x_5k" ), GetParticleSystemIndex( $"P_survival_radius_CP_1k_x_100k" ) ]
+		}
+		else
+		{
+			file.deathFieldFxIdx = [ GetParticleSystemIndex( $"P_survival_radius_CP_1x1" ), GetParticleSystemIndex( $"P_survival_radius_CP_1x5" ), GetParticleSystemIndex( $"P_survival_radius_CP_1x100" ) ]
+		}
 
 }
 
@@ -3300,6 +3367,376 @@ bool function TeamShouldSeeBeaconMarker( int team, entity beacon )
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 void function SURVIVAL_AddCallback_OnDeathFieldStartShrink( void functionref( DeathFieldStageData ) callbackFunc )
 {
 	Assert( !file.ClientCallbacks_OnDeathFieldStartShrink.contains( callbackFunc ), "Already added " + string( callbackFunc ) + " with SURVIVAL_AddCallback_OnDeathFieldStartShrink" )
@@ -3396,14 +3833,6 @@ void function SurveyZoneCleanupOnDestroy( entity surveyZoneEnt )
 
 int function Cl_Deathfield_GetFXIDForRadius( float radius )
 {
-	array<int> fxIdx     = [ GetParticleSystemIndex( $"P_survival_radius_CP_1x1" ), GetParticleSystemIndex( $"P_survival_radius_CP_1x5" ), GetParticleSystemIndex( $"P_survival_radius_CP_1x100" ) ]
-
-	if ( file.usePreciseRingFx )
-		fxIdx     = [ GetParticleSystemIndex( $"P_survival_radius_CP_1k_x_1k" ), GetParticleSystemIndex( $"P_survival_radius_CP_1k_x_5k" ), GetParticleSystemIndex( $"P_survival_radius_CP_1k_x_100k" ) ]
-
-	if ( file.ringOpacityOverrideEnabled )
-		fxIdx     = [ GetParticleSystemIndex( $"P_ring_radCP1_opaCP2_1k_x_1k" ), GetParticleSystemIndex( $"P_ring_radCP1_opaCP2_1k_x_5k" ), GetParticleSystemIndex( $"P_ring_radCP1_opaCP2_1k_x_100k" ) ]
-
 	int idealIdx
 	if ( radius <= 3000 )
 	{
@@ -3418,7 +3847,7 @@ int function Cl_Deathfield_GetFXIDForRadius( float radius )
 		idealIdx = 0
 	}
 
-	return fxIdx[ idealIdx ]
+	return file.deathFieldFxIdx[ idealIdx ]
 }
 
 void function Cl_DeathFieldThink( entity deathField )
@@ -3877,6 +4306,33 @@ float function Cl_SURVIVAL_GetDeathFieldCurrentRadius()
 
 
 
+bool function Cl_SURVIVAL_PosInsideDeathField( vector position )
+{
+	int dIndex = GetLocalViewPlayer().DeathFieldIndex()
+	bool isInside = DeathField_PointDistanceFromFrontier( position, dIndex ) > 0.0
+	return isInside
+}
+
+
+
+bool function Cl_SURVIVAL_PosInSafeZone( vector position )
+{
+	int i = SURVIVAL_GetCurrentDeathFieldStage()
+
+	if ( i == -1 )
+		return true
+
+	DeathFieldStageData data = file.deathFieldStageData[i]
+	float endRadius = data.endRadius
+	vector deathFieldCenter = Cl_SURVIVAL_GetDeathFieldCenter()
+
+	float distanceFromCenter = Distance2D( position, deathFieldCenter )
+	return distanceFromCenter < endRadius
+}
+
+
+
+
 
 
 
@@ -4014,6 +4470,22 @@ bool function TeamHasActiveSurveyZone( int team )
 	}
 	return false
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -4242,6 +4714,9 @@ void function DisplayHolsterWeaponHint()
 		return
 
 	if ( Bleedout_IsBleedingOut( viewPlayer ) )
+		return
+
+	if ( viewPlayer.GetPlayerNetBool( "isHealing" ) )
 		return
 
 	AddPlayerHint( HINT_DURATION, HINT_FADEOUT, $"", "#HINT_HOLSTER_WEAPON" )

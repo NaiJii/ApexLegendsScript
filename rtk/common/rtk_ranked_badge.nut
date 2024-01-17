@@ -10,6 +10,9 @@ global struct RTKRankedBadge_Properties
 
 	bool isPlacementMode = false
 	int completedMatches
+	int maxMatches = 10
+	bool useDynamicPips = false
+	bool isPromotional = false
 	int startPip
 	array<bool> wonMatches
 
@@ -41,6 +44,9 @@ void function RTKRankedBadge_OnDrawBegin( rtk_behavior self )
 		if ( isPlacementMode )
 		{
 			panel.SetRuiArgInt( "placementProgress", expect int( self.rtkprops.completedMatches ) )
+			panel.SetRuiArgInt( "maxPips", expect int( self.rtkprops.maxMatches ) )
+			panel.SetRuiArgBool( "useDynamicPips", expect bool( self.rtkprops.useDynamicPips ) )
+			panel.SetRuiArgBool( "isPromotional", expect bool( self.rtkprops.isPromotional ) )
 			panel.SetRuiArgInt( "startPip", expect int( self.rtkprops.startPip ) )
 
 			rtk_array wonMatches = expect rtk_array( self.rtkprops.wonMatches )

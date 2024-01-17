@@ -41,6 +41,10 @@
 
 
 
+
+
+
+
 global function ServerCallback_MonitorCommsMenuUsage
 global function ServerCallback_SetCommsDialogueEnabled
 
@@ -332,6 +336,7 @@ void function ShSurvivalTraining_Init()
 
 
 
+
 		AddLocalPlayerFunc( Training_AddPlayer )
 		AddCallback_OnClientScriptInit( OnLocalClientConnected )
 		AddTargetNameCreateCallback( RESPAWN_CHAMBER_TARGET_NAME, RespawnChamberCreated )
@@ -461,10 +466,21 @@ void function Training_EntitiesDidLoad()
 
 
 
+
+
+
+
+
 bool function IsStagingMU1()
 {
 	return( GetMapName() == "mp_rr_canyonlands_staging_mu1" )
 }
+
+
+
+
+
+
 
 
 
@@ -2698,6 +2714,37 @@ void function QuitToLobbyDelayed( entity player, float time )
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 void function TrainingDeathBoxCreated( entity ent )
 {
 	if ( ent.GetTargetName() == DEATH_BOX_TARGETNAME_TRAINING )
@@ -2766,28 +2813,6 @@ void function DisplayRuiForRespawnChamber( entity ent, entity player, var rui, E
 	RuiSetString( rui, "hintKeyboardMouse", settings.hint )
 	RuiSetString( rui, "hintController", settings.hint )
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

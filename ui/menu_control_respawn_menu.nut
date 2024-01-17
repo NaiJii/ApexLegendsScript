@@ -20,9 +20,9 @@ global function ClearWaypointDataForUI
 global function ControlSpawnMenu_SetLoadoutAndLegendSelectMenuIsEnabled
 global function ControlSpawnMenu_UpdatePlayerLoadout
 
-const string CONTROL_SFX_SELECT_INVALID_SPAWN = "Ctrl_Spawn_Invalid_1p"
+global const string CONTROL_SFX_SELECT_INVALID_SPAWN = "Ctrl_Spawn_Invalid_1p"
 const string CONTROL_SFX_SELECT_INVALID_SIDEMENU = "UI_Menu_Deny"
-const string CONTROL_SFX_SELECT_VALID_SPAWN = "UI_Menu_Accept"
+global const string CONTROL_SFX_SELECT_VALID_SPAWN = "UI_Menu_Accept"
 const string CONTROL_SFX_SELECT_VALID_SIDEMENU = "UI_Menu_Accept"
 const asset RESPAWN_BEACON_ICON = $"rui/hud/gametype_icons/survival/dna_station"
 

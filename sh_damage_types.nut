@@ -76,6 +76,10 @@ global enum eDamageSourceId
 
 
 
+
+
+
+
 	damagedef_loot_drone_explosion
 
 
@@ -112,8 +116,9 @@ global enum eDamageSourceId
 
 
 
-
-
+	mp_weapon_titan_sword
+	mp_weapon_titan_sword_slam
+	melee_titan_sword
 
 
 
@@ -207,15 +212,11 @@ global enum eDamageSourceId
 	melee_seer_heirloom
 	mp_weapon_seer_heirloom
 
-
 	melee_wraith_kunai_rt01
 	mp_weapon_wraith_kunai_primary_rt01
 
-
-
 	melee_ash_heirloom
 	mp_weapon_ash_heirloom
-
 
 
 	melee_horizon_heirloom
@@ -228,8 +229,8 @@ global enum eDamageSourceId
 
 
 
-
-
+	melee_fuse_heirloom
+	mp_weapon_fuse_heirloom_primary
 
 
 
@@ -310,11 +311,7 @@ global enum eDamageSourceId
 
 
 
-
-
-
-
-
+	mp_ability_conduit_shield_mines
 
 
 
@@ -435,6 +432,10 @@ global enum eDamageSourceId
 
 
 
+
+	mp_ability_rise_from_the_ashes
+
+
 	mp_weapon_spectre_spawner
 
 
@@ -520,19 +521,21 @@ global enum eDamageSourceId
 
 
 
+
+
+
+
 	mp_ability_shield_throw
 	mp_ability_armored_leap
 	mp_ability_castle_wall
-
 	mp_ability_sniper_ult
-
-	mp_weapon_cryo_cloud
-	mp_weapon_grenade_cryo
-	mp_weapon_cryo_wall
 	mp_weapon_ferro_wall
-	mp_weapon_ferrofluid_grenade
-	mp_weapon_resin_shot
 	mp_ability_spike_strip
+
+
+
+
+
 
 
 
@@ -558,8 +561,8 @@ global enum eDamageSourceId
 	mp_weapon_dragon_lmg
 	mp_weapon_dragon_lmg_thermite
 
-	mp_ability_loot_sensor
-	mp_ability_loot_sensor_cr
+
+
 
 
 
@@ -593,11 +596,40 @@ global enum eDamageSourceId
 	mp_ability_fire_wave
 
 
+	mp_ability_copycat_kit
+	mp_ability_copycat_kit_bloodhound_sonar
+	mp_ability_copycat_kit_horizon_elevator
+	mp_ability_copycat_kit_mirage_holopilot
+	mp_ability_copycat_kit_wraith_phase_walk
+	mp_ability_copycat_kit_catalyst_wall
+	mp_ability_copycat_kit_octane_pad
+	mp_ability_copycat_kit_ash_phase_blade
+	mp_ability_copycat_kit_caustic_grenade_gas
+	mp_weapon_grenade_rev_shell
 
 
 
 
 
+
+
+
+	golden_horse_green
+
+
+
+
+
+
+
+
+	melee_artifact_sword
+	mp_weapon_artifact_sword_primary
+
+
+
+	melee_crypto_heirloom_rt01
+	mp_weapon_crypto_heirloom_rt01_primary
 
 
 
@@ -614,10 +646,6 @@ global enum eDamageSourceId
 
 
 	_count
-
-
-
-
 }
 
 void function DamageTypes_Init()
@@ -658,6 +686,12 @@ void function DamageTypes_Init()
 	}
 
 
+		file.damageSourceIDToName[eDamageSourceId.mp_weapon_titan_sword_slam] <- "#WPN_TITAN_SWORD_SHORT"
+		file.damageSourceIDToImage[eDamageSourceId.mp_weapon_titan_sword_slam] <- $"rui/weapon_icons/r5/weapon_goldenhorse_sword"
+		file.damageSourceIDToString[eDamageSourceId.mp_weapon_titan_sword_slam] <- TITAN_SWORD_WEAPON_REF
+
+
+
 		file.damageSourceIDToImage[eDamageSourceId.melee_shadowsquad_hands] <- $"rui/gamemodes/shadow_squad/shadow_icon_small"
 		file.damageSourceIDToImage[eDamageSourceId.melee_shadowroyale_hands] <- $"rui/gamemodes/shadow_squad/shadow_icon_small"
 
@@ -693,8 +727,8 @@ void function DamageTypes_Init()
 			[ eDamageSourceId.spider_melee ] = "#DEATH_SPIDER_MELEE",
 			[ eDamageSourceId.spider_ranged ] = "#DEATH_SPIDER_RANGED",
 
-		[ eDamageSourceId.nessie_hug ] = "#BABY_NESSIE_TITLE",
-		[ eDamageSourceId.nessie_kiss ] = "#BABY_NESSIE_TITLE",
+		[ eDamageSourceId.nessie_hug ] = "#GOLDEN_HORSE_NESSIE_TITLE",
+		[ eDamageSourceId.nessie_kiss ] = "#GOLDEN_HORSE_NESSIE_TITLE",
 		[ eDamageSourceId.super_spectre_melee ] = "#DEATH_SUPER_SPECTRE",
 		[ eDamageSourceId.grunt_melee ] = "#DEATH_GRUNT_MELEE",
 
@@ -749,6 +783,10 @@ void function DamageTypes_Init()
 		[ eDamageSourceId.landing_zone ] = "#DEATH_CRUSHED",
 
 
+
+
+
+			[ eDamageSourceId.mp_ability_rise_from_the_ashes ] = "#SHADOW_ARMY_RISE_FROM_THE_ASHES",
 
 
 		[ eDamageSourceId.mp_ability_valk_cluster_missile ] = "#DEATH_VALK_CLUSTER_MISSILE",
@@ -819,15 +857,11 @@ void function DamageTypes_Init()
 		[ eDamageSourceId.melee_seer_heirloom ] = "#DEATH_MELEE_SEER_HEIRLOOM",
 		[ eDamageSourceId.mp_weapon_seer_heirloom] = "#DEATH_MELEE_SEER_HEIRLOOM",
 
+		[ eDamageSourceId.melee_wraith_kunai_rt01 ] = "#DEATH_MELEE_WRAITH_KUNAI_RT01",
+		[ eDamageSourceId.mp_weapon_wraith_kunai_primary_rt01 ] = "#DEATH_MELEE_WRAITH_KUNAI_RT01",
 
-			[ eDamageSourceId.melee_wraith_kunai_rt01 ] = "#DEATH_MELEE_WRAITH_KUNAI_RT01",
-			[ eDamageSourceId.mp_weapon_wraith_kunai_primary_rt01 ] = "#DEATH_MELEE_WRAITH_KUNAI_RT01",
-
-
-
-			[ eDamageSourceId.melee_ash_heirloom ] = "#DEATH_MELEE_ASH_HEIRLOOM",
-			[ eDamageSourceId.mp_weapon_ash_heirloom] = "#DEATH_MELEE_ASH_HEIRLOOM",
-
+		[ eDamageSourceId.melee_ash_heirloom ] = "#DEATH_MELEE_ASH_HEIRLOOM",
+		[ eDamageSourceId.mp_weapon_ash_heirloom] = "#DEATH_MELEE_ASH_HEIRLOOM",
 
 
 			[ eDamageSourceId.melee_horizon_heirloom ] = "#DEATH_MELEE_HORIZON_HEIRLOOM",
@@ -840,8 +874,18 @@ void function DamageTypes_Init()
 
 
 
+			[ eDamageSourceId.melee_fuse_heirloom ] = "#DEATH_MELEE_FUSE_HEIRLOOM",
+			[ eDamageSourceId.mp_weapon_fuse_heirloom_primary] = "#DEATH_MELEE_FUSE_HEIRLOOM",
 
 
+
+			[ eDamageSourceId.melee_artifact_sword] = "#DEATH_MELEE_ARTIFACT_SWORD",
+			[ eDamageSourceId.mp_weapon_artifact_sword_primary] = "#DEATH_MELEE_ARTIFACT_SWORD",
+
+
+
+			[ eDamageSourceId.melee_crypto_heirloom_rt01 ] = "#DEATH_MELEE_CRYPTO_HEIRLOOM_RT01",
+			[ eDamageSourceId.mp_weapon_crypto_heirloom_rt01_primary ] = "#DEATH_MELEE_CRYPTO_HEIRLOOM_RT01",
 
 
 
@@ -856,22 +900,20 @@ void function DamageTypes_Init()
 		[ eDamageSourceId.mp_weapon_cluster_bomb ] = "#WPN_CLUSTER_BOMB",
 		[ eDamageSourceId.mp_weapon_mortar_ring ] = "#WPN_MORTAR_RING",
 
-
-			[ eDamageSourceId.mp_ability_armored_leap ] = "#WPN_ARMORED_LEAP",
-			[ eDamageSourceId.mp_ability_castle_wall ] = "#WPN_ARMORED_LEAP",
-			[ eDamageSourceId.mp_ability_shield_throw ] = "#WPN_SHIELD_THROW",
-
-
-			[ eDamageSourceId.mp_weapon_grenade_cryo ] = "#WPN_CRYO_GRENADE",
-			[ eDamageSourceId.mp_weapon_cryo_wall ] = "#WPN_CRYO_WALL",
-			[ eDamageSourceId.mp_weapon_ferro_wall ] = "#WPN_FERRO_WALL",
-			[ eDamageSourceId.mp_ability_spike_strip ] = "#WPN_SPIKES",
-
+		[ eDamageSourceId.mp_ability_armored_leap ] = "#WPN_ARMORED_LEAP",
+		[ eDamageSourceId.mp_ability_castle_wall ] = "#WPN_ARMORED_LEAP",
+		[ eDamageSourceId.mp_ability_shield_throw ] = "#WPN_SHIELD_THROW",
+		[ eDamageSourceId.mp_weapon_ferro_wall ] = "#WPN_FERRO_WALL",
+		[ eDamageSourceId.mp_ability_spike_strip ] = "#WPN_SPIKES",
 
 
 			[ eDamageSourceId.mp_ability_debuff_zone ] = "#WPN_DEBUFF_ZONE",
 			[ eDamageSourceId.mp_ability_debuff_zone_aoe ] = "#WPN_DEBUFF_ZONE",
 			[ eDamageSourceId.overheat_explosion ] = "#WPN_DEBUFF_ZONE_OVERHEAT",
+
+
+
+			[ eDamageSourceId.mp_ability_conduit_shield_mines ] = "#ABL_CONDUIT_ULTIMATE",
 
 
 
@@ -906,6 +948,16 @@ void function DamageTypes_Init()
 
 		[ eDamageSourceId.vault_defense ] = "#VAULT_DEFENSE",
 		[ eDamageSourceId.mp_weapon_mobile_hmg ] = "#WPN_MOBILE_HMG",
+
+
+			[ eDamageSourceId.golden_horse_green ] = "#WPN_HOPUP_GOLDEN_HORSE_GREEN",
+
+
+
+
+
+
+
 
 
 

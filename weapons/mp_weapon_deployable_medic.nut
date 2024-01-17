@@ -13,13 +13,16 @@ global function GetHealDroneForHitEnt
 
 
 
+
+
+
 global function CanDeployHealDrone
 
 
 const asset DEPLOYABLE_MEDIC_DRONE_MODEL = $"mdl/props/lifeline_drone/lifeline_drone.rmdl"
 
 
-const float DEPLOYABLE_MEDIC_THROW_POWER = 40.0
+const float DEPLOYABLE_MEDIC_THROW_POWER = 1.0
 const float DEPLOYABLE_MEDIC_ICON_HEIGHT = 32.0
 
 
@@ -28,7 +31,11 @@ const float DEPLOYABLE_MEDIC_HEAL_START_DELAY = 1.0
 const float DEPLOYABLE_MEDIC_HEAL_RADIUS = 256.0 
 const int DEPLOYABLE_MEDIC_HEAL_AMOUNT = 9999 
 const float DEPLOYABLE_MEDIC_MAX_LIFETIME = 20
+
+
+
 const float DEPLOYABLE_MEDIC_HEAL_PER_SEC = 8
+
 const ROPE_LENGTH = DEPLOYABLE_MEDIC_HEAL_RADIUS + 50
 const ROPE_NODE_COUNT = 10
 const ROPE_SHOOT_OUT_TIME = 0.25
@@ -170,6 +177,17 @@ void function MpWeaponDeployableMedic_Init()
 
 }
 
+float function GetDeployableMedicHealRate( entity player )
+{
+	float result = DEPLOYABLE_MEDIC_HEAL_PER_SEC
+
+
+
+
+
+
+	return result
+}
 
 var function OnWeaponTossReleaseAnimEvent_weapon_deployable_medic( entity weapon, WeaponPrimaryAttackParams attackParams )
 {
@@ -195,7 +213,7 @@ var function OnWeaponTossReleaseAnimEvent_weapon_deployable_medic( entity weapon
 }
 
 
-entity function ReleaseDrone( entity weapon, WeaponPrimaryAttackParams attackParams, float throwPower, void functionref(entity) deployFunc, vector ornull angularVelocity = null )
+entity function ReleaseDrone( entity weapon, WeaponPrimaryAttackParams attackParams, float throwPower, void functionref(entity, DeployableCollisionParams) deployFunc, vector ornull angularVelocity = null )
 {
 
 		if ( !weapon.ShouldPredictProjectiles() )
@@ -243,6 +261,16 @@ entity function ReleaseDrone( entity weapon, WeaponPrimaryAttackParams attackPar
 
 
 
+
+
+
+
+
+
+
+
+
+
 	}
 
 	return deployable
@@ -278,15 +306,58 @@ void function OnWeaponTossPrep_weapon_deployable_medic( entity weapon, WeaponTos
 
 
 
+
+
+
+
+
+
 }
 
 
-void function OnDeployableMedicPlanted( entity projectile )
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+void function OnDeployableMedicPlanted( entity projectile,  DeployableCollisionParams collisionParams )
 {
 
 
 
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1617,6 +1688,9 @@ void function DeployableMedic_HealVisualsThread( entity viewPlayer, int fxHandle
 
 bool function CanDeployHealDrone( entity player )
 {
+	if(GetLocalViewPlayer() != player)
+		return false
+
 	if ( !player.HasPassive( ePassives.PAS_MEDIC ) )
 		return false
 

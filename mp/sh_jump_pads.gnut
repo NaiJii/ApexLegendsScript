@@ -54,7 +54,23 @@ global const string JUMP_PAD_SCRIPTNAME = "octane_jump_pad"
 
 
 
+
+
+
 global array<string> INVALID_GRAVITY_CANNON_PLACEABLES
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -69,9 +85,9 @@ const JUMP_PAD_DESTRUCTION = "jump_pad_destruction"
 
 const bool GRAVITY_CANNON_DEBUG = false
 const asset GRAVITY_CANNON_MODEL = $"mdl/props/gravity_cannon/gravity_cannon_v21_base_w.rmdl"
-const float GRAVITY_CANNON_RADIUS = 115
-const float GRAVITY_CANNON_ABOVE_HEIGHT = 175
-const float GRAVITY_CANNON_BELOW_HEIGHT = 230
+const float GRAVITY_CANNON_RADIUS = 70
+const float GRAVITY_CANNON_ABOVE_HEIGHT = 210
+const float GRAVITY_CANNON_BELOW_HEIGHT = 200
 
 
 void function Sh_JumpPad_Init()
@@ -83,12 +99,16 @@ void function Sh_JumpPad_Init()
 
 	PrecacheScriptString( JUMP_PAD_SCRIPTNAME )
 
+
+
+
 	PrecacheModel( JUMP_PAD_MODEL )
 	PrecacheImpactEffectTable( JUMP_PAD_DESTRUCTION )
 
 	RegisterSignal( "NewJumpPadThread" )
 	RegisterSignal( "JumpPadStart" )
 	RegisterSignal( "JumpPad_GiveDoubleJump" )
+	RegisterSignal( "JumpPad_DummieInAir" )
 
 
 	PrecacheParticleSystem( GRAVITY_CANNON_CHARGE_FX )
@@ -101,6 +121,12 @@ void function Sh_JumpPad_Init()
 	PrecacheParticleSystem( JUMP_PAD_LAUNCH_FX )
 
 
+
+
+
+
+
+
 		AddCreateCallback( "trigger_cylinder_heavy", OnJumpPadCreated )
 		AddCallback_OnBleedoutStarted( HideDoubleJumpHint )
 
@@ -110,6 +136,67 @@ void function Sh_JumpPad_Init()
 
 	AddCallback_GivePlayerDoubleJump( StartGivePlayerDoubleJump )
 }
+
+string function JumpPad_GetLaunchSFX_1p( entity trigger )
+{
+	entity jumppad = trigger.GetOwner()
+	string result = "JumpPad_LaunchPlayer_1p"
+
+
+
+
+	return result
+}
+
+string function JumpPad_GetLaunchSFX_3p( entity trigger )
+{
+	entity jumppad = trigger.GetOwner()
+	string result = "JumpPad_LaunchPlayer_3p"
+
+
+
+
+	return result
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -781,6 +868,33 @@ void function JumpPad_GiveDoubleJump( entity player )
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 				GivePlayerSettingsMods( player, [ "enable_doublejump" ] )
 
 
@@ -789,10 +903,27 @@ void function JumpPad_GiveDoubleJump( entity player )
 
 
 		OnThreadEnd(
+
+
+
 			function() : ( player )
+
 			{
 				if ( IsValid( player ) )
 				{
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -836,6 +967,11 @@ void function OnJumpPadCreated( entity trigger )
 		return
 
 	trigger.SetClientEnterCallback( JumpPad_OnTouchTrigger_Client )
+
+
+
+
+
 }
 
 void function JumpPad_OnTouchTrigger_Client( entity trigger, entity player )
@@ -847,7 +983,7 @@ void function JumpPad_OnTouchTrigger_Client( entity trigger, entity player )
 	if ( !IsPilot( player ) )
 		return
 
-	EmitSoundOnEntity( player, "JumpPad_LaunchPlayer_1p" )
+	EmitSoundOnEntity( player, JumpPad_GetLaunchSFX_1p( trigger ) )
 	EmitSoundOnEntity( player, "JumpPad_Ascent_Windrush" )
 
 	player.Signal("JumpPad_GiveDoubleJump")
@@ -860,6 +996,11 @@ void function StartGivePlayerDoubleJump(entity player)
 {
 	thread JumpPad_GiveDoubleJump( player )
 }
+
+
+
+
+
 
 
 

@@ -12,6 +12,7 @@
 
 
 
+
 global function ClBloodhound_TT_Init
 global function SCB_BloodTT_SetCustomSpeakerIdx
 
@@ -20,6 +21,7 @@ global function SCB_BloodTT_SetCustomSpeakerIdx
 
 global function Bloodhound_TT_RegisterNetworking
 global function GetBloodTTRewardPanelForLoot
+global function IsBloodhoundTTEnabled
 
 
 
@@ -228,16 +230,12 @@ struct
 
 void function ClBloodhound_TT_Init()
 {
-	if ( !IsBloodhoundTTEnabled() )
-		return
+	AddCallback_EntitiesDidLoad( EntitiesDidLoad )
 
 	StoryPropUsabilityData data
 	file.clientStoryPropData = data
 
 	RegisterSignal( SIGNAL_STORY_PROP_DIALOGUE_ABORTED )
-
-	RegisterCSVDialogue( BLOOD_TT_CSV_DIALOGUE )
-	RegisterCSVDialogue( BLOOD_TT_ANNOUNCER_CSV_DIALOGUE )
 
 	AddCallback_OnAbortDialogue( OnAbortDialogue )
 
@@ -324,7 +322,13 @@ void function Bloodhound_TT_RegisterNetworking()
 
 
 
+void function EntitiesDidLoad()
+{
+	if ( !IsBloodhoundTTEnabled() )
+		return
 
+	RegisterCSVDialogue( BLOOD_TT_CSV_DIALOGUE )
+	RegisterCSVDialogue( BLOOD_TT_ANNOUNCER_CSV_DIALOGUE )
 
 
 
@@ -434,18 +438,7 @@ void function Bloodhound_TT_RegisterNetworking()
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
+}
 
 
 void function SCB_BloodTT_SetCustomSpeakerIdx( int speakerIdx )
@@ -453,10 +446,6 @@ void function SCB_BloodTT_SetCustomSpeakerIdx( int speakerIdx )
 	
 	RegisterCustomDialogueQueueSpeakerEntities( speakerIdx, GetEntArrayByScriptName( LOUDSPEAKER_SCRIPTNAME ) )
 }
-
-
-
-
 
 
 
@@ -2008,6 +1997,22 @@ void function OnAbortDialogue( string dialogueRefName )
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 const vector BLOOD_TT_CHAMBER_MINS = <-108, -48, -16>
 const vector BLOOD_TT_CHAMBER_MAXS = <0, 48, 88>
 
@@ -2247,7 +2252,9 @@ const float ALARM_LENGTH = 14.0
 bool function IsBloodhoundTTEnabled()
 {
 	if ( GetCurrentPlaylistVarBool( "bloodhound_tt_enabled", true ) )
-		return true
+	{
+		return HasEntWithScriptName( BLOOD_TT_PANEL_TIER_0_SCRIPTNAME )
+	}
 
 	return false
 }
@@ -2267,10 +2274,6 @@ bool function BloodHountTT_UseLootPositionOverrideHack()
 	bool usePositionHack
 
 	usePositionHack = GetCurrentPlaylistVarBool( "blood_tt_loot_override_hack", true )
-
-
-		usePositionHack = GetCurrentPlaylistVarBool( "blood_tt_loot_override_hack", false )
-
 
 	return usePositionHack
 }

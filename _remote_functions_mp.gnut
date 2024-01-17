@@ -42,8 +42,10 @@ void function RemoteFunctions_Init_Begin()
 
 	RegisterNetworkedVariable( "skyDiveTrailOverrideIndex", SNDC_PLAYER_GLOBAL, SNVT_INT, -1 )
 
-	Remote_RegisterClientFunction( "ServerCallback_EventNotification", "int", 0, eEventNotifications.len(), "entity" )
-	Remote_RegisterClientFunction( "ServerCallback_EventNotification_Entity", "int", 0, eEventNotifications.len(), "entity", "entity" )
+	Remote_RegisterClientFunction( "ServerCallback_EventNotification", "int", 0, eEventNotifications.len() )
+	Remote_RegisterClientFunction( "ServerCallback_EventNotification_Entity", "int", 0, eEventNotifications.len(), "entity" )
+	Remote_RegisterClientFunction( "ServerCallback_EventNotification_EventEntity", "int", 0, eEventNotifications.len(), "entity" )
+	Remote_RegisterClientFunction( "ServerCallback_EventNotification_Entity_EventEntity", "int", 0, eEventNotifications.len(), "entity", "entity" )
 
 	Remote_RegisterClientFunction( "ServerCallback_UpdateHudWeaponData", "entity" )
 	Remote_RegisterClientFunction( "ServerCallback_UpdateHudWeaponDataNoEntity" )
@@ -98,7 +100,6 @@ void function RemoteFunctions_Init_Begin()
 	RegisterNetworkedVariable( "roundWinningKillReplayPlaying", SNDC_GLOBAL_NON_REWIND, SNVT_BOOL, false )
 	RegisterNetworkedVariable( "roundScoreLimitComplete", SNDC_GLOBAL_NON_REWIND, SNVT_BOOL, false )
 
-	RegisterNetworkedVariable( "roundWinningKillReplayEntHealthFrac", SNDC_GLOBAL_NON_REWIND, SNVT_FLOAT_RANGE, 0.0, 0.0, 1.0 )
 	RegisterNetworkedVariable( "badRepPresent", SNDC_GLOBAL_NON_REWIND, SNVT_BOOL, false )
 
 	RegisterNetworkedVariable( "roundBased", SNDC_GLOBAL_NON_REWIND, SNVT_BOOL, false )
@@ -127,7 +128,10 @@ void function RemoteFunctions_Init_Begin()
 		RegisterNetworkedVariable( "thirdBadgeIndex", SNDC_DEATH_BOX, SNVT_BIG_INT, -1 )
 		RegisterNetworkedVariable( "thirdBadgeDataInt", SNDC_DEATH_BOX, SNVT_BIG_INT, -1 )
 
-		Remote_RegisterClientFunction( "ServerCallback_PlayLootRarityFXOnDeathboxDrop", "entity" )
+		RegisterNetworkedVariable( "highlightFar", SNDC_DEATH_BOX, SNVT_BOOL, false )
+		RegisterNetworkedVariable( "maxLootTier", SNDC_DEATH_BOX, SNVT_INT, 0 )
+
+		Remote_RegisterClientFunction( "ServerToClient_PlayLootRarityFXOnDeathboxDrop", "entity" )
 
 
 	RegisterNetworkedVariable( "lootRarity", SNDC_DEATH_BOX, SNVT_INT, -1 )
@@ -223,8 +227,12 @@ void function RemoteFunctions_Init_Begin()
 
 
 			RegisterNetworkedVariable( "focalTrap", SNDC_PLAYER_EXCLUSIVE, SNVT_ENTITY )
-			RegisterNetworkedVariable( "coverFireMeter", SNDC_PLAYER_EXCLUSIVE, SNVT_FLOAT_RANGE, 0.0, 0.0, 100.0 )
-			RegisterNetworkedVariable( "coverFireLocked", SNDC_PLAYER_EXCLUSIVE, SNVT_BOOL, false )
+
+
+
+
+
+
 			Remote_RegisterClientFunction( "ServerCallback_PlayTurretDestroyFX", "vector", -32000.0, 32000.0, 32, "vector", -180.0, 180.0, 32, "vector", -32000.0, 32000.0, 32, "vector", -180.0, 180.0, 32 )
 
 			RegisterNetworkedVariable( "gladCardPlayer", SNDC_PLAYER_EXCLUSIVE, SNVT_ENTITY )
@@ -310,7 +318,7 @@ void function RemoteFunctions_Init_Begin()
 
 
 
-
+			Ability_Shadow_Zombie_RegisterNetworking()
 
 
 
@@ -359,7 +367,6 @@ void function RemoteFunctions_Init_Begin()
 
 
 			Remote_RegisterClientFunction( "ServerCallback_PlayerBootsOnGround" )
-			Remote_RegisterClientFunction( "ServerCallback_RefreshDeathBox" )
 
 			Remote_RegisterClientFunction( "ServerCallback_AutoReloadComplete", "entity" )
 
@@ -515,6 +522,20 @@ void function RemoteFunctions_Init_Begin()
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 			WinterExpress_RegisterNetworking()
 
 
@@ -580,12 +601,12 @@ void function RemoteFunctions_Init_Begin()
 
 
 
+			ShGameMode_ShadowArmy_RegisterNetworking()
+			ShadowArmy_RespawnBeacon_RegisterNetworking()
 
 
 
-
-
-
+			EvacShip_RegisterNetworking()
 
 
 
@@ -609,9 +630,26 @@ void function RemoteFunctions_Init_Begin()
 
 
 
+
+
+
 			HoverVehicle_RegisterNetworking()
 
 
+
+			MedBay_NetworkRegistration()
+
+
+
+			PathTT_OnNetworkRegistration()
+
+
+
+			Wattson_TT_Register_Networking()
+
+
+			Rampart_TT_RegisterNetworking()
+			CryptoTT_OnNetworkRegistration()
 			Bloodhound_TT_RegisterNetworking()
 			ShEpilogue_RegisterNetworking()
 			Armor_ShieldRegen_RegisterNetworking()
@@ -635,8 +673,11 @@ void function RemoteFunctions_Init_Begin()
 
 
 
+	Remote_RegisterClientFunction( "ServerCallback_YouDiedNoAttacker", "float", -1.0, 1.0, 10, "int", -1, eDamageSourceId.len(), "float", 0.0, 200.0, 32 )
 	Remote_RegisterClientFunction( "ServerCallback_YouDied", "entity", "float", -1.0, 1.0, 10, "int", -1, eDamageSourceId.len(), "float", 0.0, 200.0, 32 )
 	Remote_RegisterClientFunction( "ServerCallback_YouRespawned" )
+
+	Remote_RegisterClientFunction( "ServerCallback_PreKillReplaySounds" )
 
 	if ( !IsLobby() )
 		Remote_RegisterClientFunction( "ServerCallback_ShowDeathHint", "int", 0, MAX_DEATH_HINTS )
@@ -645,7 +686,7 @@ void function RemoteFunctions_Init_Begin()
 	Remote_RegisterClientFunction( "ServerCallback_DataKnifeStartLeech", "float", -1.0, FLT_MAX, 32 )
 	Remote_RegisterClientFunction( "ServerCallback_DataKnifeCancelLeech" )
 	Remote_RegisterClientFunction( "ServerCallback_ControlPanelRefresh", "entity" )
-	Remote_RegisterClientFunction( "ServerCallback_OnEntityKilled", "entity", "entity", "int", INT_MIN, INT_MAX, "int", eDamageSourceId.invalid, eDamageSourceId.len() ) 
+	Remote_RegisterClientFunction( "ServerCallback_OnPlayerOrNpcKilled", "entity", "entity", "int", INT_MIN, INT_MAX, "int", eDamageSourceId.invalid, eDamageSourceId.len() ) 
 	Remote_RegisterClientFunction( "ServerCallback_OnEnemyDowned", "entity", "entity", "int", INT_MIN, INT_MAX, "int", eDamageSourceId.invalid, eDamageSourceId.len(), "int", INT_MIN, INT_MAX ) 
 	Remote_RegisterClientFunction( "ServerCallback_ResetReconnectParametersAsync" )
 	Remote_RegisterUIFunction( "SCBUI_PlayerConnectedOrDisconnected", "bool" )
@@ -704,10 +745,19 @@ void function RemoteFunctions_Init_Begin()
 		Remote_RegisterClientFunction( "ServerToClient_SetRisingWallAmbientGenericState", "entity", "bool" )
 
 
+
+
+
+
+
+
+
+
 	
 	Remote_RegisterClientFunction( "ServerCallback_PlayScreenFXWarpJump" )
 	Remote_RegisterClientFunction( "ServerCallback_GameModeAnnouncement" )
 
+	Remote_RegisterClientFunction( "ServerCallback_ScoreEventNoEnt", "int", -1, INT_MAX, "int", 0, 1 << eEventDisplayType.len() - 1, "float", 0.0, FLT_MAX, 32 )
 	Remote_RegisterClientFunction( "ServerCallback_ScoreEvent", "int", -1, INT_MAX, "int", 0, 1 << eEventDisplayType.len() - 1, "entity", "float", 0.0, FLT_MAX, 32 )
 
 	Remote_RegisterClientFunction( "ServerCallback_PlayConversation", "int", 0, INT_MAX )
@@ -737,9 +787,6 @@ void function RemoteFunctions_Init_Begin()
 	Remote_RegisterUIFunction( "ServerCallback_OpenDevMenu" )
 
 	
-	Remote_RegisterClientFunction( "Dev_PrintClientMessage", "float", -1.0, 10000.0, 32 )
-	Remote_RegisterClientFunction( "Dev_BuildClientMessage", "bool", "string" )
-
 	Remote_RegisterServerFunction( "ClientCallback_Dev_SetPlayerMMR", "float", 0.0, 10000.0, 32, "float", 0.0, 10000.0, 32, "float", 0.0, 10000.0, 32, "float", 0.0, 10000.0, 32)
 	Remote_RegisterServerFunction( "ClientCallback_Dev_PrintTeamsMMR" )
 
@@ -817,9 +864,7 @@ void function RemoteFunctions_Init_Begin()
 	Remote_RegisterServerFunction( "ClientCallback_SetClubIsPendingApproval", "bool" )
 
 	Remote_RegisterServerFunction( "ClientCallback_MarkBattlePassPopupAsSeen", "int", 0, INT_MAX )
-
 	Remote_RegisterServerFunction( "ClientCallback_MarkBattlePassMilestoneAsSeen", "int", 0, INT_MAX )
-
 	Remote_RegisterServerFunction( "ClientCallback_MarkStoryEventDialoguePopupAsAttempted" )
 	Remote_RegisterServerFunction( "ClientCallback_MarkStoryEventDialoguePopupAsSeen", "int", INT_MIN, INT_MAX, "int", -1, INT_MAX )
 	Remote_RegisterServerFunction( "ClientCallback_MarkStoryEventChallengesPopupAsSeen", "int", INT_MIN, INT_MAX, "int", -1, INT_MAX )
@@ -871,20 +916,15 @@ void function RemoteFunctions_Init_Begin()
 
 	
 
+	
+	Remote_RegisterServerFunction( "ClientToServer_MarkAllBoostsAsSeen" )
 
 	
-	Remote_RegisterServerFunction( "ClientCallback_RUIProfileList", "string", "string", "string", "int", 0, INT_MAX,
-		"int", 0, INT_MAX, "int", 0, INT_MAX, "int", 0, INT_MAX, "int", 0, INT_MAX, "int", INT_MIN, INT_MAX, "int", 0, INT_MAX, "int", INT_MIN, INT_MAX,
-		"int", 0, INT_MAX, "int", INT_MIN, INT_MAX )
-
-
-	
-	Remote_RegisterClientFunction( "Dev_BuildTextInfoPanel", "bool", "string" )
 	Remote_RegisterClientFunction( "Dev_CreateTextInfoPanel", "vector", -MAX_MAP_BOUNDS, MAX_MAP_BOUNDS, 32, "vector", -MAX_MAP_BOUNDS, MAX_MAP_BOUNDS, 32, "bool", "float", -10000.0, 10000.0, 32 )
 	Remote_RegisterClientFunction( "Dev_CreateTextInfoPanelWithID", "vector", -MAX_MAP_BOUNDS, MAX_MAP_BOUNDS, 32, "vector", -MAX_MAP_BOUNDS, MAX_MAP_BOUNDS, 32, "bool", "float", -10000.0, 10000.0, 32, "int", 0, INT_MAX )
 	Remote_RegisterClientFunction( "Dev_DestroyTextInfoPanelWithID", "int", 0, INT_MAX )
 
-	Remote_RegisterClientFunction( "ServerToClient_ScreenCoverTransition", "float", 0.0, 5000.0, 32 )
+	Remote_RegisterClientFunction( "ServerToClient_ScreenCoverTransition", "float", 0.0, 5000.0, 32, "bool" )
 
 	
 	Remote_RegisterClientFunction( "ServerCallback_WatchForSyncedMeleeCancelPeriod", "float", 0.0, 10.0 )
@@ -927,16 +967,12 @@ void function RemoteFunctions_Init_Begin()
 
 	Remote_RegisterServerFunction( "FRC_ClientToServer_TryLeaveChallenge" )
 
-	Remote_RegisterClientFunction( "ServerCallback_FRC_SetChallengeKey", "string")
+	Remote_RegisterClientFunction( "ServerCallback_FRC_SetChallengeKey", "entity")
 	Remote_RegisterClientFunction( "ServerCallback_FRC_UpdateState", "int", 0, 4 )
 	Remote_RegisterClientFunction( "ServerCallback_FRC_UpdateOutofBounds", "bool", "float", 0.0, 10.0, 32 )
 	Remote_RegisterClientFunction( "ServerCallback_FRC_PostGameStats", "int", 0, INT_MAX, "int", 0, INT_MAX, "int", 0, INT_MAX, "int", 0, INT_MAX )
 
 	Remote_RegisterClientFunction( "ServerToClient_DoPresentation" )
-
-	Remote_RegisterServerFunction( "ClientCallback_DevToto", "int", INT_MIN, INT_MAX, "string" )
-	Remote_RegisterServerFunction( "ClientCallback_DevEcho", "int", INT_MIN, INT_MAX, "string", "bool", "typed_entity", "player" )
-	Remote_RegisterClientFunction( "ServerCallback_DevEcho", "int", INT_MIN, INT_MAX, "string", "bool", "typed_entity", "player" )
 
 	Remote_RegisterClientFunction( "ServerToClient_UpdateItem", "entity" )
 
@@ -977,6 +1013,9 @@ void function RemoteFunctions_Init_Begin()
 			{
 				RunUIScript( "UICallback_SetUIVar", "uiDisableDev", newVal )
 			} )
+
+
+
 
 
 	

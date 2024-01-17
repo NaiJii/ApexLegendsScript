@@ -10,6 +10,9 @@ global function SettingsButton_SetDescriptionAndChildren
 
 global function CreateSettingsConVarData
 global function SaveSettingsConVars
+global function MarkSettingsDirty
+global function MaybeSendPINSettingsEvent
+global function SendPINSettingsEvent
 global function AnySettingsConVarChanged
 
 
@@ -146,6 +149,27 @@ void function OnSettingsTab_Show( var panel )
 	RuiSetAsset( rui, "detailImage", SettingsPanel_GetDefaultImageForIndex( tabData.activeTabIdx ) )
 }
 
+void function SendPINSettingsEvent()
+{
+	table settingsTable = {
+		Audio = SettingsConVarsToTable( SoundPanel_GetConVarData() ),
+		Gameplay = SettingsConVarsToTable( GameplayPanel_GetConVarData() ),
+		ControlsPC = SettingsConVarsToTable( ControlsPCPanel_GetConVarData() ),
+		ControlsGamepad = SettingsConVarsToTable( ControlsGamepadPanel_GetConVarData() ),
+		Video = PIN_GetVideoSettings(),
+		Hardware = PIN_GetHardwareInfo(),
+		Social = PIN_GetSocialSettings(),
+		opt_out_crossplay_flag = !CrossplayUserOptIn(),
+	}
+	PIN_Settings( settingsTable )
+}
+
+void function MaybeSendPINSettingsEvent()
+{
+	if ( PIN_ShouldSendPlayerSettings() )
+		SendPINSettingsEvent()
+}
+
 void function OnSettingsPanel_Hide( var panel )
 {
 	TabData tabData = GetTabDataForPanel( panel )
@@ -159,15 +183,7 @@ void function OnSettingsPanel_Hide( var panel )
 		SaveSettingsConVars( ControlsPCPanel_GetConVarData() )
 		SaveSettingsConVars( ControlsGamepadPanel_GetConVarData() )
 
-		table settingsTable = {
-			Audio = SettingsConVarsToTable( SoundPanel_GetConVarData() ),
-			Gameplay = SettingsConVarsToTable( GameplayPanel_GetConVarData() ),
-			ControlsPC = SettingsConVarsToTable( ControlsPCPanel_GetConVarData() ),
-			ControlsGamepad = SettingsConVarsToTable( ControlsGamepadPanel_GetConVarData() ),
-			opt_out_crossplay_flag = !CrossplayUserOptIn(),
-		}
-
-		PIN_Settings( settingsTable )
+		SendPINSettingsEvent()
 
 		if ( IsFullyConnected() )
 			RunClientScript( "UIToClient_SettingsUpdated" )
@@ -348,10 +364,16 @@ ConVarData function CreateSettingsConVarData( string conVar, int conVarType )
 }
 
 
+void function MarkSettingsDirty()
+{
+	file.anyChanged = true
+}
+
+
 void function SaveSettingsConVars( array<ConVarData> savedConVarData )
 {
 	if ( AnySettingsConVarChanged( savedConVarData ) )
-		file.anyChanged = true
+		MarkSettingsDirty()
 
 	foreach ( conVarData in savedConVarData )
 	{

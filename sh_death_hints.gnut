@@ -10,9 +10,9 @@ global function GetDeathHintCount
 
 
 
-
-
-
+global function ServerCallback_ShowDeathHint
+global function DeathHintDisplay
+global function GetHintFromId
 
 
 const int NUM_CLASS_NAME_COLUMNS = 5
@@ -85,18 +85,18 @@ void function DeathHints_Init()
 	int mapNameColumn = GetDataTableColumnByName( dataTable, "mapName" )
 
 
-
-
+		int gameModeColumn = GetDataTableColumnByName( dataTable, "gameMode" )
+		string currGameMode = GameRules_GetGameMode()
 
 
 	string currMapName
 
 
+	currMapName = GetMapName()
 
 
 
 
-	currMapName = uiGlobal.loadedLevel
 
 
 	for ( int i = 0; i < numRows; i++ )
@@ -118,9 +118,9 @@ void function DeathHints_Init()
 			continue
 
 
-
-
-
+			string gameMode = GetDataTableString( dataTable, i, gameModeColumn )
+			if ( gameMode != "" && gameMode != currGameMode )
+				continue
 
 
 		int source = eHints[ sourceName ]
@@ -530,48 +530,48 @@ array<DeathHintGroup> function GetHintGroups( int source, string classname )
 
 
 
+void function ServerCallback_ShowDeathHint( int hintId )
+{
+	thread ShowDeathHintThread( GetHintFromId( hintId ) )
+}
 
+string function GetHintFromId( int hintId )
+{
+	return file.indexToHintString[ hintId ]
+}
 
+void function ShowDeathHintThread( string hint )
+{
+	
+	WaitSignal( clGlobal.levelEnt, "LocalClientPlayerRespawned" )
 
+	wait 0.5
 
+	DeathHintDisplay( hint )
+}
 
+void function DeathHintDisplay( string hint )
+{
+	if ( file.deathHintRUI != null )
+		RuiDestroyIfAlive( file.deathHintRUI )
 
+	if ( IsWatchingReplay() ) 
+		return
 
+	if ( !DeathHintsSettingIsEnabled() )
+		return
 
+	if ( GetConVarInt( "hud_setting_showTips" ) == 0 )
+		return
 
+	file.deathHintRUI = CreatePermanentCockpitRui( $"ui/death_hint_mp.rpak" )
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+	RuiSetResolutionToScreenSize( file.deathHintRUI )
+	RuiSetString( file.deathHintRUI, "hintText", hint )
+	RuiSetGameTime( file.deathHintRUI, "startTime", Time() )
+	RuiSetFloat3( file.deathHintRUI, "bgColor", DEATH_HINT_COLOR )
+	RuiSetFloat( file.deathHintRUI, "bgAlpha", DEATH_HINT_BGALPHA )
+}
 
 
 

@@ -1,5 +1,5 @@
 global function CollectionEventAboutPage_Init
-
+global function OpenCollectionEventAboutPage
 struct {
 	var menu
 	var infoPanel
@@ -21,17 +21,41 @@ void function CollectionEventAboutPage_Init( var menu )
 void function CollectionEventAboutPage_OnOpen()
 {
 	ItemFlavor ornull activeCollectionEvent = GetActiveCollectionEvent( GetUnixTimestamp() )
-	if ( activeCollectionEvent == null )
+	ItemFlavor ornull milestoneEvent = GetActiveMilestoneEvent( GetUnixTimestamp() )
+
+	if ( activeCollectionEvent == null && milestoneEvent == null )
 		return
-	expect ItemFlavor(activeCollectionEvent)
 
-	HudElem_SetRuiArg( file.infoPanel, "eventName", ItemFlavor_GetLongName( activeCollectionEvent ) )
-	HudElem_SetRuiArg( file.infoPanel, "bgPatternImage", CollectionEvent_GetBGPatternImage( activeCollectionEvent ) )
-	HudElem_SetRuiArg( file.infoPanel, "headerIcon", CollectionEvent_GetHeaderIcon( activeCollectionEvent ) )
-	HudElem_SetRuiArg( file.infoPanel, "specialTextCol", SrgbToLinear( CollectionEvent_GetAboutPageSpecialTextCol( activeCollectionEvent ) ) )
+	string eventName = ""
+	asset bgPatternImage
+	asset headerIcon
+	vector specialTextCol
+	array<string> aboutLines
 
-	array<string> aboutLines = CollectionEvent_GetAboutText( activeCollectionEvent, GRX_IsOfferRestricted() )
-	Assert( aboutLines.len() < 7, "Rui about_collection_event does not support more than 6 lines." )
+	if( activeCollectionEvent != null )
+	{
+		expect ItemFlavor( activeCollectionEvent )
+		eventName = ItemFlavor_GetLongName( activeCollectionEvent )
+		bgPatternImage = CollectionEvent_GetBGPatternImage( activeCollectionEvent )
+		headerIcon = CollectionEvent_GetHeaderIcon( activeCollectionEvent )
+		specialTextCol = SrgbToLinear( CollectionEvent_GetAboutPageSpecialTextCol( activeCollectionEvent ) )
+		aboutLines = CollectionEvent_GetAboutText( activeCollectionEvent, GRX_IsOfferRestricted() )
+	}
+	else if( milestoneEvent != null )
+	{
+		expect ItemFlavor( milestoneEvent )
+
+		eventName = ItemFlavor_GetLongName( milestoneEvent )
+		headerIcon = MilestoneEvent_GetLandingPageImage( milestoneEvent )
+		specialTextCol = SrgbToLinear( MilestoneEvent_GetDisclaimerBoxColor( milestoneEvent ) )
+		aboutLines = MilestoneEvent_GetAboutText( milestoneEvent, GRX_IsOfferRestricted() )
+	}
+
+	Assert( aboutLines.len() < 8, "Rui about_collection_event does not support more than 6 lines." )
+	HudElem_SetRuiArg( file.infoPanel, "eventName", eventName )
+	HudElem_SetRuiArg( file.infoPanel, "bgPatternImage", bgPatternImage )
+	HudElem_SetRuiArg( file.infoPanel, "headerIcon", headerIcon )
+	HudElem_SetRuiArg( file.infoPanel, "specialTextCol", specialTextCol )
 
 	foreach ( int lineIdx, string line in aboutLines )
 	{
@@ -49,5 +73,11 @@ void function CollectionEventAboutPage_OnClose()
 	RunClientScript( "UIToClient_StopBattlePassScene" )
 }
 
+void function OpenCollectionEventAboutPage( var button )
+{
+	if ( IsDialog( GetActiveMenu() ) )
+		return
 
+	AdvanceMenu( GetMenu( "CollectionEventAboutPage" ) )
+}
 

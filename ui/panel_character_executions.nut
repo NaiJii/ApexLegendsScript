@@ -12,7 +12,7 @@ struct
 	asset currentVideo = $""
 	var   finisherIsSkinLockedLabel
 	bool  isMythicExecutionUnlocked
-	bool  isMythicExecutionAutoEquip
+	bool  doesSkinAutoEquipFinisher
 } file
 
 void function InitCharacterExecutionsPanel( var panel )
@@ -89,7 +89,7 @@ void function CharacterExecutionsPanel_Update( var panel )
 		
 		
 		
-		file.isMythicExecutionAutoEquip = Mythics_SkinHasCustomExecution( skin ) && CharacterExecution_IsNotEquippable( Mythics_GetCustomExecutionForCharacterOrSkin(skin) )
+		file.doesSkinAutoEquipFinisher = Mythics_SkinHasCustomExecution( skin ) && CharacterExecution_IsNotEquippable( Mythics_GetCustomExecutionForCharacterOrSkin(skin) )
 		file.isMythicExecutionUnlocked = Mythics_IsItemFlavorMythicSkin( skin ) && Mythics_IsCustomExecutionUnlocked( FromEHI( playerEHI ), skin )
 
 		Hud_InitGridButtons( file.listPanel, file.characterExecutionList.len() )
@@ -110,7 +110,6 @@ void function CharacterExecutionsPanel_Update( var panel )
 	}
 }
 
-
 void function CharacterExecutionsPanel_OnFocusChanged( var panel, var oldFocus, var newFocus )
 {
 	if ( !IsValid( panel ) ) 
@@ -126,16 +125,21 @@ void function PreviewCharacterExecution( ItemFlavor flav )
 {
 	asset desiredVideo = CharacterExecution_GetExecutionVideo( flav )
 
-	bool executionIsMythic = ItemFlavor_GetQuality( flav ) == eRarityTier.MYTHIC
-	Hud_SetVisible( file.finisherIsSkinLockedLabel, executionIsMythic )
-	if ( executionIsMythic ) 
+	bool isMythicBundleExecution = Mythics_IsCustomExecutionInMythicBundle( flav )
+	
+
+	Hud_SetVisible( file.finisherIsSkinLockedLabel, isMythicBundleExecution )
+	if ( isMythicBundleExecution )
 	{
+		
 		string skinName                 = Localize( Mythics_GetSkinBaseNameForCharacter( GetTopLevelCustomizeContext() ) )
 		ItemFlavor character            = CharacterExecution_GetCharacterFlavor( flav )
 		bool executionUsableOnTier1And2 = Mythics_IsExecutionUsableOnTier1AndTier2( character )
 		string text = Localize( executionUsableOnTier1And2 ? "#PRESTIGE_PLUS_EQUIP_FINISHER" : "#EQUIP_MYTHIC_SKIN_TO_USE", skinName )
+
 		if ( !file.isMythicExecutionUnlocked )
 			text += "\n" + Localize( "#PRESTIGE_PLUS_FINISHER_UNLOCK", skinName, skinName )
+
 		Hud_SetText( file.finisherIsSkinLockedLabel, text )
 	}
 
@@ -148,13 +152,13 @@ void function PreviewCharacterExecution( ItemFlavor flav )
 
 
 
-void function ExecutionButtonUpdateFunc( ItemFlavor itemFlav, var rui )
+void function ExecutionButtonUpdateFunc( ItemFlavor executionFlav, var rui )
 {
-	int itemRarity = ItemFlavor_GetQuality( itemFlav )
+	int itemRarity = ItemFlavor_GetQuality( executionFlav )
 	
-	if ( file.isMythicExecutionAutoEquip )
+	if ( file.doesSkinAutoEquipFinisher )
 	{
-		if( file.isMythicExecutionUnlocked )
+		if ( file.isMythicExecutionUnlocked )
 		{
 			RuiSetBool( rui, "isLocked", itemRarity != eRarityTier.MYTHIC )
 			RuiSetBool( rui, "isEquipped", itemRarity == eRarityTier.MYTHIC )
@@ -165,10 +169,12 @@ void function ExecutionButtonUpdateFunc( ItemFlavor itemFlav, var rui )
 	
 	else
 	{
-		if( itemRarity == eRarityTier.MYTHIC && !file.isMythicExecutionUnlocked )
+		int executionDependency = CharacterExecution_GetExecutionDependencyType( executionFlav )
+		if( executionDependency == eExecutionDependency.SKIN && itemRarity == eRarityTier.MYTHIC && !file.isMythicExecutionUnlocked )
 		{
 			RuiSetBool( rui, "isLocked", true )
 		}
+		
 	}
 }
 

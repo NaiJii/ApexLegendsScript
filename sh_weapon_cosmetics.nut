@@ -30,22 +30,22 @@ global function GetWeaponThatCharmIsCurrentlyEquippedToForPlayer
 
 
 
+global function WeaponCosmetics_Apply
+global function WeaponCosmetics_ApplyModelAndSkin
+
+#if DEV
+global function DEV_TestWeaponSkinData
+global function DEV_GetCharmForCurrentWeapon
+global function DEV_SetCharmForCurrentWeapon
+#endif
 
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
+global function AddCallback_UpdatePlayerWeaponEffects
+global function ServerCallback_UpdatePlayerWeaponEffects
+global function GetCharmForWeaponEntity
+global function DestroyCharmForWeaponEntity
 
 
 
@@ -93,12 +93,12 @@ struct FileStruct_LifetimeLevel
 	table<ItemFlavor, int> cosmeticFlavorSortOrdinalMap
 
 
+		table<ItemFlavor, table<asset, int> > weaponModelLegendaryIndexMapMap
+		table<ItemFlavor, int>                weaponSkinLegendaryIndexMap
 
 
 
-
-
-
+		table<entity, entity>    menuWeaponCharmEntityMap
 
 }
 FileStruct_LifetimeLevel& fileLevel
@@ -123,8 +123,8 @@ void function ShWeaponCosmetics_LevelInit()
 	
 
 
-
-
+	Remote_RegisterServerFunction( "ClientCallback_WeaponCosmeticsApply", "int", INT_MIN, INT_MAX )
+	Remote_RegisterClientFunction( "ServerCallback_UpdatePlayerWeaponEffects", "entity" )
 
 }
 
@@ -134,7 +134,7 @@ void function OnItemFlavorRegistered_LootMainWeapon( ItemFlavor weaponFlavor )
 	
 	{
 		array<ItemFlavor> skinList = RegisterReferencedItemFlavorsFromArray( weaponFlavor, "skins", "flavor" )
-		MakeItemFlavorSet( skinList, fileLevel.cosmeticFlavorSortOrdinalMap )
+		MakeItemFlavorSet( skinList, fileLevel.cosmeticFlavorSortOrdinalMap, true )
 		foreach( ItemFlavor skin in skinList )
 		{
 			SetupWeaponSkin( skin )
@@ -181,7 +181,7 @@ void function OnItemFlavorRegistered_LootMainWeapon( ItemFlavor weaponFlavor )
 	
 	{
 		array<ItemFlavor> charmList = RegisterReferencedItemFlavorsFromArray( weaponFlavor, "charms", "flavor" )
-		MakeItemFlavorSet( charmList, fileLevel.cosmeticFlavorSortOrdinalMap )
+		MakeItemFlavorSet( charmList, fileLevel.cosmeticFlavorSortOrdinalMap, true )
 		foreach( ItemFlavor charm in charmList )
 		{
 			SetupWeaponCharm( charm )
@@ -241,8 +241,8 @@ void function SetupWeaponCharm( ItemFlavor charm )
 	string charmModel = WeaponCharm_GetCharmModel( charm )
 
 
-
-
+		if ( charmModel != "" )
+			RegisterModel( charmModel )
 
 }
 
@@ -255,56 +255,56 @@ void function SetupWeaponSkin( ItemFlavor skin )
 	asset viewModel  = WeaponSkin_GetViewModel( skin )
 
 
+		if ( worldModel != $"" )
+			PrecacheModel( worldModel )
+		if ( viewModel != $"" )
+			PrecacheModel( viewModel )
 
+		ItemFlavor weaponFlavor = WeaponSkin_GetWeaponFlavor( skin )
 
+		if ( !(weaponFlavor in fileLevel.weaponModelLegendaryIndexMapMap) )
+			fileLevel.weaponModelLegendaryIndexMapMap[weaponFlavor] <- {}
 
+		table<asset, int> weaponLegendaryIndexMap = fileLevel.weaponModelLegendaryIndexMapMap[weaponFlavor]
 
+		if ( !(worldModel in weaponLegendaryIndexMap) )
+		{
+			int skinLegendaryIndex = weaponLegendaryIndexMap.len()
+			weaponLegendaryIndexMap[worldModel] <- skinLegendaryIndex
 
+			SetWeaponLegendaryModel( WeaponItemFlavor_GetClassname( weaponFlavor ), skinLegendaryIndex, viewModel, worldModel )
 
+			foreach ( string childClassname in WeaponItemFlavor_GetChildClassNames( weaponFlavor ) )
+			{
+				SetWeaponLegendaryModel( childClassname, skinLegendaryIndex, viewModel, worldModel )
+			}
+		}
 
+		fileLevel.weaponSkinLegendaryIndexMap[skin] <- weaponLegendaryIndexMap[worldModel]
 
+		
+		if ( WeaponSkin_DoesReactToKills( skin ) )
+		{
+			for ( int levelIdx = 0; levelIdx < WeaponSkin_GetReactToKillsLevelCount( skin ); levelIdx++ )
+			{
+				WeaponReactiveKillsData rtked = WeaponSkin_GetReactToKillsDataForLevel( skin, levelIdx )
+				foreach ( asset fx in rtked.killFX1PList )
+					if ( fx != $"" )
+						PrecacheParticleSystem( fx )
 
+				foreach ( asset fx in rtked.persistentFX1PList )
+					if ( fx != $"" )
+						PrecacheParticleSystem( fx )
 
+				foreach ( asset fx in rtked.killFX3PList )
+					if ( fx != $"" )
+						PrecacheParticleSystem( fx )
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+				foreach ( asset fx in rtked.persistentFX3PList )
+					if ( fx != $"" )
+						PrecacheParticleSystem( fx )
+			}
+		}
 
 }
 
@@ -407,44 +407,44 @@ int function WeaponSkin_GetSortOrdinal( ItemFlavor flavor )
 	return fileLevel.cosmeticFlavorSortOrdinalMap[flavor]
 }
 
+#if DEV
+void function DEV_SetCharmForCurrentWeapon( asset charmModel, string attachmentName )
+{
+	entity player = GetLocalClientPlayer()
+	PrecacheModel( charmModel )
+	if ( IsValid( player ) )
+	{
+		entity weapon = player.GetActiveWeapon( eActiveInventorySlot.mainHand )
+		if ( IsValid( weapon ) )
+			weapon.SetWeaponCharm( charmModel, attachmentName )
+		else
+			printt( "Error: No active weapon to attach the charm to." )
+	}
+	else
+	{
+		printt( "Error: No valid local player. Can't attach charm to the active weapon." )
+	}
+}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+entity function DEV_GetCharmForCurrentWeapon()
+{
+	entity player = GetLocalClientPlayer()
+	entity charm  = null
+	if ( IsValid( player ) )
+	{
+		entity weapon = player.GetActiveWeapon( eActiveInventorySlot.mainHand )
+		if ( IsValid( weapon ) )
+			charm = weapon.GetCurrentWeaponCharm()
+		else
+			printt( "Error: No active wpeaon to get the current charm." )
+	}
+	else
+	{
+		printt( "Error: No valid local player. Can't get charm for the active wepaon." )
+	}
+	return charm
+}
+#endif
 
 
 
@@ -667,13 +667,35 @@ bool function WeaponSkin_ShouldHideIfLocked( ItemFlavor flavor )
 
 const bool CHARM_DEBUG = false
 
+void function WeaponCosmetics_Apply( entity ent, ItemFlavor ornull skinOrNull, ItemFlavor ornull charmOrNull )
+{
+	if ( skinOrNull != null )
+	{
+		if( ent.IsWeaponX() )
+			ent.ClearReactiveEffects()
 
+		ItemFlavor skin = expect ItemFlavor( skinOrNull )
+		Assert( ItemFlavor_GetType( skin ) == eItemType.weapon_skin )
+		ent.e.skinItemFlavorGUID = ItemFlavor_GetGUID( skin )
+		WeaponCosmetics_ApplyModelAndSkin( ent, skin )
 
+		if( ent.IsWeaponX() )
+		{
+			ent.UpdateReactiveEffects()
 
 
 
+		}
+	}
 
+	if ( charmOrNull != null )
+	{
+		ItemFlavor charm = expect ItemFlavor( charmOrNull )
+		Assert( ItemFlavor_GetType( charm ) == eItemType.weapon_charm )
+		string charmModel = WeaponCharm_GetCharmModel( charm )
+		string attachmentName = WeaponCharm_GetAttachmentName( charm )
 
+		ent.e.charmItemFlavorGUID = ItemFlavor_GetGUID( charm )
 
 
 
@@ -692,12 +714,42 @@ const bool CHARM_DEBUG = false
 
 
 
+			Assert( ent.IsClientOnly(), ent + " isn't client only" )
+			Assert( ent.GetCodeClassName() == "dynamicprop", ent + " has classname \"" + ent.GetCodeClassName() + "\" instead of \"dynamicprop\"" )
 
+			if ( CHARM_DEBUG )
+				printt( "CHARM_DEBUG: Setting weapon charm " + string(ItemFlavor_GetAsset( charm )) + " for weapon " + ent + " ( " + ent.GetModelName() + " ) (client)" )
 
+			DestroyCharmForWeaponEntity( ent )
+			if ( charmModel != "" )
+			{
+				entity charmEnt = CreateClientSidePropDynamicCharm( ent.GetOrigin(), ent.GetAngles(), charmModel )
+				charmEnt.MakeSafeForUIScriptHack()
+				charmEnt.kv.renderamt = ent.kv.renderamt
+				if ( ent.IsHidden() )
+					charmEnt.Hide()
+				charmEnt.SetParent( ent, attachmentName, false )
+				charmEnt.SetModelScale( ent.GetModelScale() )
 
+				fileLevel.menuWeaponCharmEntityMap[ent] <- charmEnt
 
+				AddEntityDestroyedCallback( charmEnt, 
+					void function ( entity charmEnt ) : ( ent ) 
+					{
+						if ( ent in fileLevel.menuWeaponCharmEntityMap )
+						{
+							delete fileLevel.menuWeaponCharmEntityMap[ent]
+						}
+					} 
+				)
+			}
 
+	}
+}
 
+void function WeaponCosmetics_ApplyModelAndSkin( entity ent, ItemFlavor skin )
+{
+	ent.SetSkin( 0 ) 
 
 
 
@@ -708,122 +760,70 @@ const bool CHARM_DEBUG = false
 
 
 
+	Assert( ent.IsClientOnly(), ent + " isn't client only" )
+	Assert( ent.GetCodeClassName() == "dynamicprop", ent + " has classname \"" + ent.GetCodeClassName() + "\" instead of \"dynamicprop\"" )
+	ent.SetModel( WeaponSkin_GetViewModel( skin ) ) 
 
 
+	int skinIndex = ent.GetSkinIndexByName( WeaponSkin_GetSkinName( skin ) )
+	int camoIndex = WeaponSkin_GetCamoIndex( skin )
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+	if ( skinIndex == -1 )
+	{
+		skinIndex = 0
+		camoIndex = 0
+	}
+
+	if ( camoIndex >= CAMO_SKIN_COUNT )
+	{
+		Assert ( false, "Tried to set camoIndex of " + string(camoIndex) + " but the maximum index is " + string(CAMO_SKIN_COUNT) )
+		camoIndex = 0
+	}
+
+	ent.SetSkin( skinIndex )
+	ent.SetCamo( camoIndex )
+}
+
+
+
+
+
+void function ServerCallback_UpdatePlayerWeaponEffects( entity weaponEnt )
+{
+	foreach ( callbackFunc in file.callback_UpdatePlayerWeaponEffects )
+	{
+		callbackFunc( weaponEnt )
+	}
+}
+
+entity function GetCharmForWeaponEntity( entity weapEnt )
+{
+	Assert( IsValid( weapEnt ) )
+	Assert( weapEnt.IsClientOnly(), weapEnt + " isn't client only" )
+	Assert( weapEnt.GetCodeClassName() == "dynamicprop", weapEnt + " has classname \"" + weapEnt.GetCodeClassName() + "\" instead of \"dynamicprop\"" )
+
+	entity charmEnt = null
+	if ( weapEnt in fileLevel.menuWeaponCharmEntityMap )
+		charmEnt = fileLevel.menuWeaponCharmEntityMap[weapEnt]
+
+	return charmEnt
+}
+
+void function DestroyCharmForWeaponEntity( entity weapEnt )
+{
+	Assert( IsValid( weapEnt ) )
+	Assert( weapEnt.IsClientOnly(), weapEnt + " isn't client only" )
+	Assert( weapEnt.GetCodeClassName() == "dynamicprop", weapEnt + " has classname \"" + weapEnt.GetCodeClassName() + "\" instead of \"dynamicprop\"" )
+
+	if ( weapEnt in fileLevel.menuWeaponCharmEntityMap )
+	{
+		entity charmEnt = fileLevel.menuWeaponCharmEntityMap[weapEnt]
+		delete fileLevel.menuWeaponCharmEntityMap[weapEnt]
+
+		if ( IsValid( charmEnt ) )
+			charmEnt.Destroy()
+	}
+}
 
 
 
@@ -861,23 +861,23 @@ void function AddCallback_UpdatePlayerWeaponEffects( void functionref( entity pl
 	file.callback_UpdatePlayerWeaponEffects.append( callbackFunc )
 }
 
+#if DEV
+void function DEV_TestWeaponSkinData()
+{
+	entity model = CreateClientSidePropDynamic( <0, 0, 0>, <0, 0, 0>, $"mdl/dev/empty_model.rmdl" )
 
+	foreach ( weapon in GetAllWeaponItemFlavors() )
+	{
+		array<ItemFlavor> weaponSkins = GetValidItemFlavorsForLoadoutSlot( LocalClientEHI(), Loadout_WeaponSkin( weapon ) )
 
+		foreach ( skin in weaponSkins )
+		{
+			printt( string(ItemFlavor_GetAsset( skin )), "skinName:", WeaponSkin_GetSkinName( skin ) )
+			WeaponCosmetics_Apply( model, skin, null )
+		}
+	}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+	model.Destroy()
+}
+#endif
 

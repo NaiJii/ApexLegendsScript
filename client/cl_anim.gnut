@@ -26,6 +26,7 @@ void function ClAnim_Init()
 	AddGlobalAnimEventTokenize( "mirage_holo_fx_start", ClGlobalAnimEvent_mirage_holo_fx_start )
 	AddGlobalAnimEventTokenize( "mirage_holo_fx_end", ClGlobalAnimEvent_mirage_holo_fx_end )
 	AddGlobalAnimEventTokenize( "add_player_hint", ClGlobalAnimEvent_add_player_hint )
+	AddGlobalAnimEventTokenize( "customReadyUpVoiceLine", ClGlobalAnimEvent_customReadyUpVoiceLine )
 
 	PrecacheParticleSystem( $"P_screenfx_concusion" )
 }
@@ -430,4 +431,11 @@ void function ClGlobalAnimEvent_add_player_hint( entity player, array<string> to
 	AddPlayerHint( dispTime, fadeTime, $"", hintLocString )
 }
 
+void function ClGlobalAnimEvent_customReadyUpVoiceLine( entity player, array<string> tokens  )
+{
+	Assert( tokens.len() == 2 )
+	string voiceLine = tokens[1]
+	if ( voiceLine != "" )
+		SetCustomReadyUpVoiceLine( voiceLine )
+}
 

@@ -1,5 +1,10 @@
 global function InitCharacterSkillsDialog
 global function OpenCharacterSkillsDialog
+
+
+
+
+
 global function ClientToUI_OpenCharacterSkillsDialog
 
 struct
@@ -24,6 +29,12 @@ void function InitCharacterSkillsDialog( var newMenuArg )
 		TabDef tabDef = AddTab( menu, Hud_GetChild( menu, "CharacterAbilitiesPanel" ), "#ABILITIES" )
 		SetTabBaseWidth( tabDef,  220 )
 	}
+
+
+
+
+
+
 	{
 		TabDef tabDef = AddTab( menu, Hud_GetChild( menu, "CharacterRolesPanel" ), "#ALL_CLASSES" )
 		SetTabBaseWidth( tabDef,  260 )
@@ -32,6 +43,7 @@ void function InitCharacterSkillsDialog( var newMenuArg )
 	TabData tabData = GetTabDataForPanel( file.menu )
 
 	tabData.centerTabs = true
+	tabData.initialFirstTabButtonXPos = 20
 	SetTabDefsToSeasonal(tabData)
 	SetTabBackground( tabData, Hud_GetChild( file.menu, "TabsBackground" ), eTabBackground.STANDARD )
 
@@ -44,6 +56,17 @@ void function OpenCharacterSkillsDialog( ItemFlavor character )
 	file.character = character
 	AdvanceMenu( file.menu )
 }
+
+
+
+
+
+
+
+
+
+
+
 
 void function ClientToUI_OpenCharacterSkillsDialog( int characterGUID )
 {
@@ -60,6 +83,9 @@ void function ClientToUI_OpenCharacterSkillsDialog( int characterGUID )
 void function CharacterSkillsDialog_OnOpen()
 {
 	SetCharacterSkillsPanelLegend( file.character )
+
+
+
 	TabData tabData = GetTabDataForPanel( file.menu )
 
 	if ( GetLastMenuNavDirection() == MENU_NAV_FORWARD )

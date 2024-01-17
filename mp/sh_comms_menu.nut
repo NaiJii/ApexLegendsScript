@@ -16,6 +16,9 @@ global function CommsMenu_OpenMenuTo
 global function CommsMenu_Shutdown
 global function CommsMenu_OpenMenuForNewPing
 global function CommsMenu_OpenMenuForPingReply
+
+
+
 global function CommsMenu_HasValidSelection
 global function CommsMenu_ExecuteSelection
 global function CommsMenu_GetCurrentCommsMenu
@@ -99,6 +102,14 @@ global enum eChatPage
 
 
 	CRAFTING,
+
+
+
+
+
+
+
+
 
 
 
@@ -339,10 +350,48 @@ void function CommsMenu_OpenMenuForPingReply( entity player, entity wp )
 		}
 
 		SetFocusedWaypointForced( wp )
-		RuiSetBool( wp.wp.ruiHud, "hasWheelFocus", true )
+		if( wp.wp.ruiHud != null )
+			RuiSetBool( wp.wp.ruiHud, "hasWheelFocus", true )
+
 		s_focusWaypoint = wp
 	}
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 void function CommsMenu_OpenMenuTo( entity player, int chatPage, int commsMenuStyle, bool debounce = true )
 {
@@ -460,6 +509,10 @@ enum eOptionType
 
 
 
+
+
+
+
 	_count
 }
 
@@ -477,6 +530,9 @@ struct CommsMenuOptionData
 	int healType
 
 	int craftingIndex = -1
+
+
+
 
 
 
@@ -564,6 +620,16 @@ CommsMenuOptionData function MakeOption_CraftItem( int itemIndex )
 	op.craftingIndex = itemIndex
 	return op
 }
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -808,6 +874,9 @@ array<CommsMenuOptionData> function BuildMenuOptions( int chatPage )
 
 
 
+
+
+
 				results.append( MakeOption_UseHealItem( eHealthPickupType.HEALTH_SMALL ) )
 				results.append( MakeOption_UseHealItem( eHealthPickupType.HEALTH_LARGE ) )
 			}
@@ -878,9 +947,18 @@ array<CommsMenuOptionData> function BuildMenuOptions( int chatPage )
 
 					if( data.category == "banner" )
 					{
-						if ( Perk_CanBuyBanners( player ) || Perks_DoesPlayerHavePerk( player, ePerkIndex.BANNER_CRAFTING ) )
+
+
+
+
+
+
+
 						{
-							results.append( MakeOption_CraftItem( counter ) )
+							if ( ( Perk_CanBuyBanners( player ) || Perks_DoesPlayerHavePerk( player, ePerkIndex.BANNER_CRAFTING ) ) && ( GetRespawnStyle() == eRespawnStyle.RESPAWN_CHAMBERS ) )
+							{
+								results.append( MakeOption_CraftItem( counter ) )
+							}
 						}
 					}
 					else
@@ -902,6 +980,27 @@ array<CommsMenuOptionData> function BuildMenuOptions( int chatPage )
 			break
 		}
 		
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1054,7 +1153,20 @@ string[2] function GetPromptsForMenuOption( int index )
 				else if ( validItems[0] == "expired_banners" )
 				{
 					promptTexts[0] = Localize( "#BANNER" )
-					promptTexts[1] = Localize( "#REPLICATER_CRAFT_BANNER_DESCRIPTION" )
+
+
+
+
+
+
+
+
+
+
+
+					{
+						promptTexts[1] = Localize( "#REPLICATER_CRAFT_BANNER_DESCRIPTION" )
+					}
 				}
 				else if( validItems[0] == "next_care_package_drop_location" )
 				{
@@ -1090,6 +1202,12 @@ string[2] function GetPromptsForMenuOption( int index )
 			}
 			break
 		}
+
+
+
+
+
+
 
 
 
@@ -1177,6 +1295,12 @@ var function GetRuiForMenuOption( var mainRui, int index )
 		case eOptionType.CRAFT:
 			
 			asset craftingAsset = $"ui/comms_menu_icon_crafting.rpak"
+
+
+
+
+
+
 			return RuiCreateNested( mainRui, "iconHandle" + index, craftingAsset )
 
 
@@ -1184,6 +1308,10 @@ var function GetRuiForMenuOption( var mainRui, int index )
 			
 			asset weaponAsset = $"ui/comms_menu_icon_weapon_inspect.rpak"
 			return RuiCreateNested( mainRui, "iconHandle" + index, weaponAsset )
+
+
+
+
 
 
 
@@ -1261,6 +1389,13 @@ asset function GetIconForMenuOption( int index )
 		{
 			return $"rui/weapon_icons/r5/weapon_inspect"
 		}
+
+
+
+
+
+
+
 
 
 
@@ -1536,6 +1671,25 @@ void function SetRuiOptionsForChatPage( var rui, int chatPage )
 			labelText = "#CRAFTING_WORKBENCH"
 			promptText = "#CRAFTING_USE"
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 			
 
 
@@ -1699,6 +1853,11 @@ void function ShowCommsMenu( int chatPage )
 		{
 			int index = options[idx].craftingIndex
 			Crafting_PopulateItemRuiAtIndex( nestedRui, index )
+
+
+
+
+
 		}
 		
 
@@ -2418,6 +2577,13 @@ bool function MakeCommMenuSelection( int choice, int wheelInputType )
 
 
 
+
+
+
+
+
+
+
 	}
 
 	return false
@@ -2468,9 +2634,9 @@ void function HandleQuipPick( ItemFlavor quip, int choice )
 	if ( CharacterQuip_UseHoloProjector( quip ) )
 	{
 
-
-
-
+		if ( player.Player_IsSkydiving() && !player.Player_IsSkydiveAnticipating())
+			SkydiveEmoteProjector_ActivateEmoteProjector( player, quip )
+		else
 
 			ActivateEmoteProjector( player, quip )
 	}
@@ -2686,7 +2852,6 @@ void function DestroyCommsMenu_( bool instant )
 	if ( instant )
 	{
 		RuiDestroy( file.menuRui )
-		ReleaseHUDRui( file.menuRui )
 	}
 	else
 		file.menuRuiLastShutdown = file.menuRui
@@ -2776,6 +2941,9 @@ var function CommsMenu_GetMenuRui()
 {
 	return file.menuRui
 }
+
+
+
 
 
 

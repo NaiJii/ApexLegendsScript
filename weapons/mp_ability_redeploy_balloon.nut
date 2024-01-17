@@ -1228,6 +1228,18 @@ int function RedeployBallon_PlaceBalloon( entity weapon, WeaponPrimaryAttackPara
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
 void function OnWaypointCreated( entity wp )
 {
 	int wpType = wp.GetWaypointType()
@@ -1241,7 +1253,15 @@ void function OnWaypointCreated( entity wp )
 void function OnPropDynamicCreate( entity prop )
 {
 	if ( prop.GetScriptName() == REDEPLOY_BALLOON_WEIGHT_SCRIPT_NAME )
+	{
 		AddRefEntAreaToInvalidOriginsForPlacingPermanentsOnto( prop, REDEPLOY_BALLOON_INVALID_PLACEMENT_MIN_AREA, REDEPLOY_BALLOON_INVALID_PLACEMENT_MAX_AREA )
+		AddEntityDestroyedCallback( prop,
+			void function( entity ent ) : ( prop )
+			{
+				RemoveRefEntAreaFromInvalidOriginsForPlacingPermanentsOnto( ent )
+			}
+		)
+	}
 }
 
 
@@ -1501,7 +1521,6 @@ RedeployBalloonPlacementInfo function RedeployBalloon_GetPlacementInfo( entity p
 		failed = airResults.fraction < 1.0
 		
 	}
-
 
 	if ( !failed && !VerifyAirdropPoint( origin, placementAngles.y, true, player ) )
 	{

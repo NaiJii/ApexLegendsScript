@@ -421,10 +421,8 @@ void function SetupDefaultDevCommandsMP()
 	SetupDevCommand( "[HOVER VEHICLE] Spawn Hover Vehicle At Player", "script HoverVehicle_CreateForPlayer(gp()[0])" )
 
 
-
 	SetupDevCommand( "[WEAPON MASTERY] Toggle Weapon Mastery Debug Window", "script_client DEV_ToggleWeaponMasteryDebugWindow()" )
 	SetupDevCommand( "[WEAPON MASTERY] Dump Weapon Mastery Info", "mastery_dump" )
-
 
 
 
@@ -835,13 +833,6 @@ void function SetDevMenu_NarrativeDebug ( var _ )
 void function SetupNarrativeDebugDevMenu()
 {
 	SetupDevMenu( "Dynamic Dialogue Debug", SetDevMenu_DynamicDialogueDebug )
-
-	SetupDevMenu( "S17 Chronicle Debug Menu", SetDevMenu_S17ChronicleDebug )
-
-	SetupDevMenu( "Firing Range MU1 Tease", SetDevMenu_FRTeaseDebug )
-
-
-
 }
 
 void function SetDevMenu_VictorySceen( var _ )
@@ -922,57 +913,6 @@ void function SetupDynamicDialogueDebug()
 	}
 }
 
-
-void function SetDevMenu_S17ChronicleDebug( var _ )
-{
-	ChangeToThisMenu( SetupS17ChronicleDebug )
-}
-
-void function SetupS17ChronicleDebug()
-{
-	SetupDevCommand("Launch Chronicle Intro", "launchplaylist survival_event_finale")
-	SetupDevCommand("Launch Chronicle Intro (Debug)", "launchplaylist survival_event_finale_debug")
-	if ( GetActiveLevel() == "mp_rr_salham" )
-	{
-		SetupDevCommand("Test Intro Cinematic", "script thread DEV_TestIntroCinematic(gp()[0], true)")
-		SetupDevCommand("Test Intro Cinematic (freecam)", "script thread DEV_TestIntroCinematic(gp()[0], false); freecam; freecam_setpos -11690 -23284 33319; freecam_setang 30 203 0")
-		SetupDevCommand("Test Intro Cinematic (Computer Interact Only)", "script DEV_ComputerInteractIntroCinematic(gp()[0])")
-		SetupDevCommand("Test Locked Door VFX", "script DEV_TestUnlockDoorFX(gp()[0])")
-
-		SetupDevCommand("Setup Platform Fall Intro", "script thread DEV_TestPlatformFallMoment(gp()[0])")
-		SetupDevCommand("Setup End Monologue Cinematic", "setpos -2300.449951 -4100.327637 28744.875000;setang 7.437382 126.616669 0.000000")
-	}
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-void function SetDevMenu_FRTeaseDebug( var _ )
-{
-	ChangeToThisMenu( SetupFRTeaseDebug )
-}
-
-void function SetupFRTeaseDebug()
-{
-	SetupDevCommand("Phase 0 (Disabled)", "launchplaylist survival_s16t_disabled")
-	SetupDevCommand("Phase 1", "launchplaylist survival_s16t_phase1")
-	SetupDevCommand("Phase 2", "launchplaylist survival_s16t_phase2")
-	SetupDevCommand("Phase 3", "launchplaylist survival_s16t_phase3")
-}
-
 void function SetupRespawnOverrideDevMenu()
 {
 	SetupDevCommand( "Use gamemode behaviour", "set_respawn_override off" )
@@ -1043,7 +983,7 @@ void function SetupFreelanceDevMenu()
 void function SetupPrototypesDevMenu()
 {
 
-
+		SetupDevCommand( "Change to Shadow Zombie", "script DEV_GiveShadowZombieAbilities( gp()[0] )" )
 
 }
 

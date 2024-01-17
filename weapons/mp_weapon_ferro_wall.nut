@@ -153,13 +153,19 @@ const float FERRO_WALL_HEIGHT 		= 120.0
 const float FERRO_WALL_WIDTH 		= 15.0
 const float FERRO_WALL_WIDTH_SQR 		= FERRO_WALL_WIDTH * FERRO_WALL_WIDTH
 
-const float FERRO_WALL_PILLAR_DURATION = 30.0
+const float FERRO_WALL_PILLAR_DURATION = 25.0
+
+
+
 const float FERRO_WALL_PILLAR_DELAY_BEFORE_SCALING = 1.2
 const float FERRO_WALL_PILLAR_DELAY_FORWARD = 0.05
 const float FERRO_WALL_PILLAR_DELAY_HORIZONTAL = FERRO_WALL_PILLAR_DELAY_FORWARD * 2
 const float FERRO_WALL_PILLAR_SCALE_TIME = 0.6
 const float FERRO_WALL_PILLAR_DESCALE_TIME = 0.85
 const int FERRO_WALL_NUM_PILLARS_FORWARD = 24
+
+
+
 const int FERRO_WALL_NUM_PILLARS_HORIZONTAL_PER_SIDE = 8
 const float FERRO_WALL_PILLAR_HEALTH = 125
 const float FERRO_WALL_PILLAR_HEIGHT_CHECK_BUFFER = 25.0 - FERRO_WALL_PILLAR_Z_OFFSET
@@ -403,6 +409,43 @@ void function MpWeaponFerroWall_Init()
 	file.darkVisionDurationNPC				= GetCurrentPlaylistVarFloat( "catalyst_wall_darkVisionDurationNPC", FERRO_WALL_SLOW_NPC_TIME_SCALER )
 	file.maxWallsPerPlayer					= GetCurrentPlaylistVarInt( "catalyst_wall_maxWallsPerPlayer", FERRO_WALL_MAX_WALLS_PER_PLAYER ) 
 	file.maxWallsPerGame					= GetCurrentPlaylistVarInt( "catalyst_wall_maxWallsPerGame", FERRO_WALL_MAX_WALLS_PER_GAME ) 
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+float function GetWallDuration( entity player )
+{
+	float result = file.duration
+
+
+
+
+
+
+
+	return result
+}
+
+int function GetWallLength( entity player )
+{
+	int result = file.numSegments
+
+
+
+
+
+
+	return result
 }
 
 
@@ -678,17 +721,17 @@ vector function GetProjectileVelocity_weapon_ferro_wall( entity projectile, floa
 bool function FerroWall_BlockScan( vector startPos, vector endPos )
 {
 
-	TraceResults traceResult = TraceLine( startPos, endPos, [], CONTENTS_BLOCKSCAN, TRACE_COLLISION_GROUP_NONE, null, true )
-
-	bool retVal = ( traceResult.fraction < 1.0 )
-
-	return retVal
 
 
 
 
 
 
+	entity ent = TraceGetTargetNameEntAlongLine( FERRO_WALL_SEGMENT_TARGET_NAME, startPos, endPos )
+	if ( IsValid( ent ) )
+		return ent.GetTargetName() == FERRO_WALL_SEGMENT_TARGET_NAME
+
+	return false
 
 }
 
@@ -2117,7 +2160,7 @@ void function WeaponActive_Client( entity ownerPlayer, entity weapon )
 	wait 0.2
 
 	array< entity > proxies
-	int maxCharges = file.numSegments
+	int maxCharges = GetWallLength( ownerPlayer )
 	for( int i = 0; i < maxCharges; i++ )
 	{
 		entity proxy = FerroWallCreatePlacementProxy( FERRO_WALL_MODEL_AR )
@@ -2267,6 +2310,7 @@ void function OnFerroWallPillarCreatedThread( entity infoTarget )
 	clientAG.AddToOtherEntitysRealms( infoTarget )
 	clientAG.SetParent( infoTarget, "", true )
 	SetTeam( clientAG, infoTarget.GetTeam() )
+	clientAG.SetEnabled( true )
 
 	OnThreadEnd(
 		function() : ( clientAG )
@@ -2278,18 +2322,30 @@ void function OnFerroWallPillarCreatedThread( entity infoTarget )
 		}
 	)
 
+	int prevNumSegments = 0
 	while( true )
 	{
-		clientAG.RemoveSegmentEndpoints()
 		array< entity > segments = infoTarget.GetLinkEntArray()
-		clientAG.SetEnabled( ( segments.len() > 0 ) )
-		foreach( wallSegment in segments )
+		int currentNumSegments   = segments.len()
+		if ( currentNumSegments != prevNumSegments )
 		{
-			if( IsValid( wallSegment ) && wallSegment.GetModelScale() >= 1.0 )
+			prevNumSegments = currentNumSegments
+			if ( currentNumSegments == 0 )
 			{
-				vector startPoint = wallSegment.GetOrigin() + < 0, 0, FERRO_WALL_HEIGHT * 0.75 > + wallSegment.GetRightVector() * FERRO_WALL_RADIUS
-				vector endPoint = wallSegment.GetOrigin() + < 0, 0, FERRO_WALL_HEIGHT * 0.75 > - wallSegment.GetRightVector() * FERRO_WALL_RADIUS
-				clientAG.AddSegmentEndpoints( startPoint, endPoint )
+				clientAG.SetEnabled( false )
+			}
+
+
+			clientAG.RemoveSegmentEndpoints()
+			foreach( wallSegment in segments )
+			{
+				if( IsValid( wallSegment ) )
+				{
+					vector startPoint = wallSegment.GetOrigin() + < 0, 0, FERRO_WALL_HEIGHT * 0.75 > + wallSegment.GetRightVector() * FERRO_WALL_RADIUS
+					vector endPoint = wallSegment.GetOrigin() + < 0, 0, FERRO_WALL_HEIGHT * 0.75 > - wallSegment.GetRightVector() * FERRO_WALL_RADIUS
+
+					clientAG.AddSegmentEndpoints( startPoint, endPoint )
+				}
 			}
 		}
 		WaitFrame()

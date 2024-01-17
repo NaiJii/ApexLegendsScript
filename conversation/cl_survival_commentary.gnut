@@ -84,7 +84,7 @@ void function ClSurvivalCommentary_Init()
 	ShSurvivalCommentary_Init()
 	ShAmbientDialogue_Init()
 
-	if ( IsPVEMode() )
+	if ( IsVDUDialogueEnabled() )
 		SetUseDialogueVDU( true )
 
 	AddCallback_KillReplayStarted( KillReplayStarted )
@@ -672,6 +672,15 @@ string function GetBattleChatterAlias1P3P( entity player, string aliasSubname, b
 	string voice = GetPlayerVoice( player )
 	if ( voice == SILENT_PLAYER_VOICE )
 		return ""
+
+
+
+
+
+
+
+
+
 	string perspective = firstPerson ? "1p" : "3p"
 	string result = "diag_mp_" + voice + "_" + aliasSubname + "_" + perspective
 	if ( result in FORBIDDEN_DIALOGUE_EVENT_NAMES )
