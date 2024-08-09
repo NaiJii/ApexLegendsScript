@@ -1,0 +1,111 @@
+global function AlterExtraScript_Init
+
+
+
+
+
+
+
+
+
+
+global const string ALTER_VOICE = "alter"
+
+
+const bool ALTER_EXTRA_SCRIPT_DEBUG = false
+
+struct
+{
+
+
+
+} tuning
+
+struct
+{
+} file
+
+
+void function AlterExtraScript_Init()
+{
+	if ( !IsAlterExtraScriptEnabled() )
+		return
+
+	SetupTuning()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+}
+
+void function SetupTuning()
+{
+
+
+
+}
+
+bool function IsAlterExtraScriptEnabled()
+{
+	return GetCurrentPlaylistVarBool( "alter_extra_script_enabled", true )
+}
+
+
+void function OnPassiveChanged( entity player, int passive, bool didHave, bool nowHas )
+{
+
+
+
+
+
+
+
+
+
+
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

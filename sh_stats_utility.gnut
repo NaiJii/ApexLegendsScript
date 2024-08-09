@@ -1,0 +1,205 @@
+global function Stats_IsValidMapForStats
+
+
+
+
+
+
+
+
+
+global function Stats_CurrentModeSupportsCustomStats
+global function Stats_CurrentModeIsSurvival
+
+global function CalcStatSum_Int
+global function FindMaxStat_Int
+
+global function Stats_CountSetBitsInCharacterBitfield
+
+bool function Stats_IsValidMapForStats()
+{
+	if ( GameModeVariant_IsActive( eGameModeVariants.SURVIVAL_TRAINING ) )
+		return false
+
+	if ( GameModeVariant_IsActive( eGameModeVariants.SURVIVAL_FIRING_RANGE ) )
+		return false
+
+	if ( IsLobby() )
+		return false
+
+	return true
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+bool function Stats_CurrentModeSupportsCustomStats()
+{
+	string mode = ""
+
+
+
+
+
+
+
+
+	{
+		mode = GetCurrentPlaylistVarString( "stats_match_type", "survival" )
+	}
+
+	Assert( STATS_MATCH_TYPES.contains( mode ), "Invalid Playlist var stats_match_type " + mode )
+
+	return ( STATS_ALTERNATE_MODE_REFS.contains( mode ) )
+}
+
+bool function Stats_CurrentModeIsSurvival()
+{
+	string mode = ""
+
+
+
+
+
+
+
+
+	{
+		mode = GetCurrentPlaylistVarString( "stats_match_type", "survival" )
+	}
+
+	return mode == "survival" || mode == "duo" || mode == "ranked"
+}
+
+int function CalcStatSum_Int( entity player, array<StatEntry> sourceEntries, int when )
+{
+	int sum = 0
+	foreach ( StatEntry sourceEntry in sourceEntries )
+		sum += GetStat_Int( player, sourceEntry, when )
+	return sum
+}
+
+int function FindMaxStat_Int( entity player, array<StatEntry> sourceEntries, int when )
+{
+	int max = 0
+	foreach ( StatEntry sourceEntry in sourceEntries )
+	{
+		int temp = GetStat_Int( player, sourceEntry, when )
+		if ( temp > max )
+			max = temp
+	}
+	return max
+}
+
+int function Stats_CountSetBitsInCharacterBitfield( int input )
+{
+	int count = 0
+
+	
+	
+
+	
+	foreach ( string guid, int characterBitmask in StatsDefs_GetCharacterGUIDToBitmaskMap() )
+	{
+		if ( IsBitFlagSet( input, characterBitmask ) )
+		{
+			count += 1
+		}
+	}
+
+	return count
+}
